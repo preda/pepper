@@ -1,4 +1,4 @@
-#include "fnv.h"
+#include "common.h"
 
 u64 hash64(byte *p, int len, u64 h) {
     byte *end = p + len;

@@ -3,15 +3,14 @@
 #include "Map.h"
 #include "Func.h"
 
-typedef unsigned char byte;
+#define OP(c) ((byte) (c))
+#define OC(c) ((byte) (c >> 8))
+#define OA(c) ((byte) (c >> 16)
+#define OB(c) ((byte) (c >> 24))
+#define OAB(c) ((unsigned short) (c >> 16))
 
-#define OP(c)  (c & 0x1f)
-#define OB(c) ((c >>  5) & 0x1ff)
-#define OC(c) ((c >> 14) & 0x1ff)
-#define OD(c) ((c >>  5) & 0x3ffff)
-#define OA(c)  (c >> 23)
-
-#define STEP code=*pc++; ra=regs+OA(code); b=OB(code); c=OC(code); B=regs[b]; C=regs[c]; goto *dispatch[OP(code)]
+#define STEP code=*pc++; A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
+// ra=regs+OA(code); 
 
 #define INT(x) VAL_INT((signed char)x)
 #define BINOP(op) op: b=regs[OB(code)]; tagB=TAG(b); c=regs[OC(code)]; tagC=TAG(c);
@@ -114,6 +113,12 @@ Value doXor(Value a, Value b) {
     return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERR;
 }
 
+#define DECODE(A) { const byte v = O##A(code);\
+      if (v <  0x80) { A = VAL_INT((((signed char)(v<<1))>>1)); }\
+ else if (v <  0xfe) { A = (v < 0xf0) ? curFunc->ups[v & 0x7f] : VALUE((v & 0x0f), 0); }\
+ else if (v == 0xfe) { A = *(Value *)pc; pc += 2; }\
+ else { int inc = 0; A = readVarlen(pc, &inc); pc += inc; }}
+
 int VM::run(unsigned *pc) {
     void *dispatch[32] = {
         &&call, &&return_, &&move,
@@ -123,35 +128,43 @@ int VM::run(unsigned *pc) {
     int stackSize = 1024;
     Value *stack = (Value *) calloc(stackSize, sizeof(Value));
     Value *regs  = stack;
+    Func *curFunc;
     unsigned code;
-    Value *ra;
-    int b, c;
-    Value B, C;
+    Value A, B;
+    Value *ptrC;
     Vector<RetInfo> retInfo;
     STEP;
 
+ decodeAB:  DECODE(A); // fall
+ decodeB:   DECODE(B); goto *dispatch[OP(code) & 0x1f];
+
+ decodeAC:  ptrC = curFunc->ups + OC(code); // fall
+ decodeA:   DECODE(A); goto *dispatch[OP(code) & 0x1f];
+
+ decodeABC: DECODE(A); // fall
+ decodeBC:  DECODE(B); // fall
+ decodeC:   ptrC = curFunc->ups + OC(code); goto *dispatch[OP(code) & 0x1f];
+
  call: {
-    // A: function to call
-    // b: start of args
-    // c: n args    
-        Value A = *ra;
-        if (TAG(A) != OBJECT) { return 1; }
-        Func *f = (Func *) A;
-        Value *base = regs + b;
-        const int effArgs = c;
+        const int nEffArgs = (unsigned) A;
+        const Func *f = (Func *) B;
+        Value *base = ptrC;
+
+        if (TAG(A) != INTEGER || TAG(B) != OBJECT) { return 1; }
+
         if (f->type == FUNC) {
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
-            for (Value *p=base+effArgs, *end=base+nArgs; p < end; ++p) {
+            for (Value *p=base+nEffArgs, *end=base+nArgs; p < end; ++p) {
                 *p = NIL;
             }
             if (proto->hasEllipsis) {
-                if (effArgs < nArgs) {
+                if (nEffArgs < nArgs) {
                     base[nArgs-1] = ARRAY0; // VALUE(ARRAY, 0);
                 } else {
-                    int nExtra = effArgs - nArgs;
+                    int nExtra = nEffArgs - nArgs;
                     Array *a = Array::alloc(nExtra);
-                    for (Value *p=base+nArgs-1, *end=base+effArgs; p < end; ++p) {
+                    for (Value *p=base+nArgs-1, *end=base+nEffArgs; p < end; ++p) {
                         a->push(*p);
                     }
                     base[nArgs-1] = VAL_OBJ(a);
@@ -168,7 +181,7 @@ int VM::run(unsigned *pc) {
             pc = proto->pc;
         } else if (f->type == CFUNC) {
             CFunc *cf = (CFunc *) A;
-            cf->call(base, effArgs);
+            cf->call(base, nEffArgs);
         } else { return 2; }
         STEP;
     }

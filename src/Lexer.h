@@ -1,5 +1,7 @@
 #pragma once
 
+#include "SymbolMap.h"
+
 static const char *tokens[] = {
     "<begin-keyword>",
     "break", "continue", 
@@ -26,21 +28,22 @@ enum TOKENS {
     TK_EQUAL = 257,
 };
 
-struct TokenInfo {
+union TokenInfo {
     s64 intVal;
     double doubleVal;
-    const char *string;
+    struct {
+        const char *strVal;
+        int strLen;
+    };
+    u64 nameHash;
 };
 
 class Lexer {
-    static bool isAlpha(char c)    { return ('a' <= (c|32) && (c|32) <= 'z') || c == '_'; }
-    static bool isDigit(char c)    { return '0' <= c && c <= '9'; }
-    static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
-
     char *string, *p, *end;
     int lineNumber;
     char *readString();
     int error, errorPos, errorExpected;
+    SymbolMap keywords;
 
  public:
     Lexer(char *string);

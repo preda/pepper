@@ -1,8 +1,11 @@
 #include "Lexer.h"
-#include "Vector.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+
+static bool isAlpha(char c)    { return ('a' <= (c|32) && (c|32) <= 'z') || c == '_'; }
+static bool isDigit(char c)    { return '0' <= c && c <= '9'; }
+static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
 
 Lexer::Lexer(char *string) {
     this->string = (char *) string;
@@ -11,6 +14,10 @@ Lexer::Lexer(char *string) {
     lineNumber = 0;
     error = 0;
     errorPos = 0;
+    for (int i = TK_BEGIN_KEYWORD; i < TK_END_KEYWORD; ++i) {
+        HashEntry *e = keywords.add(hash64(tokens[i]));
+        e->d = SymbolData(KIND_KEYWORD, 0, i);
+    }
 }
 
 int Lexer::nextToken(TokenInfo *info) {
@@ -21,22 +28,17 @@ int Lexer::nextToken(TokenInfo *info) {
         char c = *p++;
         switch (c) {
         default:
-            if (isAlpha(c)) {
-                Vector<char> s;
-                s.push(c);
-                c = *p;
+            if (isAlpha(c)) {                
+                u64 hash = 0;
+                --p;
                 while (isAlphaNum(c)) {
-                    s.push(c);
+                    hash = hash64Step(c, hash);
                     c = *++p;
-                }
-                s.push('\0');
-                char *tmp = s.buf;
-                for (int i = TK_BEGIN_KEYWORD; i < TK_END_KEYWORD; ++i) {
-                    if (!strcmp(tmp, tokens[i])) {
-                        return i;
-                    }
-                }
-                info->string = strdup(tmp);
+                }                
+                if (HashEntry *e = keywords.get(hash)) {
+                    return e->d.slot;
+                }                
+                info->nameHash = hash;
                 return TK_NAME;
             } else if (isDigit(c)) {
                 char p1, p2;
@@ -77,7 +79,7 @@ int Lexer::nextToken(TokenInfo *info) {
             return *p == '=' ? ++p, c + TK_EQUAL : c;
                 
         case '"':
-            info->string = readString();
+            info->strVal = readString(&info->strLen);
             return TK_STRING;
         }
     }
@@ -86,7 +88,7 @@ int Lexer::nextToken(TokenInfo *info) {
     }
 }
 
-char *Lexer::readString() {
+char *Lexer::readString(int *outLen) {
     char c;
     Vector<char> s;
     while (p < end && (c=*p) != '"') {
@@ -110,5 +112,6 @@ char *Lexer::readString() {
     }
     s.push('\0');
     char *ret = strdup(s.buf);
+    *outLen = strlen(ret);
     return ret;
 }

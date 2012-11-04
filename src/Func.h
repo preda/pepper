@@ -6,10 +6,9 @@
 
 struct Proto {
     byte nArgs;
-    byte nUps;
     bool hasEllipsis;
-    short *upInfo;
-    unsigned *pc;
+    Vector<short> ups;
+    Vector<unsigned> code;
     Proto *parent;
 };
 

@@ -2,10 +2,7 @@
 
 #include "Lexer.h"
 #include "SymbolTable.h"
-
-struct Function {
-    
-};
+#include "Vector.h"
 
 class Block {
  public:
@@ -20,12 +17,9 @@ class Parser {
     Lexer *lexer;
     int token;
     TokenInfo tokenInfo;
+    Vector<unsigned> bytecode;
 
-    /*
-    void addFun(const char *name, ) {
-        symbolTable.set(name, top);        
-    }
-    */
+    Value codeUnary(int op, Value a);
 
 public:
     Parser(Lexer *lexer);
@@ -34,7 +28,11 @@ public:
     void consume(int t);
 
     void var();
-    void expr(int destReg);
+    
+    Value expr(int dest);
+    Value subExpr(int dest, int limit);
+    Value simpleExpr();
+    Value suffixedExpr();
 
     void block();
     void statList();
