@@ -1,5 +1,7 @@
 #include "FFI.h"
 #include "Value.h"
+#include "Object.h"
+#include "String.h"
 #include <string.h>
 #include <dlfcn.h>
 

@@ -44,7 +44,7 @@ class SymbolMap {
     bool del(u64 key) {
         HashEntry *e = get(key);
         if (!e) { return false; }
-        if (e < tab + (allocSize - 1) && (e+1)->kind==KIND_EMPTY) {
+        if (e < tab + (allocSize - 1) && (e+1)->d.kind==KIND_EMPTY) {
             e->d.kind = KIND_EMPTY;
             --size;
         } else {

@@ -2,5 +2,5 @@
 #include "GC.h"
 
 CFunc *CFunc::alloc(void *f, int dataSize) {
-    return GC::alloc(CFUNC, sizeof(CFunc) + dataSize, true);
+    return (CFunc *) GC::alloc(CFUNC, sizeof(CFunc) + dataSize, true);
 }

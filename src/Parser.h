@@ -3,6 +3,7 @@
 #include "Lexer.h"
 #include "SymbolTable.h"
 #include "Vector.h"
+#include "Value.h"
 
 class Block {
  public:
@@ -20,6 +21,8 @@ class Parser {
     Vector<unsigned> bytecode;
 
     Value codeUnary(int op, Value a);
+    SymbolData createUpval(u64 name, SymbolData sym, int level);
+    SymbolData lookupName(u64 name);
 
 public:
     Parser(Lexer *lexer);

@@ -1,42 +1,19 @@
 #pragma once
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
 template <typename T>
-struct Vector {
+class Vector {
+ public:
     int size, allocSize;
     T *buf;
 
-    Vector(int iniSize = 0) {
-        printf("Vector %p\n", this);
-        allocSize = 0;
-        size = 0;
-        buf = 0;
-        reserve(iniSize);
-    }
+    Vector(int iniSize = 0);
+    ~Vector();
 
-    ~Vector() {
-        if (buf) {
-            free(buf);
-            buf = 0;
-        }
-    }
+    void append(Vector<T> *v);
 
-    void reserve(int capacity) {
-        if (capacity > allocSize) {
-            while (capacity > allocSize) {
-                allocSize += allocSize ? 4 : allocSize;
-            }
-            buf = (T*) realloc(buf, allocSize * sizeof(T));
-            // memset(buf+oldAlloc, 0, (allocSize - oldAlloc) * sizeof(T));
-        }
-    }
-
-    void append(Vector<T> *v) {
-        reserve(size + v->size);
-        memcpy(buf + size, v->buf, v->size * sizeof(T));
+    void push(T v) {
+        reserve(size+1);
+        buf[size++] = v;
     }
     
     T *push() {
@@ -48,9 +25,6 @@ struct Vector {
         return buf + (size-1);
     }
 
-    void push(T v) {
-        add(size, v);
-    }
 
     T pop() {
         return buf[--size];
@@ -69,22 +43,11 @@ struct Vector {
         }
     }
 
-    void add(int pos, T v) {        
-        reserve(size+1);
-        if (pos < size) {
-            memmove(buf + pos + 1, buf + pos, (size - pos) * sizeof(T));            
-        }
-        buf[size++] = v;
-    }
+    void removeRange(int a, int b);
+    void remove(int pos) { removeRange(pos, pos + 1); }
 
-    void remove(int pos) {
-        removeRange(pos, pos + 1);
-    }
+    void reserve(int capacity) { if (capacity > allocSize) { doReserve(capacity); } }
 
-    void removeRange(int a, int b) {
-        if (b < size) {
-            memmove(buf + a, buf + b, (size - b) * sizeof(T));
-        }
-        size -= b - a;
-    }
+ private:
+    void doReserve(int capacity);
 };

@@ -83,7 +83,7 @@ Value doMul(Value a, Value b) {
 
 Value doDiv(Value a, Value b) {
     if (IS_INTEGER(a) && IS_INTEGER(b)) {
-        long long vc = getInteger(b);
+        s64 vc = getInteger(b);
         return vc == 0 ? ERR : VAL_INT(getInteger(a) / vc);
     } else if (IS_NUMBER(a) && IS_NUMBER(b)) {
         double vc = getDouble(b);

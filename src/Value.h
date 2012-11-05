@@ -1,8 +1,8 @@
 #pragma once
 
-// #include "Object.h"
+#include "common.h"
 
-typedef unsigned long long Value;
+typedef u64 Value;
 
 // Value tags
 enum {
@@ -27,7 +27,7 @@ enum {
     // future INTEGER
 };
 
-#define VALUE(tag,x) ((((unsigned long long)(tag)) << 48) | (x))
+#define VALUE(tag,x) ((((u64)(tag)) << 48) | (x))
 #define VAL_OBJ(obj) ((Value)(obj))
 #define VAL_INT(i)   VALUE(INTEGER, (i) & 0xffffffffffffLL)
 #define VAL_REG(i) VALUE(REGISTER, i)
@@ -78,8 +78,8 @@ static inline Value VAL_DOUBLE(double dbl) {
     return u.v;
 }
 
-static inline long long getInteger(Value val) {
-    return (((long long)val) << 16) >> 16;
+static inline s64 getInteger(Value val) {
+    return (((s64)val) << 16) >> 16;
 }
 
 static inline double getDouble(Value val) {

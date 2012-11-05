@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Value.h"
-
 struct Integer {
     byte type;
     __int128 val;

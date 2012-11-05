@@ -31,7 +31,5 @@ class VM {
         END,
     };
     
-    Stack stack;
-
     int run(unsigned *code);
 };

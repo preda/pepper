@@ -59,7 +59,7 @@ class SymbolTable {
     }
 
     SymbolData set(int level, u64 key, int slot) {
-        return set(undoLog + level, key, SymbolData(kind, level, slot));
+        return set(undoLog + level, key, SymbolData(KIND_REGUP, level, slot));
     }    
 
     SymbolData get(const char *str) {

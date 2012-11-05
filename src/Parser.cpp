@@ -2,8 +2,6 @@
 #include "Lexer.h"
 #include "VM.h"
 
-#define ANYWHERE (-1)
-
 Parser::Parser(Lexer *lexer) {
     this->lexer = lexer;
     top = 0;
