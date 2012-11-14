@@ -31,23 +31,16 @@ class SymbolTable {
     }
     
  public:
-    SymbolTable() {
-        level = 0;
-    }
-   
+    SymbolTable();
+    ~SymbolTable();
+
+    void print();
+
     int pushContext() {
         return ++level;
     }
 
-    int popContext() {
-        SymbolVect *currUndo = undoLog + level;
-        int n = currUndo->size;
-        Symbol *buf = currUndo->buf;
-        for (Symbol *s = buf + n - 1; s >= buf; --s) {
-            undo(s);
-        }
-        return --level;
-    }
+    int popContext();
     
     SymbolData get(u64 key) {
         HashEntry *e = map.get(key);

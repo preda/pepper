@@ -16,4 +16,6 @@ class Proto {
     Vector<Value> consts;
     Vector<unsigned> code;
     Proto *up; // level-1
+
+    void print();
 };

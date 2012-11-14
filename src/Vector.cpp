@@ -1,13 +1,14 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
 #include "Vector.h"
 #include "Value.h"
+#include "Object.h"
+#include "SymbolMap.h"
+#include "RetInfo.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 template<typename T>
 Vector<T>::Vector(int iniSize) {
-    printf("Vector %p\n", this);
     allocSize = 0;
     size = 0;
     buf = 0;
@@ -25,7 +26,7 @@ Vector<T>::~Vector() {
 template<typename T>
 void Vector<T>::doReserve(unsigned capacity) {
     while (capacity > allocSize) {
-        allocSize += allocSize ? 4 : allocSize;
+        allocSize += allocSize ? allocSize : 4;
     }
     buf = (T*) realloc(buf, allocSize * sizeof(T));
     // memset(buf+oldAlloc, 0, (allocSize - oldAlloc) * sizeof(T));
@@ -48,6 +49,11 @@ void Vector<T>::removeRange(unsigned a, unsigned b) {
 template class Vector<unsigned>;
 template class Vector<short>;
 template class Vector<Value>;
+template class Vector<Object*>;
+template class Vector<char>;
+template class Vector<RetInfo>;
+template class Vector<Symbol>;
+
 
     /*
     void add(int pos, T v) {        

@@ -12,9 +12,11 @@ static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
 static const char *tokens[] = {
     "<begin-keyword>",
     "break", "continue", 
-    "else", "for", "fun", "goto",
+    "else", "for", "func", "goto",
     "if", "nil", "return", "var",
-    "<end-keyword>", "<number>", "<name>", "<string>", "<eos>", "<error>",
+    "<end-keyword>", 
+
+    "<integer>", "<double>", "<name>", "<string>", "<end>",
 };
 
 Lexer::Lexer(const char *string) {
@@ -29,7 +31,13 @@ Lexer::Lexer(const char *string) {
 }
 
 int Lexer::advance() {
+    printf("before advance ");
     token = advanceInt();
+    if (token < 32) {
+        printf("token %s\n", tokens[token]);
+    } else {
+        printf("token '%c' (%d)\n", (char) token, token);
+    }
     return token;
 }
 

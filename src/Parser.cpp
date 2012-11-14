@@ -93,9 +93,9 @@ void Parser::var() {
         u64 name = lexer->info.nameHash;
         consume(TK_NAME);
         consume('=');
+        Value a = expr(); // sympleExpr() ?
         int reg = proto->top++;
         syms->set(name, reg+1);
-        Value a = expr(); // sympleExpr() ?
         genCode(MOVE, reg, a);
     } else {
         error(E_VAR_NAME);
@@ -143,7 +143,7 @@ Value Parser::genCode(int op, int dest, Value a, Value b) {
     bool bIsReg = IS_REGISTER(b) && (int)b >= 0;
     byte rb = getRegValue(b);
 
-    proto->code.push(PACK4(op | (aIsReg?0:0x10) | (bIsReg?0:0x20), dest, ra, rb));
+    proto->code.push(PACK4(op | (aIsReg?0:0x20) | (bIsReg?0:0x40), dest, ra, rb));
     return VAL_REG(dest);
 }
 
@@ -283,6 +283,7 @@ Value Parser::suffixedExpr() {
 }
 
 Value Parser::simpleExpr() {
+    printf("enter simpleExpr\n");
     switch (lexer->token) {
     case TK_INTEGER: return VAL_INT(lexer->info.intVal);
     case TK_DOUBLE:  return VAL_DOUBLE(lexer->info.doubleVal);
@@ -305,6 +306,7 @@ Value Parser::simpleExpr() {
 }
 
 Value Parser::subExpr(int limit) {
+    printf("enter subExpr %d\n", limit);
     Value a;
     if (isUnaryOp(lexer->token)) {
         int op = lexer->token;
@@ -312,6 +314,7 @@ Value Parser::subExpr(int limit) {
         a = codeUnary(op, subExpr(8));
     } else {
         a = simpleExpr();
+        advanceToken();
     }
     while (binaryPriorityLeft(lexer->token) > limit) {
         int op = lexer->token;
