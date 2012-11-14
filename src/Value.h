@@ -97,3 +97,4 @@ static inline double getDouble(Value val) {
 
 unsigned hashCode(Value a);
 unsigned len(Value a);
+void printValue(Value a);

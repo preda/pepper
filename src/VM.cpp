@@ -10,7 +10,12 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
+
+#define OP(c) ((byte) (c))
+#define OC(c) ((byte) (c >> 8))
+#define OA(c) ((byte) (c >> 16))
+#define OB(c) ((byte) (c >> 24))
+#define OAB(c) ((unsigned short) (c >> 16))
 
 #define STEP code=*pc++; A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
 // ra=regs+OA(code); 
@@ -19,47 +24,7 @@
 
 #define ERROR(mes) { error=mes; goto end; }
 
-static const char *opNames[] = {
-    "CALL", "RET ", "MOVE",
-    "ADD ", "SUB ", "MUL ", "DIV ", "MOD ", "POW ", "AND ", "OR  ", "XOR ",
-    "NOT ", "LEN ",
-    "END ",
-};
-
-static const char *typeNames[] = {
-    "NIL", "[] ", "{} ", 0,
-    0, 0, 0, 0,
-    "\"\" ",
-};
-
 #define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : v<0xf0 ? ups[v & 0x7f] : VALUE((v&0xf), 0); }
-
-void printOperand(int bit, int v) {
-    if (!bit) {
-        printf("%2d ", v);
-    } else {
-        if (v < 0x80) {
-            printf("#%-2d ", (int)(((signed char)(v<<1))>>1));
-        } else if (v < 0xf0) {
-            printf("[%2d] ", (int)(v & 0x7f));
-        } else {
-            printf("#%s ", typeNames[v & 0xf]);
-        }
-    }
-}
-
-void bytecodePrint(unsigned *p, int size) {
-    for (unsigned *end = p + size; p < end; ++p) {
-        unsigned code = *p;
-        int fullOp = OP(code), c = OC(code), a = OA(code), b = OB(code);
-        int op = fullOp & 0x1f;        
-        printf("%s ", opNames[op]);
-        printOperand(fullOp & 0x80, c);
-        printOperand(fullOp & 0x20, a);
-        printOperand(fullOp & 0x40, b);
-        printf("\n");
-    }
-}
 
 static Value arrayAdd(Value a, Value b) {
     int sz = len(a) + len(b);

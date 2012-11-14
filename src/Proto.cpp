@@ -8,7 +8,3 @@ Proto::Proto() :
     top(0),
     up(0) {
 }
-
-void Proto::print() {
-    bytecodePrint(code.buf, code.size);
-}

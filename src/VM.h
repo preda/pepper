@@ -23,19 +23,9 @@ enum {
     
     // Unary
     NOT, LEN,
-    
-    END,
 };
 
-#define OP(c) ((byte) (c))
-#define OC(c) ((byte) (c >> 8))
-#define OA(c) ((byte) (c >> 16))
-#define OB(c) ((byte) (c >> 24))
-#define OAB(c) ((unsigned short) (c >> 16))
-
 int vmrun(unsigned *pc);
-
-void bytecodePrint(unsigned *bytecode, int size);
 
 class VM {
  public:

@@ -93,10 +93,13 @@ void Parser::var() {
         u64 name = lexer->info.nameHash;
         consume(TK_NAME);
         consume('=');
+        int slot = proto->top;
         Value a = expr(); // sympleExpr() ?
-        int reg = proto->top++;
-        syms->set(name, reg+1);
-        genCode(MOVE, reg, a);
+        proto->top = slot + 1;
+        syms->set(name, slot);
+        if (!IS_REGISTER(a) || (int)a != slot) {
+            genCode(MOVE, slot, a);
+        }
     } else {
         error(E_VAR_NAME);
     }
@@ -237,6 +240,7 @@ SymbolData Parser::lookupName(u64 name) {
 }
 
 Value Parser::primaryExpr() {
+    printf("enter primaryExpr\n");
     switch (lexer->token) {
     case '(': {
         advanceToken();
@@ -254,8 +258,10 @@ Value Parser::primaryExpr() {
         }
         
         if (sym.level == proto->level) {
+            printf("same level, slot %d\n", (int) sym.slot);
             return VAL_REG(sym.slot);
         } else {
+            printf("level %d %d\n", (int)sym.level, (int)proto->level);
             // create new upval in current level
             createUpval(proto, name, sym);
         }
@@ -265,8 +271,8 @@ Value Parser::primaryExpr() {
 }
 
 Value Parser::suffixedExpr() {
+    return primaryExpr();
     //TODO
-    return 0;
     /*
     Value a = primaryExpr();
     while (true) {
@@ -284,11 +290,12 @@ Value Parser::suffixedExpr() {
 
 Value Parser::simpleExpr() {
     printf("enter simpleExpr\n");
+    Value ret = NIL;
     switch (lexer->token) {
-    case TK_INTEGER: return VAL_INT(lexer->info.intVal);
-    case TK_DOUBLE:  return VAL_DOUBLE(lexer->info.doubleVal);
-    case TK_STRING:  return VAL_STRING(lexer->info.strVal, lexer->info.strLen);
-    case TK_NIL:     return NIL;
+    case TK_INTEGER: ret = VAL_INT(lexer->info.intVal); break;
+    case TK_DOUBLE:  ret = VAL_DOUBLE(lexer->info.doubleVal); break;
+    case TK_STRING:  ret = VAL_STRING(lexer->info.strVal, lexer->info.strLen); break;
+    case TK_NIL:     ret = NIL; break;
 
     case '[': // array TODO
         break;
@@ -302,7 +309,8 @@ Value Parser::simpleExpr() {
     default:
         return suffixedExpr();
     }
-    error(E_TODO);
+    advanceToken();
+    return ret;
 }
 
 Value Parser::subExpr(int limit) {
@@ -314,7 +322,6 @@ Value Parser::subExpr(int limit) {
         a = codeUnary(op, subExpr(8));
     } else {
         a = simpleExpr();
-        advanceToken();
     }
     while (binaryPriorityLeft(lexer->token) > limit) {
         int op = lexer->token;
