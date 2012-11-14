@@ -9,6 +9,8 @@ class GC;
 
 struct Object {
     byte type;
+    unsigned size;
+
     void traverse();
     void destroy();
     unsigned hashCode();

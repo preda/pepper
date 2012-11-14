@@ -15,21 +15,28 @@ Value doAnd(Value a, Value b);
 Value doOr(Value a, Value b);
 Value doXor(Value a, Value b);
 
+enum {
+    CALL, RETURN, MOVE,
+    
+    // Binary
+    ADD, SUB, MUL, DIV, MOD, POW, AND, OR, XOR,
+    
+    // Unary
+    NOT, LEN,
+    
+    END,
+};
+
+enum {
+
+};
+
+
+int vmrun(unsigned *pc);
+
 class VM {
  public:
     const char *error;
-
-    enum {
-        CALL, RETURN, MOVE,
-
-        // Binary
-        ADD, SUB, MUL, DIV, MOD, POW, AND, OR, XOR,
-
-        // Unary
-        NOT, LEN,
-
-        END,
-    };
     
     int run(unsigned *code);
 };

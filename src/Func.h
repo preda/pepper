@@ -1,18 +1,11 @@
 #pragma once
 
-#include "Vector.h"
 #include "Value.h"
 
-struct Proto {
-    byte nArgs;
-    bool hasEllipsis;
-    Vector<short> ups;
-    Vector<Value> consts;
-    Vector<unsigned> code;
-    Proto *parent;
-};
+class Proto;
 
-struct Func {
+class Func {
+ public:
     byte type;
     Proto *proto;
     Value *ups;

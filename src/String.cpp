@@ -15,6 +15,14 @@ String *String::alloc(const char *p, int size) {
     return s;
 }
 
+/*
+int String::len(Value a) {
+    assert(IS_STRING(a));
+    int ta = TAG(a);
+    return ta >= STRING && ta <= STRING+6 ? ta - STRING : ((String *) a)->size;
+}
+*/
+
 unsigned String::hashCode(char *buf, int size) {
     unsigned char *p = (unsigned char *) buf;
     unsigned h = 0;
@@ -34,4 +42,63 @@ bool String::equals(String *other) {
         return false;
     }
     return !memcmp(s, other->s, size);
+}
+
+static Value stringConcat(Value a, char *pb, int sb) {
+    int ta = TAG(a);
+    char *pa;
+    int sa;
+    Value ret;
+
+    if (ta>=STRING && ta<=STRING+6) {
+        sa = ta - STRING;
+        pa = (char *) &a;
+    } else {
+        String *s = (String *) a;
+        sa = s->size;
+        pa = s->s;
+    }
+    char *pr;
+    if (sa + sb <= 6) {
+        ret = VALUE(STRING+(sa+sb), 0);
+        pr = (char *) &ret;
+    } else {
+        String *s = String::alloc(sa + sb);
+        pr = s->s;
+        ret = VAL_OBJ(s);
+    }
+    memcpy(pr, pa, sa);
+    memcpy(pr+sa, pb, sb);
+    return ret;    
+}
+
+static void numberToString(Value a, char *out, int outSize) {
+    if (TAG(a)==INTEGER) {
+        snprintf(out, outSize, "%d", (int)(unsigned)a);
+    } else {
+        snprintf(out, outSize, "%.17g", getDouble(a));
+    }    
+}
+
+Value String::concat(Value a, Value b) {
+    char buf[32];
+    int tb = TAG(b);
+    int sb;
+    char *pb;
+    if (tb>=STRING && tb<=STRING+6) {
+        sb = tb - STRING;
+        pb = (char *) &b;
+    } else if (IS_NUMBER(b)) {
+        numberToString(b, buf, sizeof(buf));
+        sb = strlen(buf);
+        pb = buf;
+    } else if (IS_STRING(b)) {    
+        String *s = (String *) b;
+        sb = s->size;
+        pb = s->s;
+    } else {
+        // error();
+        return NIL;
+    }
+    return stringConcat(a, pb, sb);
 }

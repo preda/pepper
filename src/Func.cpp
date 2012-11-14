@@ -1,4 +1,5 @@
 #include "Func.h"
+#include "Proto.h"
 #include "GC.h"
 #include <new>
 #include <stdlib.h>

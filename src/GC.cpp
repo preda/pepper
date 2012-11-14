@@ -50,7 +50,7 @@ void GC::_mark(Object *o) {
     const unsigned mask = (1<<nBits) - 1;
     unsigned i = PTR_HASH(p) & mask;
     unsigned step = 1;
-    while (map[i] | 3 != p | 3) {
+    while ((map[i] | 3) != (p | 3)) {
         i = (i + step++) & mask;
     }
     if (!(map[i] & BIT_MARK)) {

@@ -1,4 +1,5 @@
 #include "SymbolMap.h"
+#include <stdlib.h>
 
 #define INC(p) p = (p + 1) & mask
 

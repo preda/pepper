@@ -151,7 +151,7 @@ int ffiConstruct(int op, byte *data, Value *stack, int nCallArg) {
 }
 
 int ffiCall(int op, byte *data, Value *stack, int nCallArg) {
-    static const int typeSize[] = {0, 4, 4, sizeof(long), 8, 8};
+    // static const int typeSize[] = {0, 4, 4, sizeof(long), 8, 8};
     if (op == 0) {
         FFIData *d = (FFIData *) data;
         uint64 p1[8] = {0};        

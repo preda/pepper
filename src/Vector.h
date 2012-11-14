@@ -3,7 +3,7 @@
 template <typename T>
 class Vector {
  public:
-    int size, allocSize;
+    unsigned size, allocSize;
     T *buf;
 
     Vector(int iniSize = 0);
@@ -30,10 +30,7 @@ class Vector {
         return buf[--size];
     }
 
-    void set(int pos, T v) {
-        if (pos < 0) { 
-            return; // TODO
-        }
+    void set(unsigned pos, T v) {
         if (pos < size) {
             buf[pos] = v;
         } else {
@@ -43,11 +40,11 @@ class Vector {
         }
     }
 
-    void removeRange(int a, int b);
-    void remove(int pos) { removeRange(pos, pos + 1); }
+    void removeRange(unsigned a, unsigned b);
+    void remove(unsigned pos) { removeRange(pos, pos + 1); }
 
-    void reserve(int capacity) { if (capacity > allocSize) { doReserve(capacity); } }
+    void reserve(unsigned capacity) { if (capacity > allocSize) { doReserve(capacity); } }
 
  private:
-    void doReserve(int capacity);
+    void doReserve(unsigned capacity);
 };

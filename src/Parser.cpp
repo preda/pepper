@@ -1,38 +1,104 @@
 #include "Parser.h"
 #include "Lexer.h"
 #include "VM.h"
+#include "Object.h"
+#include "Array.h"
+#include "Map.h"
+#include "String.h"
+#include "Func.h"
+#include "Proto.h"
+#include "SymbolTable.h"
 
-Parser::Parser(Lexer *lexer) {
+#include <assert.h>
+
+#define UNUSED VAL_REG(0)
+#define TRUE  VAL_INT(1)
+#define FALSE VAL_INT(0)
+
+void Parser::error(int err) {
+    fprintf(stderr, "parser error %d\n", err);
+    assert(0);
+}
+
+Func *Parser::parseFunc(const char *text) {
+    Proto proto;
+    SymbolTable syms;
+    Lexer lexer(text);
+    // Parser(&proto, &syms, &lexer).func();
+    // TODO
+    return 0;
+}
+
+void Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+    Lexer lexer(text);
+    Parser(proto, syms, &lexer).statList();
+}
+
+Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
+    this->proto = proto;
+    this->syms  = syms;
     this->lexer = lexer;
-    top = 0;
-    symbolTable.set("import", top++);
+    lexer->advance();
+}
 
-    token = lexer->nextToken(&tokenInfo);
+Parser::~Parser() {
 }
 
 void Parser::advanceToken() {
-    token = lexer->nextToken(&tokenInfo);
+    lexer->advance();
 }
 
 void Parser::consume(int t) {
-    if (t == token) {
-        advanceToken();
-    } else if (token != TK_ERROR) {
-        lexer->setError(t);
+    if (t == lexer->token) {
+        lexer->advance();
+    } else {
+        error(E_EXPECTED + t);
+    }
+}
+
+void Parser::block() {
+    consume('{');
+    enterBlock();
+    statList();
+    leaveBlock();
+    consume('}');
+}
+
+void Parser::enterBlock() {
+}
+
+void Parser::leaveBlock() {
+}
+
+void Parser::statList() {
+    while (lexer->token != '}' && lexer->token != TK_END) {
+        statement();
+    }
+}
+
+void Parser::statement() {
+    switch (lexer->token) {
+    case TK_VAR: var(); break;
+        /*
+    case TK_IF: ifstat(); break;
+    case TK_FOR: forstat(); break;
+    default: exprstat(); break;
+        */
     }
 }
 
 void Parser::var() {
     consume(TK_VAR);
-    if (token == TK_NAME) {
-        u64 name = hash64(tokenInfo.string);
+    if (lexer->token == TK_NAME) {
+        u64 name = lexer->info.nameHash;
         consume(TK_NAME);
         consume('=');
-        int varReg = top++;
-        expr(varReg);
-        symbolTable.set(key, KIND_LOCAL, varReg);
+        int reg = proto->top++;
+        syms->set(name, reg+1);
+        Value a = expr(); // sympleExpr() ?
+        genCode(MOVE, reg, a);
     } else {
-        consume(TK_NAME);
+        error(E_VAR_NAME);
     }
 }
 
@@ -40,63 +106,68 @@ static bool isUnaryOp(int token) {
     return token=='!' || token=='-' || token=='#' || token=='~';
 }
 
-static byte getRegValue(Value a) {
-    s64 v;
+Value Parser::maybeAllocConst(Value a) {
     int ta = TAG(a);
-    return
-        ta==REGISTER && (int)a >= 0 ? (int) a :
-        ta==REGISTER ? 0x80 | (-(int)a) :
-        ta==INTEGER && (v=getInteger(a))>=-64 && v<64) ? (unsigned)a & 0x7f :
-        ta==ARRAY || ta==MAP || ta==STRING ? 0xf0 | ta :
-        ta==OBJECT ? 0xff : 0xfe;
+    if (ta==REGISTER || ta==ARRAY || ta==MAP || ta==STRING ||
+        (ta==INTEGER && getInteger(a)>=-64 && getInteger(a)<64)) {
+        return a;
+    }
+    proto->ups.push(0);
+    proto->consts.push(a);
+    return VAL_REG(- proto->ups.size);
 }
 
-Value Parser::code(int op, Value a, Value b) {
-    int dest = top++;
+static byte getRegValue(Value a) {
+    const int ta = TAG(a);
+    return
+        ta==REGISTER && (int)a >= 0 ? (int) a :
+        ta==REGISTER ? 0x80 | (-(int)a-1) :
+        ta==ARRAY || ta==MAP || ta==STRING ? (0xf8 | ta) : ((unsigned)a & 0x7f);
+}
+
+static inline unsigned PACK4(unsigned op, unsigned dest, unsigned a, unsigned b) {
+    return op | (dest<<8) | (a<<16) | (b<<24);
+}
+
+Value Parser::genCode(int op, Value a, Value b) {
+    return genCode(op, proto->top++, a, b);
+}
+
+Value Parser::genCode(int op, int dest, Value a, Value b) {
+    // int dest = top++;
+    a = maybeAllocConst(a);
+    b = maybeAllocConst(b);
     bool aIsReg = IS_REGISTER(a) && (int)a >= 0;
     byte ra = getRegValue(a);
     
     bool bIsReg = IS_REGISTER(b) && (int)b >= 0;
     byte rb = getRegValue(b);
 
-    bytecode.push(CODE(op, dest, ra, rb));
-    if (!aIsReg && ra==0xfe) {
-        bytecode.push((unsigned)a);
-        bytecode.push((unsigned)(a>>32));
-    }
-    if (!bIsReg && rb==0xfe) {
-        bytecode.push((unsigned)b);
-        bytecode.push((unsigned)(b>>32));
-    }
+    proto->code.push(PACK4(op | (aIsReg?0:0x10) | (bIsReg?0:0x20), dest, ra, rb));
     return VAL_REG(dest);
 }
-
-#define REG0 VAL_REG(0)
-#define TRUE  VAL_INT(1)
-#define FALSE VAL_INT(0)
 
 Value Parser::codeUnary(int op, Value a) {
     switch (op) {
     case '!': return 
         a==NIL ? TRUE :
         IS_NUMBER(a) ? (getDouble(a)==0 ? TRUE : FALSE) :
-        IS_REGISTER(a) ? code(NOT, a, REG0) : FALSE;
+        IS_REGISTER(a) ? genCode(NOT, a) : FALSE;
              
     case '-': return
         IS_INTEGER(a) ? VAL_INT(-getInteger(a)) :
         IS_DOUBLE(a)  ? VAL_DOUBLE(-getDouble(a)) :
-        IS_REGISTER(a) ? code(SUB, VAL_INT(0), a) : ERR;
+        IS_REGISTER(a) ? genCode(SUB, VAL_INT(0), a) : ERR;
 
     case '~': return
         IS_INTEGER(a) ? VAL_INT(~getInteger(a)) :
-        IS_REGISTER(a) ? code(XOR, a, VAL_INT(-1)) : ERR;
+        IS_REGISTER(a) ? genCode(XOR, a, VAL_INT(-1)) : ERR;
         
     case '#': return
-        IS_ARRAY(a)  ? Array::len(a) :
-        IS_STRING(a) ? String::len(a) :
-        IS_MAP(a)    ? Map::len(a) :
-        IS_REGISTER(a) ? code(LEN, a, REG0) : ERR;
+        IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) :
+        IS_REGISTER(a) ? genCode(LEN, a) : ERR;
     }
+    assert(false);
 }
 
 static Value foldBinary(int op, Value a, Value b) {
@@ -122,8 +193,9 @@ Value Parser::codeBinary(int op, Value a, Value b) {
         op == '*' ? MUL :
         op == '/' ? DIV :
         op == '%' ? MOD :
-        op == '^' ? POW;
-    return code(opcode, a, b);
+        op == '^' ? POW : -1;
+    assert(op >= 0);
+    return genCode(opcode, a, b);
 }
 
 static int binaryPriorityLeft(int token) {
@@ -135,7 +207,7 @@ static int binaryPriorityLeft(int token) {
     case '>': case '>'+TK_EQUAL: return 3;
     case '&': return 2;
     case '|': return 1;
-    default : return 0;
+    default : return -1;
     }
 }
 
@@ -144,28 +216,28 @@ static int binaryPriorityRight(int token) {
     return token == '^' ? left-1 : left;
 }
 
-SymbolData Parser::createUpval(u64 name, SymbolData sym, int level) {    
-    if (sym.level < level - 1) {
-        sym = createUpval(name, sym, level - 1);
+SymbolData Parser::createUpval(Proto *proto, u64 name, SymbolData sym) {
+    if (sym.level < proto->level - 1) {
+        sym = createUpval(proto->up, name, sym);
     }
-    assert(sym.level == level - 1);
+    assert(sym.level == proto->level - 1);
     proto->ups.push(sym.slot);
-    return symbolTable.set(level, name, KIND_REGUP, proto.ups.size - 1);
+    return syms->set(proto->level, name, -proto->ups.size);
 }
 
 SymbolData Parser::lookupName(u64 name) {
-    SymbolData s = symbolTable.get(name);
+    SymbolData s = syms->get(name);
     if (s.kind != KIND_EMPTY) {
-        assert(s.level <= curLevel);
-        if (s.level < curLevel) {
-            s = createUpval(name, s, level);
+        assert(s.level <= proto->level);
+        if (s.level < proto->level) {
+            s = createUpval(proto, name, s);
         }
     }
     return s;
 }
 
-Value Parser::primaryExp() {
-    switch (token) {
+Value Parser::primaryExpr() {
+    switch (lexer->token) {
     case '(': {
         advanceToken();
         Value a = expr();
@@ -174,38 +246,31 @@ Value Parser::primaryExp() {
     }
         
     case TK_NAME: {
-        u64 name = hash64(tokenInfo.strVal, tokenInfo.strLen);
+        u64 name = lexer->info.nameHash;
         consume(TK_NAME);
-        SymbolData sym = symbolTable.get(name);
+        SymbolData sym = syms->get(name);
         if (sym.kind == KIND_EMPTY) {
-            ERR(); // symbol not found
-            return ERR;
+            error(E_NAME_NOT_FOUND);
         }
         
-        if (sym.level == curLevel) {
+        if (sym.level == proto->level) {
             return VAL_REG(sym.slot);
         } else {
             // create new upval in current level
-            createUpval(name, sym, curLevel);
+            createUpval(proto, name, sym);
         }
     }
     }
+    error(E_TODO);
 }
 
-        /*
-            if (sym.kind == KIND_LOCAL) {
-                return VAL_REG(sym.slot);
-            } else if (sym.kind == KIND_UPVAL) {
-                return VAL_REG(-sym.slot);
-            } else {
-                return ERR;
-                }*/
-
-
 Value Parser::suffixedExpr() {
+    //TODO
+    return 0;
+    /*
     Value a = primaryExpr();
     while (true) {
-        switch (token) {
+        switch (lexer->token) {
         case '(':
             funcargs();
             break;
@@ -214,13 +279,14 @@ Value Parser::suffixedExpr() {
             
         }
     }
+    */
 }
 
 Value Parser::simpleExpr() {
-    switch (token) {
-    case TK_INTEGER: return VAL_INT(tokenInfo.intVal);
-    case TK_DOUBLE:  return VAL_DOUBLE(tokenInfo.doubleVal);
-    case TK_STRING:  return VAL_STRING(tokenInfo.strVal, tokenInfo.strLen);
+    switch (lexer->token) {
+    case TK_INTEGER: return VAL_INT(lexer->info.intVal);
+    case TK_DOUBLE:  return VAL_DOUBLE(lexer->info.doubleVal);
+    case TK_STRING:  return VAL_STRING(lexer->info.strVal, lexer->info.strLen);
     case TK_NIL:     return NIL;
 
     case '[': // array TODO
@@ -233,21 +299,22 @@ Value Parser::simpleExpr() {
         break;
 
     default:
-        return suffixedExp();
+        return suffixedExpr();
     }
+    error(E_TODO);
 }
 
 Value Parser::subExpr(int limit) {
     Value a;
-    if (isUnaryOp(token)) {
-        int op = token;
+    if (isUnaryOp(lexer->token)) {
+        int op = lexer->token;
         advanceToken();
         a = codeUnary(op, subExpr(8));
     } else {
-        a = simpleExpr(dest);
+        a = simpleExpr();
     }
-    while (binaryPriorityLeft(token) > limit) {
-        int op = token;
+    while (binaryPriorityLeft(lexer->token) > limit) {
+        int op = lexer->token;
         advanceToken();
         a = codeBinary(op, a, subExpr(binaryPriorityRight(op)));
     }
@@ -257,68 +324,3 @@ Value Parser::subExpr(int limit) {
 Value Parser::expr() {
     return subExpr(0);
 }
-
-void Parser::block() {
-    consume('{');
-    enterBlock();
-    statList();
-    leaveBlock();
-    consume('}');
-}
-
-void Parser::enterBlock() {
-}
-
-void Parser::leaveBlock() {
-}
-
-void Parser::statList() {
-    while (token != '}' && token != TK_ERROR) {
-        statement();
-    }
-}
-
-void Parser::statement() {
-    int reg = name();
-    consume(':' + TK_EQUAL);
-    simpleExp();
-
-    /*
-    switch (token) {
-    case TK_IF: ifstat(); break;
-    case TK_FOR: forstat(); break;
-    default: exprstat(); break;
-    }
-    */
-}
-
-int Parser::name() {
-    int reg = 0;
-    if (token == TK_NAME) {
-        const char *s = tokenInfo.string;
-        Name *name = names.find(s);
-        if (!name) {
-            names.add(s, 1);
-            name = names.buf + names.size-1;
-        }
-        reg = name->reg;
-    }
-    consume(TK_NAME);
-    return reg;
-}
-
-/*
-void Parser::ifstat() {    
-}
-
-void Parser::exprstat() {
-}
-
-void Parser::primaryexp() {
-    switch (token) {
-    case '(':
-        advance();
-        expr()
-    }
-}
-*/

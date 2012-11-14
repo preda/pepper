@@ -1,19 +1,22 @@
 #include "Map.h"
-#include "Object.h"
 #include "Array.h"
+#include "String.h"
 #include "GC.h"
 #include "Value.h"
+
 #include <new>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define INC(h) h = (h + 1) & mask
 #define HASH(pos) (hashCode(keys[pos]) & mask)
 
-Map *Map::alloc(int iniSize) {
+Map *Map::alloc(unsigned iniSize) {
     return new (GC::alloc(MAP, sizeof(Map), true)) Map(iniSize);
 }
 
-Map::Map(int iniSize) {
+Map::Map(unsigned iniSize) {
     printf("Map %p\n", this);
     size = 0;
     n = 8;
@@ -27,6 +30,11 @@ Map::Map(int iniSize) {
 void Map::destroy() {
     free(buf);
     buf = 0;
+}
+
+void Map::traverse() {
+    GC::markVector(buf, size);
+    GC::markVector(buf+(n>>1), size);
 }
 
 Map *Map::copy() {
@@ -81,6 +89,34 @@ bool Map::set(Value key, Value val, bool overwrite) {
     }
 }
 
+bool Map::appendArray(Value v) {
+    int t = TAG(v);
+    if (t == ARRAY || t == MAP || t == STRING) {
+        return true;
+    }
+    if (t >= STRING+1 && t <= STRING+6) {
+        appendString((char *) &v, t - STRING);
+        return true;
+    }
+    if (t == OBJECT && v) {
+        t = ((Object *) v)->type;
+        if (t == MAP) {
+            appendMap((Map *) v);
+            return true;
+        }
+        if (t == ARRAY) {
+            appendArray((Array *) v);
+            return true;
+        }
+        if (t == STRING) {
+            String *s = (String *) v;
+            appendString(s->s, s->size);
+            return true;
+        }
+    }
+    return false;
+}
+
 void Map::appendMap(Map *m) {
     Value *pk = m->buf, *end = m->buf + m->size;
     Value *pv = pk + (m->n >> 1);
@@ -116,9 +152,9 @@ bool Map::remove(Value key) {
         if (keys[pos] == key) { break; }
         INC(h);
     }
-    const int deletePos = map[h];
+    const unsigned deletePos = map[h];
     map[h] = EMPTY;
-    int hole = h;
+    unsigned hole = h;
     while (true) {
         INC(h);
         const int pos = map[h];
@@ -150,7 +186,7 @@ void Map::grow() {
     memcpy(buf + (n>>1), buf + (n>>2), size * 8);
     const unsigned mask = n - 1;
     int * const map = (int *)(buf + n);
-    Value * const keys = buf;
+    // Value * const keys = buf;
     int i = 0;
     for (Value *p = buf, *end = buf+size; p < end; ++p, ++i) {
         unsigned h = hashCode(*p) & mask;

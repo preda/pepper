@@ -23,7 +23,7 @@ Vector<T>::~Vector() {
 }
 
 template<typename T>
-void Vector<T>::doReserve(int capacity) {
+void Vector<T>::doReserve(unsigned capacity) {
     while (capacity > allocSize) {
         allocSize += allocSize ? 4 : allocSize;
     }
@@ -38,7 +38,7 @@ void Vector<T>::append(Vector<T> *v) {
 }
 
 template<typename T>
-void Vector<T>::removeRange(int a, int b) {
+void Vector<T>::removeRange(unsigned a, unsigned b) {
     if (b < size) {
         memmove(buf + a, buf + b, (size - b) * sizeof(T));
     }

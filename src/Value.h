@@ -33,6 +33,7 @@ enum {
 #define VAL_REG(i) VALUE(REGISTER, i)
 
 #define NIL VAL_OBJ(0)
+#define ERR NIL
 // #define ERR VAL_OBJ(1)
 // #define UNK VAL_OBJ(2)
 
@@ -95,5 +96,4 @@ static inline double getDouble(Value val) {
 #define GET_CSTR(v) (TAG(v)==OBJECT ? ((String*) v)->s : ((char *) &v))
 
 unsigned hashCode(Value a);
-
-Value stringConcat(Value a, Value b);
+unsigned len(Value a);

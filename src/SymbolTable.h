@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Vector.h"
-#include "common.h"
 #include "SymbolMap.h"
+#include "common.h"
 
 typedef Vector<Symbol> SymbolVect;
 
@@ -36,7 +36,7 @@ class SymbolTable {
     }
    
     int pushContext() {
-        ++level;
+        return ++level;
     }
 
     int popContext() {
@@ -46,7 +46,7 @@ class SymbolTable {
         for (Symbol *s = buf + n - 1; s >= buf; --s) {
             undo(s);
         }
-        --level;
+        return --level;
     }
     
     SymbolData get(u64 key) {
@@ -54,8 +54,8 @@ class SymbolTable {
         return e ? e->d : SymbolData(KIND_EMPTY, 0, 0);
     }
 
-    SymbolData set(u64 key, int kind, int slot) {
-        return set(undoLog + level, key, SymbolData(kind, level, slot));
+    SymbolData set(u64 key, int slot) {
+        return set(undoLog + level, key, SymbolData(KIND_REGUP, level, slot));
     }
 
     SymbolData set(int level, u64 key, int slot) {
@@ -65,10 +65,4 @@ class SymbolTable {
     SymbolData get(const char *str) {
         return get(hash64(str));
     }
-
-    /*
-    void set(const char *str, int kind, int slot) {
-        set(hash64(str), kind, slot);
-    }
-    */
 };

@@ -1,47 +1,58 @@
 #pragma once
 
-#include "Lexer.h"
-#include "SymbolTable.h"
-#include "Vector.h"
 #include "Value.h"
 
-class Block {
- public:
-    int nVars;
-    int regTop;
+class Lexer;
+class SymbolTable;
+class Proto;
+class Func;
+struct SymbolData;
+
+enum {
+    E_VAR_NAME = 1,
+    E_NAME_NOT_FOUND,
+    E_TODO,
+    E_EXPECTED = 256,
+    
 };
 
 class Parser {
-    SymbolTable symbolTable;
-    int top;
-
+    Proto *proto;
+    SymbolTable *syms;
     Lexer *lexer;
-    int token;
-    TokenInfo tokenInfo;
-    Vector<unsigned> bytecode;
-
+    
     Value codeUnary(int op, Value a);
-    SymbolData createUpval(u64 name, SymbolData sym, int level);
+    SymbolData createUpval(Proto *proto, u64 name, SymbolData sym);
     SymbolData lookupName(u64 name);
 
+    Value maybeAllocConst(Value a);
+    Value genCode(int op, int dest, Value a, Value b = VAL_REG(0));
+    Value genCode(int op, Value a, Value b = VAL_REG(0));
+    Value codeBinary(int op, Value a, Value b);
+    void error(int err) __attribute__ ((noreturn));
+
+    Parser(Proto *proto, SymbolTable *syms, Lexer *lexer);
+    ~Parser();
+
 public:
-    Parser(Lexer *lexer);
+    static Func *parseFunc(const char *text);
+    static void parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
+
 
     void advanceToken();
     void consume(int t);
 
     void var();
     
-    Value expr(int dest);
-    Value subExpr(int dest, int limit);
+    Value expr();
+    Value subExpr(int limit);
     Value simpleExpr();
     Value suffixedExpr();
+    Value primaryExpr();
 
     void block();
     void statList();
     void statement();
-    void simpleExp();
-    int name();
     void enterBlock();
     void leaveBlock();
 };

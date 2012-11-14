@@ -11,10 +11,11 @@ struct Array {
 
     static Array *alloc(int iniSize);
     
+    /*
     static int len(Value v) {
         return TAG(v)==ARRAY ? 0 : ((Array *) v)->size();
     }
-
+    */
 
     Array(int iniSize) : 
     vect(iniSize) {
@@ -26,11 +27,11 @@ struct Array {
 
     void traverse() { GC::markVector(vect.buf, vect.size); }
 
-    Value get(int pos) {
+    Value get(unsigned pos) {
         return pos < 0 || pos >= vect.size ? NIL : vect.buf[pos];
     }
 
-    void set(int pos, Value val) {
+    void set(unsigned pos, Value val) {
         vect.set(pos, val);
     }
 

@@ -1,14 +1,7 @@
 #pragma once
 
 #include "SymbolMap.h"
-
-static const char *tokens[] = {
-    "<begin-keyword>",
-    "break", "continue", 
-    "else", "for", "fun", "goto",
-    "if", "nil", "return", "var",
-    "<end-keyword>", "<number>", "<name>", "<string>", "<eos>", "<error>",
-};
+#include "common.h"
 
 enum TOKENS {
     TK_BEGIN_KEYWORD = 1,
@@ -24,7 +17,7 @@ enum TOKENS {
     TK_VAR,
     TK_END_KEYWORD,
 
-    TK_INTEGER, TK_DOUBLE, TK_NAME, TK_STRING, TK_EOS, TK_ERROR,
+    TK_INTEGER, TK_DOUBLE, TK_NAME, TK_STRING, TK_END,
     TK_EQUAL = 257,
 };
 
@@ -39,19 +32,21 @@ union TokenInfo {
 };
 
 class Lexer {
-    char *string, *p, *end;
+    const char *string, *p, *end;
     int lineNumber;
     char *readString();
-    int error, errorPos, errorExpected;
+    // int error, errorPos, errorExpected;
     SymbolMap keywords;
 
+    char *readString(int *outLen);
+
+    int advanceInt();
+
  public:
-    Lexer(char *string);
+    Lexer(const char *string);
 
-    int nextToken(TokenInfo *info);
+    int advance();
 
-    void setError(int expected) {
-        error = 1;
-        errorExpected = expected;
-    }
+    int token;
+    TokenInfo info;
 };

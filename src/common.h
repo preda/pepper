@@ -6,4 +6,4 @@ typedef long long s64;
 
 u64 hash64(byte *p, int len, u64 h=0);
 u64 hash64(const char *p);
-static u64 hash64Step(byte b, u64 h) { return (h ^ b) * 0x100000001b3ULL; }
+static inline u64 hash64Step(byte b, u64 h) { return (h ^ b) * 0x100000001b3ULL; }
