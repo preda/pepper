@@ -38,7 +38,7 @@ class Parser {
 
 public:
     static Func *parseFunc(const char *text);
-    static void parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
+    static int parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
 
     void consume(int t);
     

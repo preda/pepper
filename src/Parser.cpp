@@ -11,9 +11,12 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <setjmp.h>
 
 #define UNUSED VAL_REG(0)
 #define TOKEN (lexer->token)
+
+static __thread jmp_buf jumpBuf;
 
 Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
     this->proto = proto;
@@ -26,8 +29,13 @@ Parser::~Parser() {
 }
 
 Value error(int err) {
-    fprintf(stderr, "parser error %d\n", err);
-    abort();
+    if (err > E_EXPECTED) {
+        int token = err - E_EXPECTED;
+        fprintf(stderr, "ERROR expected token %d '%c'\n", token, (char)(token>=32?token:' '));
+    } else {
+        fprintf(stderr, "ERROR %d\n", err);
+    }
+    longjmp(jumpBuf, err); 
 }
 
 void Parser::advance() {
@@ -51,9 +59,12 @@ Func *Parser::parseFunc(const char *text) {
     return 0;
 }
 
-void Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+    int err = setjmp(jumpBuf);
+    if (err) { return err; }
     Lexer lexer(text);
     Parser(proto, syms, &lexer).statList();
+    return 0;
 }
 
 void Parser::block() {
@@ -162,12 +173,15 @@ void Parser::ifStat() {
 
 void Parser::varStat() {
     consume(TK_VAR);
-    if (lexer->token == TK_NAME) {
+    if (TOKEN == TK_NAME) {
         u64 name = lexer->info.nameHash;
         consume(TK_NAME);
-        consume('=');
         int top = proto->localsTop;
-        Value a = expr(top);
+        Value a = NIL;
+        if (TOKEN == '=') {
+            consume('=');
+            a = expr(top);
+        }
         syms->set(name, top);
         patchOrEmitMove(top, a);
         ++proto->localsTop;

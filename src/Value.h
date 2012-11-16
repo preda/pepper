@@ -4,19 +4,6 @@
 
 typedef u64 Value;
 
-enum {
-    E_VAR_NAME = 1,
-    E_NAME_NOT_FOUND,
-    E_TODO,
-    E_WRONG_TYPE,
-    E_DIV_ZERO,
-    E_ASSIGN_TO_CONST,
-    E_ASSIGN_RHS,
-    E_EXPECTED = 256,    
-};
-
-Value error(int err) __attribute__ ((noreturn));
-
 // Value tags
 enum {
     OBJECT = 0,
