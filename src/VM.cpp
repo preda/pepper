@@ -210,3 +210,7 @@ int vmrun(unsigned *pc) {
  xor_: *ptrC = NIL;         STEP;
  end: return 0;
 }
+
+bool opcodeHasDest(int op) {
+    return (ADD <= op && op <= LEN) || op == MOVE || op == GET;
+}

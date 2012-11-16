@@ -29,7 +29,7 @@ class Parser {
     int  emitHole();
     void emitPatch(unsigned pos, unsigned code);
     void emitPatchJumpHere(unsigned pos, Value cond = FALSE);
-    void maybeEmitMove(int dest, Value a);
+    void patchOrEmitMove(int dest, Value a);
 
     Value codeUnary(int op, Value a);
     Value codeBinary(int op, Value a, Value b);

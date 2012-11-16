@@ -98,7 +98,7 @@ void Parser::assignStat() {
     int slot = lookupSlot(lexer->info.nameHash);
     consume(TK_NAME);
     consume('=');
-    maybeEmitMove(slot, expr());    
+    patchOrEmitMove(slot, expr());
 }
 
 static Value makeValue(bool flag, byte ra) {
@@ -134,22 +134,21 @@ void Parser::ifStat() {
     consume(TK_IF);
     // int slot = proto->top;
     Value a = expr();
-    // maybeEmitMove(slot, a);
-    // proto->top = slot + 1;
     int pos1 = emitHole();
     block();
-    int pos2 = emitHole();
-    // emitPatch(codePos1, makeCode(JMP, a, 
-    emitPatchJumpHere(pos1, a);
     if (lexer->token == TK_ELSE) {
-        advance();
+        int pos2 = emitHole();
+        emitPatchJumpHere(pos1, a);
+        consume(TK_ELSE);
         if (lexer->token == '{') {
             block();
         } else { 
             ifStat();
         }
+        emitPatchJumpHere(pos2);
+    } else {
+        emitPatchJumpHere(pos1, a);
     }
-    emitPatchJumpHere(pos2);
 }
 
 void Parser::varStat() {
@@ -162,7 +161,7 @@ void Parser::varStat() {
         Value a = expr(); // sympleExpr() ?
         proto->top = slot + 1;
         syms->set(name, slot);
-        maybeEmitMove(slot, a);
+        patchOrEmitMove(slot, a);
     } else {
         error(E_VAR_NAME);
     }
@@ -370,10 +369,24 @@ Value Parser::expr() {
 
 // code generation below
 
-void Parser::maybeEmitMove(int slot, Value a) {
-    if (!IS_REGISTER(a) || (int)a != slot) {
-        emitCode(makeCode(MOVE, VAL_REG(slot), a, UNUSED));
+void Parser::patchOrEmitMove(int dest, Value src) {
+    if (IS_REGISTER(src)) {
+        int srcSlot = (int) src;        
+        if (srcSlot == dest) { return; } // everything is in the right place, do nothing
+
+        unsigned code = *proto->code.top();
+        Value a, b, c;
+        int op = unCode(code, &c, &a, &b);
+        if (opcodeHasDest(op)) {
+            assert(IS_REGISTER(c));
+            if (srcSlot == (int) c) {
+                proto->code.pop();
+                emitCode(makeCode(op, VAL_REG(dest), a, b));
+                return; // last instruction patched
+            }
+        }
     }
+    emitCode(makeCode(MOVE, VAL_REG(dest), src, UNUSED));
 }
 
 Value Parser::maybeAllocConst(Value a) {

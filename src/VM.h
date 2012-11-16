@@ -34,6 +34,8 @@ enum {
     NOT, LEN,
 };
 
+bool opcodeHasDest(int opcode);
+
 int vmrun(unsigned *pc);
 
 class VM {
