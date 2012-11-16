@@ -47,8 +47,12 @@ static void printValue(char *buf, int bufSize, Value a) {
     } else if (IS_DOUBLE_TAG(t)) {
         snprintf(buf, bufSize, "%g", getDouble(a));
     } else if (t == OBJECT) {
-        int type = ((Object *) a)->type;
-        snprintf(buf, bufSize, "OBJECT(%s)", objTypeName[type]);
+        if (a==NIL) {
+            snprintf(buf, bufSize, "NIL");
+        } else {
+            int type = ((Object *) a)->type;
+            snprintf(buf, bufSize, "OBJECT(%s)", objTypeName[type]);
+        }
     } else if (t <= STRING) {
         snprintf(buf, bufSize, "%s", emptyVals[t]);
     } else if (t > STRING && t <= STRING+6) {

@@ -9,6 +9,7 @@ u64 hash64(const char *p);
 static inline u64 hash64Step(byte b, u64 h) { return (h ^ b) * 0x100000001b3ULL; }
 
 u64 error(int err) __attribute__ ((noreturn));
+int catchError();
 #define ERR(cond, mes) if (cond) { error(mes); }
 
 enum {

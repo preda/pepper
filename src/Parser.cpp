@@ -11,12 +11,9 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <setjmp.h>
 
 #define UNUSED VAL_REG(0)
 #define TOKEN (lexer->token)
-
-static __thread jmp_buf jumpBuf;
 
 Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
     this->proto = proto;
@@ -26,16 +23,6 @@ Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
 }
 
 Parser::~Parser() {
-}
-
-Value error(int err) {
-    if (err > E_EXPECTED) {
-        int token = err - E_EXPECTED;
-        fprintf(stderr, "ERROR expected token %d '%c'\n", token, (char)(token>=32?token:' '));
-    } else {
-        fprintf(stderr, "ERROR %d\n", err);
-    }
-    longjmp(jumpBuf, err); 
 }
 
 void Parser::advance() {
@@ -59,9 +46,8 @@ Func *Parser::parseFunc(const char *text) {
     return 0;
 }
 
-int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
-    int err = setjmp(jumpBuf);
-    if (err) { return err; }
+int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {    
+    if (int err = catchError()) { return err; }
     Lexer lexer(text);
     Parser(proto, syms, &lexer).statList();
     return 0;
@@ -325,21 +311,19 @@ Value Parser::primaryExpr(int top) {
 }
 
 Value Parser::suffixedExpr(int top) {
-    return primaryExpr(top);
-    //TODO
-    /*
-    Value a = primaryExpr();
+    Value a = primaryExpr(top);
     while (true) {
-        switch (lexer->token) {
-        case '(':
-            funcargs();
+        switch(TOKEN) {
+        case '[':
+            consume('[');            
+            emitCode(makeCode(GET, VAL_REG(top), expr(topAbove(a, top)), a));
+            a = VAL_REG(top);
+            consume(']');
             break;
-
         default:
-            
+            return a;
         }
     }
-    */
 }
 
 Value Parser::simpleExpr(int top) {
@@ -414,7 +398,7 @@ void Parser::patchOrEmitMove(int dest, Value src) {
 
 Value Parser::maybeAllocConst(Value a) {
     int ta = TAG(a);
-    if (ta==REGISTER || ta==ARRAY || ta==MAP || ta==STRING ||
+    if (ta==REGISTER || ta==ARRAY || ta==MAP || ta==STRING || a==NIL ||
         (ta==INTEGER && getInteger(a)>=-64 && getInteger(a)<64)) {
         return a;
     }
@@ -429,7 +413,7 @@ byte Parser::getRegValue(Value a) {
     return
         ta==REGISTER && (int)a >= 0 ? (int) a :
         ta==REGISTER ? 0x80 | (-(int)a-1) :
-        ta==ARRAY || ta==MAP || ta==STRING ? (0xf0 | ta) : ((unsigned)a & 0x7f);
+        ta==ARRAY || ta==MAP || ta==STRING || a==NIL? (0xf0 | ta) : ((unsigned)a & 0x7f);
 }
 
 static inline unsigned PACK4(unsigned b0, unsigned b1, unsigned b2, unsigned b3) {
@@ -447,12 +431,6 @@ static byte flags(Value a, Value b, Value c) {
 unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
     return PACK4(op | flags(a, b, c), getRegValue(a), getRegValue(b), getRegValue(c));
 }
-
-/*
-unsigned Parser::makeCode(int op, Value a, int offset) {
-    return PACK4(op | flags(a, UNUSED, UNUSED), getRegValue(a), (byte)(offset & 0xff), (byte)(offset >> 8));
-}
-*/
 
 void Parser::emitCode(unsigned code) {
     proto->code.push(code);

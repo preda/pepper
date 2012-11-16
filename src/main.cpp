@@ -23,11 +23,12 @@ void compileDecompile(const char *text) {
 }
 
 int main(int argc, char **argv) {    
-    for (const char **p = test; *p != 0; ++p) {
-        compileDecompile(*p);
-    }
     if (argc > 1) {
         compileDecompile(argv[1]);
+    } else {
+        for (const char **p = test; *p != 0; ++p) {
+            compileDecompile(*p);
+        }
     }
     return 0;
 }
