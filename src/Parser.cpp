@@ -412,9 +412,11 @@ unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
     return PACK4(op | flags(a, b, c), getRegValue(a), getRegValue(b), getRegValue(c));
 }
 
+/*
 unsigned Parser::makeCode(int op, Value a, int offset) {
     return PACK4(op | flags(a, UNUSED, UNUSED), getRegValue(a), (byte)(offset & 0xff), (byte)(offset >> 8));
 }
+*/
 
 void Parser::emitCode(unsigned code) {
     proto->code.push(code);
@@ -431,5 +433,5 @@ void Parser::emitPatch(unsigned pos, unsigned code) {
 
 void Parser::emitPatchJumpHere(unsigned pos, Value cond) {
     int offset = proto->code.size - pos - 1;
-    emitPatch(pos, makeCode(JMP, cond, offset));
+    emitPatch(pos, makeCode(JMP, UNUSED, VAL_INT(offset), cond));
 }

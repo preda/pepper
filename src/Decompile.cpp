@@ -90,13 +90,15 @@ void printBytecode(unsigned *p, int size) {
         printf("%2d: %02x%02x%02x%02x   %-4s ", i, fullOp, a, b, c, opNames[op]);
         switch (op) {
         case JMP: {
-            int offset = OD(code);
-            int jmpDest = i+offset+1;
-            if (fullOp == (JMP | 0x20) && a==0) {
+            // int offset  = a;
+            // int jmpDest = i+offset+1;
+            /*
+            if (fullOp & 0x20 && b==0) {
                 printf("%3d:\n", jmpDest);
             } else {
-                printf("%3d:  %3s\n", jmpDest, sa);
-            }
+            */
+            printf("%3s   %3s\n", sa, sb);
+            // }
             break;
         }
 

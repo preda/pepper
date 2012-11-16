@@ -19,7 +19,7 @@ Value doXor(Value a, Value b);
 #define OA(c) ((byte)  (c >> 8))
 #define OB(c) ((byte)  (c >> 16))
 #define OC(c) ((byte)  (c >> 24))
-#define OD(c) ((short) (c >> 16))
+// #define OD(c) ((short) (c >> 16))
 
 enum {
     JMP, CALL, RETURN, MOVE,

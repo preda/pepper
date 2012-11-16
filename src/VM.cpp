@@ -135,7 +135,7 @@ int vmrun(unsigned *pc) {
  decodeBC:  DECODE(B); // fall
  decodeC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
 
- jmp: if (IS_FALSE(A)) { pc += OD(code); } STEP;
+ jmp: if (IS_FALSE(B)) { pc += getInteger(A); } STEP;
     
  return_:
     if (retInfo.size == 0) {
