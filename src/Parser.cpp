@@ -98,7 +98,7 @@ void Parser::assignStat() {
     int slot = lookupSlot(lexer->info.nameHash);
     consume(TK_NAME);
     consume('=');
-    patchOrEmitMove(slot, expr());
+    patchOrEmitMove(slot, expr(proto->localsTop));
 }
 
 static Value makeValue(bool flag, byte ra) {
@@ -116,24 +116,33 @@ static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
     return bigop & 0x1f;
 }
 
+static int max(int a, int b) { return a < b ? b : a; }
+
+static int topAbove(Value a, int top) {
+    if (!IS_REGISTER(a)) {
+        return top;
+    }
+    return max((int)a + 1, top);
+}
+
 void Parser::exprOrAssignStat() {
-    Value a = expr();
+    Value lhs = expr(proto->localsTop);
     if (TOKEN == '=') {
         consume('=');
-        if (!IS_REGISTER(a)) {
+        if (!IS_REGISTER(lhs)) {
             error(E_ASSIGN_TO_CONST);
         }
         Value a, b, c;
         int op = unCode(proto->code.pop(), &c, &a, &b);
         ERR(op != GET, E_ASSIGN_RHS);
-        emitCode(makeCode(SET, c, a, expr()));
+        assert(lhs == c);
+        emitCode(makeCode(SET, b, a, expr(topAbove(lhs, proto->localsTop))));
     }    
 }
 
 void Parser::ifStat() {
     consume(TK_IF);
-    // int slot = proto->top;
-    Value a = expr();
+    Value a = expr(proto->localsTop);
     int pos1 = emitHole();
     block();
     if (lexer->token == TK_ELSE) {
@@ -145,7 +154,7 @@ void Parser::ifStat() {
         } else { 
             ifStat();
         }
-        emitPatchJumpHere(pos2);
+        emitPatchJumpHere(pos2, ZERO);
     } else {
         emitPatchJumpHere(pos1, a);
     }
@@ -157,11 +166,11 @@ void Parser::varStat() {
         u64 name = lexer->info.nameHash;
         consume(TK_NAME);
         consume('=');
-        int slot = proto->top;
-        Value a = expr(); // sympleExpr() ?
-        proto->top = slot + 1;
-        syms->set(name, slot);
-        patchOrEmitMove(slot, a);
+        int top = proto->localsTop;
+        Value a = expr(top);
+        syms->set(name, top);
+        patchOrEmitMove(top, a);
+        ++proto->localsTop;
     } else {
         error(E_VAR_NAME);
     }
@@ -197,7 +206,7 @@ static Value foldBinary(int op, Value a, Value b) {
     return NIL;
 }
 
-Value Parser::codeUnary(int op, Value a) {
+Value Parser::codeUnary(int top, int op, Value a) {
     {
         Value c = foldUnary(op, a);
         if (c != NIL) { return c; }
@@ -211,12 +220,12 @@ Value Parser::codeUnary(int op, Value a) {
     case '#': opcode = LEN; break;
     default: assert(false);
     }
-    Value c = VAL_REG(proto->top++);
+    Value c = VAL_REG(top);
     emitCode(makeCode(opcode, c, a, b));
     return c;
 }
 
-Value Parser::codeBinary(int op, Value a, Value b) {
+Value Parser::codeBinary(int top, int op, Value a, Value b) {
     {
         Value c = foldBinary(op, a, b);
         if (c != NIL) { return c; }
@@ -231,7 +240,7 @@ Value Parser::codeBinary(int op, Value a, Value b) {
     case '^': opcode = POW; break;
     default: assert(false);
     }
-    Value c = VAL_REG(proto->top++);
+    Value c = VAL_REG(top);
     emitCode(makeCode(opcode, c, a, b));
     return c;
 }
@@ -282,27 +291,27 @@ SymbolData Parser::lookupName(u64 name) {
      return sym.slot;
  }
 
-Value Parser::primaryExpr() {
+Value Parser::primaryExpr(int top) {
     printf("enter primaryExpr\n");
     switch (lexer->token) {
     case '(': {
-        advance();
-        Value a = expr();
+        consume('(');
+        Value a = expr(top);
         consume(')');
         return a;
     }
         
     case TK_NAME: {
         u64 name = lexer->info.nameHash;
-        advance();        
+        consume(TK_NAME);        
         return VAL_REG(lookupSlot(name));
     }
     }
     error(E_TODO);
 }
 
-Value Parser::suffixedExpr() {
-    return primaryExpr();
+Value Parser::suffixedExpr(int top) {
+    return primaryExpr(top);
     //TODO
     /*
     Value a = primaryExpr();
@@ -319,7 +328,7 @@ Value Parser::suffixedExpr() {
     */
 }
 
-Value Parser::simpleExpr() {
+Value Parser::simpleExpr(int top) {
     printf("enter simpleExpr\n");
     Value ret = NIL;
     switch (lexer->token) {
@@ -338,32 +347,32 @@ Value Parser::simpleExpr() {
         break;
 
     default:
-        return suffixedExpr();
+        return suffixedExpr(top);
     }
     advance();
     return ret;
 }
 
-Value Parser::subExpr(int limit) {
+Value Parser::subExpr(int top, int limit) {
     printf("enter subExpr %d\n", limit);
     Value a;
     if (isUnaryOp(lexer->token)) {
         int op = lexer->token;
         advance();
-        a = codeUnary(op, subExpr(8));
+        a = codeUnary(top, op, subExpr(top, 8));
     } else {
-        a = simpleExpr();
+        a = simpleExpr(top);
     }
     while (binaryPriorityLeft(lexer->token) > limit) {
         int op = lexer->token;
         advance();
-        a = codeBinary(op, a, subExpr(binaryPriorityRight(op)));
+        a = codeBinary(top, op, a, subExpr(topAbove(a, top), binaryPriorityRight(op)));
     }
     return a;
 }
 
-Value Parser::expr() {
-    return subExpr(0);
+Value Parser::expr(int top) {
+    return subExpr(top, 0);
 }
 
 

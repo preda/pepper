@@ -28,11 +28,11 @@ class Parser {
     void emitCode(unsigned code);
     int  emitHole();
     void emitPatch(unsigned pos, unsigned code);
-    void emitPatchJumpHere(unsigned pos, Value cond = FALSE);
+    void emitPatchJumpHere(unsigned pos, Value cond);
     void patchOrEmitMove(int dest, Value a);
 
-    Value codeUnary(int op, Value a);
-    Value codeBinary(int op, Value a, Value b);
+    Value codeUnary(int top, int op, Value a);
+    Value codeBinary(int top, int op, Value a, Value b);
 
     void advance();
 
@@ -42,11 +42,11 @@ public:
 
     void consume(int t);
     
-    Value expr();
-    Value subExpr(int limit);
-    Value simpleExpr();
-    Value suffixedExpr();
-    Value primaryExpr();
+    Value expr(int top);
+    Value subExpr(int top, int limit);
+    Value simpleExpr(int top);
+    Value suffixedExpr(int top);
+    Value primaryExpr(int top);
 
     void block();
     void statList();

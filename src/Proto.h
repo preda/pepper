@@ -10,7 +10,7 @@ class Proto {
     byte nArgs;
     bool hasEllipsis;
     byte level;
-    byte top;
+    byte localsTop;
 
     Vector<short> ups;
     Vector<Value> consts;
