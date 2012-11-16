@@ -29,8 +29,8 @@ enum {
 
 #define VALUE(tag,x) ((((u64)(tag)) << 48) | (x))
 #define VAL_OBJ(obj) ((Value)(obj))
-#define VAL_INT(i)   VALUE(INTEGER, (i) & 0xffffffffffffLL)
-#define VAL_REG(i) VALUE(REGISTER, i)
+#define VAL_INT(i)   VALUE(INTEGER,  (i) & 0xffffffffffffLL)
+#define VAL_REG(i)   VALUE(REGISTER, (i) & 0xffffffffffffLL)
 
 #define NIL VAL_OBJ(0)
 

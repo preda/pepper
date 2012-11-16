@@ -37,7 +37,6 @@ static bool init() {
     return true;
 }
 
-
 static void printValue(char *buf, int bufSize, Value a) {
     const int t = TAG(a);
     // printf("tag %d\n", t);
@@ -53,6 +52,8 @@ static void printValue(char *buf, int bufSize, Value a) {
             int type = ((Object *) a)->type;
             snprintf(buf, bufSize, "OBJECT(%s)", objTypeName[type]);
         }
+    } else if (t == REGISTER) {
+        snprintf(buf, bufSize, "register %d", (int)a);
     } else if (t <= STRING) {
         snprintf(buf, bufSize, "%s", emptyVals[t]);
     } else if (t > STRING && t <= STRING+6) {
@@ -63,6 +64,12 @@ static void printValue(char *buf, int bufSize, Value a) {
     } else {
         snprintf(buf, bufSize, "<?%d>", t);
     }
+}
+
+void printValue(Value a) {
+    char buf[32];
+    printValue(buf, sizeof(buf), a);
+    fprintf(stderr, "%s\n", buf);
 }
 
 static void printOperand(char *buf, int bufSize, int bit, int v) {
@@ -108,6 +115,14 @@ void printBytecode(unsigned *p, int size) {
 
         case MOVE:
             printf("%3s,  %3s\n", sc, sa);
+            break;
+
+        case GET:
+            printf("%3s, %3s[%s]\n", sc, sa, sb);
+            break;
+
+        case SET:
+            printf("%3s[%s], %3s\n", sc, sa, sb);
             break;
 
         default:

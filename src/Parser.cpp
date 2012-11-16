@@ -102,7 +102,7 @@ static Value makeValue(bool flag, byte ra) {
     return !flag ? VAL_REG(ra) :
         !(ra & 0x80) ? VAL_INT(((signed char)(ra<<1))>>1) :
         ra >= 0xf0 ? VALUE(ra & 0xf, 0) :
-        VAL_REG(-(ra + 1));
+        VAL_REG(-((ra&0x7f) + 1));
 }
 
 static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
@@ -122,6 +122,8 @@ static int topAbove(Value a, int top) {
     return max((int)a + 1, top);
 }
 
+// void printValue(Value a);
+
 void Parser::exprOrAssignStat() {
     Value lhs = expr(proto->localsTop);
     if (TOKEN == '=') {
@@ -131,9 +133,11 @@ void Parser::exprOrAssignStat() {
         }
         Value a, b, c;
         int op = unCode(proto->code.pop(), &c, &a, &b);
+        // printValue(c); printValue(a); printValue(b);
+        
         ERR(op != GET, E_ASSIGN_RHS);
         assert(lhs == c);
-        emitCode(makeCode(SET, b, a, expr(topAbove(lhs, proto->localsTop))));
+        emitCode(makeCode(SET, a, b, expr(topAbove(lhs, proto->localsTop))));
     }    
 }
 
@@ -316,18 +320,20 @@ Value Parser::suffixedExpr(int top) {
         switch(TOKEN) {
         case '[':
             consume('[');            
-            emitCode(makeCode(GET, VAL_REG(top), expr(topAbove(a, top)), a));
+            emitCode(makeCode(GET, VAL_REG(top), a, expr(topAbove(a, top))));
             a = VAL_REG(top);
             consume(']');
             break;
+
         default:
+            printf("exit suffixed %d\n", TOKEN);
             return a;
         }
     }
 }
 
 Value Parser::simpleExpr(int top) {
-    printf("enter simpleExpr\n");
+    // printf("enter simpleExpr\n");
     Value ret = NIL;
     switch (lexer->token) {
     case TK_INTEGER: ret = VAL_INT(lexer->info.intVal); break;
@@ -335,10 +341,10 @@ Value Parser::simpleExpr(int top) {
     case TK_STRING:  ret = VAL_STRING(lexer->info.strVal, lexer->info.strLen); break;
     case TK_NIL:     ret = NIL; break;
 
-    case '[': // array TODO
+    case '[': error(E_TODO);
         break;
 
-    case '{': // map TODO
+    case '{': error(E_TODO);
         break;
 
     case TK_FUNC:
@@ -352,7 +358,7 @@ Value Parser::simpleExpr(int top) {
 }
 
 Value Parser::subExpr(int top, int limit) {
-    printf("enter subExpr %d\n", limit);
+    // printf("enter subExpr %d\n", limit);
     Value a;
     if (isUnaryOp(lexer->token)) {
         int op = lexer->token;
