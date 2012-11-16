@@ -10,14 +10,36 @@
 #include "SymbolTable.h"
 
 #include <assert.h>
+#include <stdlib.h>
 
 #define UNUSED VAL_REG(0)
-#define TRUE  VAL_INT(1)
-#define FALSE VAL_INT(0)
+#define TOKEN (lexer->token)
 
-void Parser::error(int err) {
+Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
+    this->proto = proto;
+    this->syms  = syms;
+    this->lexer = lexer;
+    lexer->advance();
+}
+
+Parser::~Parser() {
+}
+
+Value error(int err) {
     fprintf(stderr, "parser error %d\n", err);
-    assert(0);
+    abort();
+}
+
+void Parser::advance() {
+    lexer->advance();
+}
+
+void Parser::consume(int t) {
+    if (t == lexer->token) {
+        lexer->advance();
+    } else {
+        error(E_EXPECTED + t);
+    }
 }
 
 Func *Parser::parseFunc(const char *text) {
@@ -32,28 +54,6 @@ Func *Parser::parseFunc(const char *text) {
 void Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(text);
     Parser(proto, syms, &lexer).statList();
-}
-
-Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
-    this->proto = proto;
-    this->syms  = syms;
-    this->lexer = lexer;
-    lexer->advance();
-}
-
-Parser::~Parser() {
-}
-
-void Parser::advanceToken() {
-    lexer->advance();
-}
-
-void Parser::consume(int t) {
-    if (t == lexer->token) {
-        lexer->advance();
-    } else {
-        error(E_EXPECTED + t);
-    }
 }
 
 void Parser::block() {
@@ -78,16 +78,81 @@ void Parser::statList() {
 
 void Parser::statement() {
     switch (lexer->token) {
-    case TK_VAR: var(); break;
-        /*
-    case TK_IF: ifstat(); break;
-    case TK_FOR: forstat(); break;
-    default: exprstat(); break;
-        */
+    case TK_VAR: varStat(); break;
+    case TK_IF:  ifStat();   break;
+
+    case TK_NAME: 
+        if (lexer->lookahead() == '=') {
+            assignStat();
+        } else {
+            exprOrAssignStat();
+        }
+        break;
+
+    default: exprOrAssignStat(); break;
     }
 }
 
-void Parser::var() {
+void Parser::assignStat() {
+    assert(TOKEN == TK_NAME);
+    int slot = lookupSlot(lexer->info.nameHash);
+    consume(TK_NAME);
+    consume('=');
+    maybeEmitMove(slot, expr());    
+}
+
+static Value makeValue(bool flag, byte ra) {
+    return !flag ? VAL_REG(ra) :
+        !(ra & 0x80) ? VAL_INT(((signed char)(ra<<1))>>1) :
+        ra >= 0xf0 ? VALUE(ra & 0xf, 0) :
+        VAL_REG(-(ra + 1));
+}
+
+static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
+    byte bigop = OP(code);
+    *a = makeValue(bigop & 0x20, OA(code));
+    *b = makeValue(bigop & 0x40, OB(code));
+    *c = makeValue(bigop & 0x80, OC(code));
+    return bigop & 0x1f;
+}
+
+void Parser::exprOrAssignStat() {
+    Value a = expr();
+    if (TOKEN == '=') {
+        consume('=');
+        if (!IS_REGISTER(a)) {
+            error(E_ASSIGN_TO_CONST);
+        }
+        Value a, b, c;
+        int op = unCode(proto->code.pop(), &c, &a, &b);
+        ERR(op != GET, E_ASSIGN_RHS);
+        emitCode(makeCode(SET, c, a, expr()));
+    }    
+}
+
+void Parser::ifStat() {
+    consume(TK_IF);
+    // int slot = proto->top;
+    Value a = expr();
+    // maybeEmitMove(slot, a);
+    // proto->top = slot + 1;
+    int pos1 = emitHole();
+    block();
+    int pos2 = emitHole();
+    // emitPatch(codePos1, makeCode(JMP, a, 
+    emitPatchJumpHere(pos1, a);
+    if (lexer->token == TK_ELSE) {
+        advance();
+        if (lexer->token == '{') {
+            block();
+        } else { 
+            ifStat();
+        }
+    }
+    emitPatchJumpHere(pos2);
+}
+
+void Parser::varStat() {
     consume(TK_VAR);
     if (lexer->token == TK_NAME) {
         u64 name = lexer->info.nameHash;
@@ -97,9 +162,7 @@ void Parser::var() {
         Value a = expr(); // sympleExpr() ?
         proto->top = slot + 1;
         syms->set(name, slot);
-        if (!IS_REGISTER(a) || (int)a != slot) {
-            genCode(MOVE, slot, a);
-        }
+        maybeEmitMove(slot, a);
     } else {
         error(E_VAR_NAME);
     }
@@ -109,68 +172,16 @@ static bool isUnaryOp(int token) {
     return token=='!' || token=='-' || token=='#' || token=='~';
 }
 
-Value Parser::maybeAllocConst(Value a) {
-    int ta = TAG(a);
-    if (ta==REGISTER || ta==ARRAY || ta==MAP || ta==STRING ||
-        (ta==INTEGER && getInteger(a)>=-64 && getInteger(a)<64)) {
-        return a;
+static Value foldUnary(int op, Value a) {
+    if (!IS_REGISTER(a)) {
+        switch (op) {
+        case '!': return IS_FALSE(a) ? TRUE : FALSE;
+        case '-': return doSub(ZERO, a);
+        case '~': return doXor(a, VAL_INT(-1));
+        case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) : error(E_WRONG_TYPE);
+        }
     }
-    proto->ups.push(0);
-    proto->consts.push(a);
-    return VAL_REG(- proto->ups.size);
-}
-
-static byte getRegValue(Value a) {
-    const int ta = TAG(a);
-    return
-        ta==REGISTER && (int)a >= 0 ? (int) a :
-        ta==REGISTER ? 0x80 | (-(int)a-1) :
-        ta==ARRAY || ta==MAP || ta==STRING ? (0xf8 | ta) : ((unsigned)a & 0x7f);
-}
-
-static inline unsigned PACK4(unsigned op, unsigned dest, unsigned a, unsigned b) {
-    return op | (dest<<8) | (a<<16) | (b<<24);
-}
-
-Value Parser::genCode(int op, Value a, Value b) {
-    return genCode(op, proto->top++, a, b);
-}
-
-Value Parser::genCode(int op, int dest, Value a, Value b) {
-    // int dest = top++;
-    a = maybeAllocConst(a);
-    b = maybeAllocConst(b);
-    bool aIsReg = IS_REGISTER(a) && (int)a >= 0;
-    byte ra = getRegValue(a);
-    
-    bool bIsReg = IS_REGISTER(b) && (int)b >= 0;
-    byte rb = getRegValue(b);
-
-    proto->code.push(PACK4(op | (aIsReg?0:0x20) | (bIsReg?0:0x40), dest, ra, rb));
-    return VAL_REG(dest);
-}
-
-Value Parser::codeUnary(int op, Value a) {
-    switch (op) {
-    case '!': return 
-        a==NIL ? TRUE :
-        IS_NUMBER(a) ? (getDouble(a)==0 ? TRUE : FALSE) :
-        IS_REGISTER(a) ? genCode(NOT, a) : FALSE;
-             
-    case '-': return
-        IS_INTEGER(a) ? VAL_INT(-getInteger(a)) :
-        IS_DOUBLE(a)  ? VAL_DOUBLE(-getDouble(a)) :
-        IS_REGISTER(a) ? genCode(SUB, VAL_INT(0), a) : ERR;
-
-    case '~': return
-        IS_INTEGER(a) ? VAL_INT(~getInteger(a)) :
-        IS_REGISTER(a) ? genCode(XOR, a, VAL_INT(-1)) : ERR;
-        
-    case '#': return
-        IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) :
-        IS_REGISTER(a) ? genCode(LEN, a) : ERR;
-    }
-    assert(false);
+    return NIL;
 }
 
 static Value foldBinary(int op, Value a, Value b) {
@@ -187,18 +198,43 @@ static Value foldBinary(int op, Value a, Value b) {
     return NIL;
 }
 
+Value Parser::codeUnary(int op, Value a) {
+    {
+        Value c = foldUnary(op, a);
+        if (c != NIL) { return c; }
+    }
+    Value b = UNUSED;
+    int opcode = 0;
+    switch (op) {
+    case '!': opcode = NOT; break;
+    case '-': opcode = SUB; b = a; a = ZERO; break;
+    case '~': opcode = XOR; b = VAL_INT(-1); break;
+    case '#': opcode = LEN; break;
+    default: assert(false);
+    }
+    Value c = VAL_REG(proto->top++);
+    emitCode(makeCode(opcode, c, a, b));
+    return c;
+}
+
 Value Parser::codeBinary(int op, Value a, Value b) {
-    Value c = foldBinary(op, a, b);
-    if (c != NIL) { return c; }
-    int opcode = 
-        op == '+' ? ADD :
-        op == '-' ? SUB :
-        op == '*' ? MUL :
-        op == '/' ? DIV :
-        op == '%' ? MOD :
-        op == '^' ? POW : -1;
-    assert(op >= 0);
-    return genCode(opcode, a, b);
+    {
+        Value c = foldBinary(op, a, b);
+        if (c != NIL) { return c; }
+    }
+    int opcode = 0;
+    switch (op) {
+    case '+': opcode = ADD; break;
+    case '-': opcode = SUB; break;
+    case '*': opcode = MUL; break;
+    case '/': opcode = DIV; break;
+    case '%': opcode = MOD; break;
+    case '^': opcode = POW; break;
+    default: assert(false);
+    }
+    Value c = VAL_REG(proto->top++);
+    emitCode(makeCode(opcode, c, a, b));
+    return c;
 }
 
 static int binaryPriorityLeft(int token) {
@@ -239,11 +275,19 @@ SymbolData Parser::lookupName(u64 name) {
     return s;
 }
 
+ int Parser::lookupSlot(u64 name) {
+     SymbolData sym = lookupName(name);
+     if (sym.kind == KIND_EMPTY) {
+         error(E_NAME_NOT_FOUND);
+     }
+     return sym.slot;
+ }
+
 Value Parser::primaryExpr() {
     printf("enter primaryExpr\n");
     switch (lexer->token) {
     case '(': {
-        advanceToken();
+        advance();
         Value a = expr();
         consume(')');
         return a;
@@ -251,20 +295,8 @@ Value Parser::primaryExpr() {
         
     case TK_NAME: {
         u64 name = lexer->info.nameHash;
-        consume(TK_NAME);
-        SymbolData sym = syms->get(name);
-        if (sym.kind == KIND_EMPTY) {
-            error(E_NAME_NOT_FOUND);
-        }
-        
-        if (sym.level == proto->level) {
-            printf("same level, slot %d\n", (int) sym.slot);
-            return VAL_REG(sym.slot);
-        } else {
-            printf("level %d %d\n", (int)sym.level, (int)proto->level);
-            // create new upval in current level
-            createUpval(proto, name, sym);
-        }
+        advance();        
+        return VAL_REG(lookupSlot(name));
     }
     }
     error(E_TODO);
@@ -309,7 +341,7 @@ Value Parser::simpleExpr() {
     default:
         return suffixedExpr();
     }
-    advanceToken();
+    advance();
     return ret;
 }
 
@@ -318,14 +350,14 @@ Value Parser::subExpr(int limit) {
     Value a;
     if (isUnaryOp(lexer->token)) {
         int op = lexer->token;
-        advanceToken();
+        advance();
         a = codeUnary(op, subExpr(8));
     } else {
         a = simpleExpr();
     }
     while (binaryPriorityLeft(lexer->token) > limit) {
         int op = lexer->token;
-        advanceToken();
+        advance();
         a = codeBinary(op, a, subExpr(binaryPriorityRight(op)));
     }
     return a;
@@ -333,4 +365,71 @@ Value Parser::subExpr(int limit) {
 
 Value Parser::expr() {
     return subExpr(0);
+}
+
+
+// code generation below
+
+void Parser::maybeEmitMove(int slot, Value a) {
+    if (!IS_REGISTER(a) || (int)a != slot) {
+        emitCode(makeCode(MOVE, VAL_REG(slot), a, UNUSED));
+    }
+}
+
+Value Parser::maybeAllocConst(Value a) {
+    int ta = TAG(a);
+    if (ta==REGISTER || ta==ARRAY || ta==MAP || ta==STRING ||
+        (ta==INTEGER && getInteger(a)>=-64 && getInteger(a)<64)) {
+        return a;
+    }
+    proto->ups.push(0);
+    proto->consts.push(a);
+    return VAL_REG(- proto->ups.size);
+}
+
+byte Parser::getRegValue(Value a) {
+    a = maybeAllocConst(a);
+    const int ta = TAG(a);
+    return
+        ta==REGISTER && (int)a >= 0 ? (int) a :
+        ta==REGISTER ? 0x80 | (-(int)a-1) :
+        ta==ARRAY || ta==MAP || ta==STRING ? (0xf0 | ta) : ((unsigned)a & 0x7f);
+}
+
+static inline unsigned PACK4(unsigned b0, unsigned b1, unsigned b2, unsigned b3) {
+    return b0 | (b1<<8) | (b2<<16) | (b3<<24);
+}
+
+static bool isNormal(Value a) {
+    return IS_REGISTER(a) && (int)a >= 0;
+}
+
+static byte flags(Value a, Value b, Value c) {
+    return (isNormal(a)?0:0x20) | (isNormal(b)?0:0x40) | (isNormal(c)?0:0x80);
+}
+
+unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
+    return PACK4(op | flags(a, b, c), getRegValue(a), getRegValue(b), getRegValue(c));
+}
+
+unsigned Parser::makeCode(int op, Value a, int offset) {
+    return PACK4(op | flags(a, UNUSED, UNUSED), getRegValue(a), (byte)(offset & 0xff), (byte)(offset >> 8));
+}
+
+void Parser::emitCode(unsigned code) {
+    proto->code.push(code);
+}
+
+int Parser::emitHole() {
+    return (int) proto->code.push(0);
+}
+
+void Parser::emitPatch(unsigned pos, unsigned code) {
+    assert(pos < proto->code.size);
+    proto->code.buf[pos] = code;
+}
+
+void Parser::emitPatchJumpHere(unsigned pos, Value cond) {
+    int offset = proto->code.size - pos - 1;
+    emitPatch(pos, makeCode(JMP, cond, offset));
 }

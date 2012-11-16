@@ -4,6 +4,19 @@
 
 typedef u64 Value;
 
+enum {
+    E_VAR_NAME = 1,
+    E_NAME_NOT_FOUND,
+    E_TODO,
+    E_WRONG_TYPE,
+    E_DIV_ZERO,
+    E_ASSIGN_TO_CONST,
+    E_ASSIGN_RHS,
+    E_EXPECTED = 256,    
+};
+
+Value error(int err) __attribute__ ((noreturn));
+
 // Value tags
 enum {
     OBJECT = 0,
@@ -33,15 +46,10 @@ enum {
 #define VAL_REG(i) VALUE(REGISTER, i)
 
 #define NIL VAL_OBJ(0)
-#define ERR NIL
-// #define ERR VAL_OBJ(1)
-// #define UNK VAL_OBJ(2)
 
 #define EMPTY_STRING VALUE(STRING, 0)
 #define EMPTY_ARRAY  VALUE(ARRAY, 0)
 #define EMPTY_MAP    VALUE(MAP, 0)
-// #define EMPTY_ARRAY  VALUE(EMPTY, ARRAY)
-// #define EMPTY_MAP    VALUE(EMPTY, MAP)
 
 #define TAG(v) ((unsigned) ((v) >> 48))
 
@@ -50,6 +58,15 @@ static inline bool IS_NUMBER(Value v) {
     unsigned t = TAG(v);
     return t==INTEGER || t==DOUBLE || (t&0x7ff0);
 }
+
+#define LOW(v) ((unsigned)v)
+#define UP(v) ((unsigned)(v>>32))
+
+#define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(INTEGER<<16) || (UP(v)&0x7fffffff)==0x7fffffff))
+
+#define TRUE  VAL_INT(1)
+#define FALSE VAL_INT(0)
+#define ZERO  VAL_INT(0)
 
 #define IS_REGISTER(v) (TAG(v) == REGISTER)
 #define IS_DOUBLE_TAG(t) (t==DOUBLE || t&0x7ff0)

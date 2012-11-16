@@ -11,9 +11,10 @@ class Vector {
 
     void append(Vector<T> *v);
 
-    void push(T v) {
-        reserve(size+1);
-        buf[size++] = v;
+    unsigned push(T v) {
+        reserve(size + 1);
+        buf[size] = v;
+        return size++;
     }
     
     T *push() {

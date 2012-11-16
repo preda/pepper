@@ -15,8 +15,17 @@ Value doAnd(Value a, Value b);
 Value doOr(Value a, Value b);
 Value doXor(Value a, Value b);
 
+#define OP(c) ((byte)  (c))
+#define OA(c) ((byte)  (c >> 8))
+#define OB(c) ((byte)  (c >> 16))
+#define OC(c) ((byte)  (c >> 24))
+#define OD(c) ((short) (c >> 16))
+
 enum {
-    CALL, RETURN, MOVE,
+    JMP, CALL, RETURN, MOVE,
+
+    // table e.g. a[i]
+    GET, SET,
     
     // Binary
     ADD, SUB, MUL, DIV, MOD, POW, AND, OR, XOR,

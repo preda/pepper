@@ -7,13 +7,38 @@
 #include <stdio.h>
 #include <string.h>
 
+
 static const char *objTypeName[] = {
     0, "ARRAY", "MAP", "FUNC", "CFUNC", 0, 0, 0, "STRING"
 };
 
 static const char *emptyVals[] = {0, "[]", "{}", 0, 0, 0, 0, 0, "\"\""};
 
-void printValue(char *buf, int bufSize, Value a) {
+static const char *opNames[32];
+
+static const char *typeNames[] = {
+    "NIL", "[]", "{}", 0,
+    0, 0, 0, 0,
+    "\"\"",
+};
+
+static bool init() {
+#define ENTRY(t, n) t[n]=#n
+#define _(n) ENTRY(opNames, n)
+#define __(a, b, c, d) _(a); _(b); _(c); _(d);
+    __(JMP, CALL, RETURN, MOVE);
+    _(GET); _(SET),
+    __(ADD, SUB, MUL, DIV);
+    __(MOD, POW, AND, OR);
+    _(XOR); _(NOT); _(LEN);
+#undef _
+#undef __
+#undef ENTRY
+    return true;
+}
+
+
+static void printValue(char *buf, int bufSize, Value a) {
     const int t = TAG(a);
     // printf("tag %d\n", t);
     if (t == INTEGER) {
@@ -29,30 +54,12 @@ void printValue(char *buf, int bufSize, Value a) {
     } else if (t > STRING && t <= STRING+6) {
         int sz = t - STRING;
         char tmp[8] = {0};
-        memcpy(tmp, (char *)a, sz);
+        memcpy(tmp, (char *)&a, sz);
         snprintf(buf, bufSize, "\"%s\"", tmp);
     } else {
         snprintf(buf, bufSize, "<?%d>", t);
     }
 }
-
-#define OP(c) ((byte) (c))
-#define OC(c) ((byte) (c >> 8))
-#define OA(c) ((byte) (c >> 16))
-#define OB(c) ((byte) (c >> 24))
-#define OAB(c) ((unsigned short) (c >> 16))
-
-static const char *opNames[] = {
-    "CALL", "RET ", "MOVE",
-    "ADD ", "SUB ", "MUL ", "DIV ", "MOD ", "POW ", "AND ", "OR  ", "XOR ",
-    "NOT ", "LEN ",
-};
-
-static const char *typeNames[] = {
-    "NIL", "[] ", "{} ", 0,
-    0, 0, 0, 0,
-    "\"\" ",
-};
 
 static void printOperand(char *buf, int bufSize, int bit, int v) {
     if (!bit) {
@@ -69,15 +76,37 @@ static void printOperand(char *buf, int bufSize, int bit, int v) {
 }
 
 void printBytecode(unsigned *p, int size) {
+    static bool inited = init();
+    (void) inited;
     char sa[32], sb[32], sc[32];
-    for (unsigned *end = p + size; p < end; ++p) {
+    int i = 0;
+    for (unsigned *end = p + size; p < end; ++p, ++i) {
         unsigned code = *p;
-        int fullOp = OP(code), c = OC(code), a = OA(code), b = OB(code);
+        int fullOp = OP(code), a = OA(code), b = OB(code), c = OC(code);
         int op = fullOp & 0x1f;    
-        printOperand(sc, sizeof(sc), fullOp & 0x80, c);
         printOperand(sa, sizeof(sa), fullOp & 0x20, a);
         printOperand(sb, sizeof(sb), fullOp & 0x40, b);
-        printf("%02x %02x %02x %02x    %s %4s %4s %4s\n", fullOp, c, a, b, opNames[op], sc, sa, sb);
+        printOperand(sc, sizeof(sc), fullOp & 0x80, c);
+        printf("%2d: %02x%02x%02x%02x   %-4s ", i, fullOp, a, b, c, opNames[op]);
+        switch (op) {
+        case JMP: {
+            int offset = OD(code);
+            int jmpDest = i+offset+1;
+            if (fullOp == (JMP | 0x20) && a==0) {
+                printf("%3d:\n", jmpDest);
+            } else {
+                printf("%3d:  %3s\n", jmpDest, sa);
+            }
+            break;
+        }
+
+        case MOVE:
+            printf("%3s,  %3s\n", sc, sa);
+            break;
+
+        default:
+            printf("%3s,  %3s %3s\n", sc, sa, sb);
+        }
     }
 }
 
@@ -89,12 +118,12 @@ void printProto(Proto *proto) {
     for (short *p = proto->ups.buf, *end = p + proto->ups.size; p < end; ++p, ++i) {
         int u = *p;
         if (u > 0) {
-            printf("%2d %d\n", i, u-1);
+            printf("%2d: %d\n", i, u-1);
         } else if (u < 0) {
-            printf("%2d [%d]\n", i, -u-1);
+            printf("%2d: [%d]\n", i, -u-1);
         } else {
             printValue(buf, sizeof(buf), proto->consts.buf[c++]);
-            printf("%2d #%s\n", i, buf);
+            printf("%2d: #%s\n", i, buf);
         }
     }
     printf("\nCode:\n");

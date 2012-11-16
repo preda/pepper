@@ -40,12 +40,13 @@ class Lexer {
 
     char *readString(int *outLen);
 
-    int advanceInt();
+    int advanceInt(TokenInfo *info);
 
  public:
     Lexer(const char *string);
 
     int advance();
+    int lookahead();
 
     int token;
     TokenInfo info;

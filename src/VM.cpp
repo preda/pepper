@@ -11,13 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define OP(c) ((byte) (c))
-#define OC(c) ((byte) (c >> 8))
-#define OA(c) ((byte) (c >> 16))
-#define OB(c) ((byte) (c >> 24))
-#define OAB(c) ((unsigned short) (c >> 16))
-
-#define STEP code=*pc++; A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
+#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
 // ra=regs+OA(code); 
 
 #define INT(x) VAL_INT((signed char)x)
@@ -30,20 +24,20 @@ static Value arrayAdd(Value a, Value b) {
     int sz = len(a) + len(b);
     if (sz == 0) {
         int tb = TAG(b);
-        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_ARRAY : ERR;
+        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_ARRAY : error(E_WRONG_TYPE);
     }
     Array *array = Array::alloc(sz);
-    return (array->appendArray(a) && array->appendArray(b)) ? VAL_OBJ(array) : ERR;
+    return (array->appendArray(a) && array->appendArray(b)) ? VAL_OBJ(array) : error(E_WRONG_TYPE);
 }
 
 static Value mapAdd(Value a, Value b) {
     int sz = len(a) + len(b);
     if (sz == 0) {
         int tb = TAG(b);
-        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_MAP : ERR;
+        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_MAP : error(E_WRONG_TYPE);
     }
     Map *map = ((Map *) a)->copy();
-    return map->appendArray(b) ? VAL_OBJ(map) : ERR;
+    return map->appendArray(b) ? VAL_OBJ(map) : error(E_WRONG_TYPE);
 }
 
 Value doAdd(Value a, Value b) {
@@ -53,32 +47,32 @@ Value doAdd(Value a, Value b) {
         IS_STRING(a) ? String::concat(a, b) :
         IS_ARRAY(a)  ? arrayAdd(a, b) :
         IS_MAP(a)    ? mapAdd(a, b) :
-        ERR;
+        error(E_WRONG_TYPE);
 }
 
 Value doSub(Value a, Value b) {
     return 
-        IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) + getInteger(b))  :
-        IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) + getDouble(b)) :
-        ERR;
+        IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) - getInteger(b))  :
+        IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) - getDouble(b)) :
+        error(E_WRONG_TYPE);
 }
 
 Value doMul(Value a, Value b) {
     return 
         IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) * getInteger(b))  :
         IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) * getDouble(b)) :
-        ERR;
+        error(E_WRONG_TYPE);
 }
 
 Value doDiv(Value a, Value b) {
     if (IS_INTEGER(a) && IS_INTEGER(b)) {
         s64 vc = getInteger(b);
-        return vc == 0 ? ERR : VAL_INT(getInteger(a) / vc);
+        return vc == 0 ? error(E_DIV_ZERO) : VAL_INT(getInteger(a) / vc);
     } else if (IS_NUMBER(a) && IS_NUMBER(b)) {
         double vc = getDouble(b);
-        return vc == 0 ? ERR : VAL_DOUBLE(getDouble(a) / vc);
+        return vc == 0 ? error(E_DIV_ZERO) : VAL_DOUBLE(getDouble(a) / vc);
     } else {
-        return ERR;
+        return error(E_WRONG_TYPE);
     }
 }
 
@@ -91,20 +85,20 @@ Value doPow(Value a, Value b) {
 }
 
 Value doAnd(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) & getInteger(b)) : ERR;
+    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) & getInteger(b)) : error(E_WRONG_TYPE);
 }
 
 Value doOr(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) | getInteger(b)) : ERR;
+    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) | getInteger(b)) : error(E_WRONG_TYPE);
 }
 
 Value doXor(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERR;
+    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : error(E_WRONG_TYPE);
 }
 
 int vmrun(unsigned *pc) {
     void *dispatch[256] = {
-        &&call, &&return_, &&move,
+        &&jmp, &&call, &&return_, &&move,
         &&add, &&sub, &&mul, &&div, &&mod, &&pow, &&and_, &&or_, &&xor_,
         &&end};
 
@@ -141,6 +135,8 @@ int vmrun(unsigned *pc) {
  decodeBC:  DECODE(B); // fall
  decodeC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
 
+ jmp: if (IS_FALSE(A)) { pc += OD(code); } STEP;
+    
  return_:
     if (retInfo.size == 0) {
         int ret = 0;

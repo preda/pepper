@@ -30,9 +30,19 @@ Lexer::Lexer(const char *string) {
     }
 }
 
+int Lexer::lookahead() {
+    const char *savep = p;
+    int saveLineNumber = lineNumber;
+    TokenInfo dummy;
+    int nextToken = advanceInt(&dummy);
+    p = savep;
+    lineNumber = saveLineNumber;
+    return nextToken;
+}
+
 int Lexer::advance() {
-    printf("before advance ");
-    token = advanceInt();
+    // printf("before advance ");
+    token = advanceInt(&info);
     if (token < 32) {
         printf("token %s\n", tokens[token]);
     } else {
@@ -41,7 +51,7 @@ int Lexer::advance() {
     return token;
 }
 
-int Lexer::advanceInt() {
+int Lexer::advanceInt(TokenInfo *info) {
     while (p > (char*)2 && p < end) {
         char c = *p++;
         switch (c) {
@@ -56,7 +66,7 @@ int Lexer::advanceInt() {
                 if (HashEntry *e = keywords.get(hash)) {
                     return e->d.slot;
                 }                
-                info.nameHash = hash;
+                info->nameHash = hash;
                 return TK_NAME;
             } else if (isDigit(c)) {
                 char *p1, *p2;
@@ -64,11 +74,11 @@ int Lexer::advanceInt() {
                 double doubleVal =  strtod(p-1, &p2);
                 if (p2 > p1) {
                     p = p2;
-                    info.doubleVal = doubleVal;
+                    info->doubleVal = doubleVal;
                     return TK_DOUBLE;
                 } else {
                     p = p1;
-                    info.intVal = intVal;
+                    info->intVal = intVal;
                     return TK_INTEGER;
                 }
             } else {
@@ -97,7 +107,7 @@ int Lexer::advanceInt() {
             return *p == '=' ? ++p, c + TK_EQUAL : c;
                 
         case '"':
-            info.strVal = readString(&info.strLen);
+            info->strVal = readString(&info->strLen);
             return TK_STRING;
         }
     }
