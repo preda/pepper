@@ -5,11 +5,15 @@
 #include "GC.h"
 #include "Object.h"
 
-struct Array {
+class Array {
+    Array(int iniSize);
+
+ public:
     byte type;
     Vector<Value> vect;
 
-    static Array *alloc(int iniSize);
+    static Array *alloc(int iniSize = 0);
+    static Array *alloc(Vector<Value> *vect);
     
     /*
     static int len(Value v) {
@@ -17,9 +21,6 @@ struct Array {
     }
     */
 
-    Array(int iniSize) : 
-    vect(iniSize) {
-    }
 
     void destroy() {
         vect.~Vector();

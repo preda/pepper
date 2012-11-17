@@ -16,28 +16,26 @@
 
 #define INT(x) VAL_INT((signed char)x)
 
-#define ERROR(mes) { error=mes; goto end; }
-
 #define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : v<0xf0 ? ups[v & 0x7f] : VALUE((v&0xf), 0); }
 
 static Value arrayAdd(Value a, Value b) {
     int sz = len(a) + len(b);
     if (sz == 0) {
         int tb = TAG(b);
-        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_ARRAY : error(E_WRONG_TYPE);
+        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_ARRAY : ERROR(E_WRONG_TYPE);
     }
     Array *array = Array::alloc(sz);
-    return (array->appendArray(a) && array->appendArray(b)) ? VAL_OBJ(array) : error(E_WRONG_TYPE);
+    return (array->appendArray(a) && array->appendArray(b)) ? VAL_OBJ(array) : ERROR(E_WRONG_TYPE);
 }
 
 static Value mapAdd(Value a, Value b) {
     int sz = len(a) + len(b);
     if (sz == 0) {
         int tb = TAG(b);
-        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_MAP : error(E_WRONG_TYPE);
+        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_MAP : ERROR(E_WRONG_TYPE);
     }
     Map *map = ((Map *) a)->copy();
-    return map->appendArray(b) ? VAL_OBJ(map) : error(E_WRONG_TYPE);
+    return map->appendArray(b) ? VAL_OBJ(map) : ERROR(E_WRONG_TYPE);
 }
 
 Value doAdd(Value a, Value b) {
@@ -47,32 +45,32 @@ Value doAdd(Value a, Value b) {
         IS_STRING(a) ? String::concat(a, b) :
         IS_ARRAY(a)  ? arrayAdd(a, b) :
         IS_MAP(a)    ? mapAdd(a, b) :
-        error(E_WRONG_TYPE);
+        ERROR(E_WRONG_TYPE);
 }
 
 Value doSub(Value a, Value b) {
     return 
         IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) - getInteger(b))  :
         IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) - getDouble(b)) :
-        error(E_WRONG_TYPE);
+        ERROR(E_WRONG_TYPE);
 }
 
 Value doMul(Value a, Value b) {
     return 
         IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) * getInteger(b))  :
         IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) * getDouble(b)) :
-        error(E_WRONG_TYPE);
+        ERROR(E_WRONG_TYPE);
 }
 
 Value doDiv(Value a, Value b) {
     if (IS_INTEGER(a) && IS_INTEGER(b)) {
         s64 vc = getInteger(b);
-        return vc == 0 ? error(E_DIV_ZERO) : VAL_INT(getInteger(a) / vc);
+        return vc == 0 ? ERROR(E_DIV_ZERO) : VAL_INT(getInteger(a) / vc);
     } else if (IS_NUMBER(a) && IS_NUMBER(b)) {
         double vc = getDouble(b);
-        return vc == 0 ? error(E_DIV_ZERO) : VAL_DOUBLE(getDouble(a) / vc);
+        return vc == 0 ? ERROR(E_DIV_ZERO) : VAL_DOUBLE(getDouble(a) / vc);
     } else {
-        return error(E_WRONG_TYPE);
+        return ERROR(E_WRONG_TYPE);
     }
 }
 
@@ -85,15 +83,15 @@ Value doPow(Value a, Value b) {
 }
 
 Value doAnd(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) & getInteger(b)) : error(E_WRONG_TYPE);
+    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) & getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
 Value doOr(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) | getInteger(b)) : error(E_WRONG_TYPE);
+    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) | getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
 Value doXor(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : error(E_WRONG_TYPE);
+    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
 int vmrun(unsigned *pc) {

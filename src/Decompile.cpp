@@ -118,11 +118,11 @@ void printBytecode(unsigned *p, int size) {
             break;
 
         case GET:
-            printf("%3s, %3s[%s]\n", sc, sa, sb);
+            printf("%3s,  %3s %3s\n", sc, sa, sb);
             break;
 
         case SET:
-            printf("%3s[%s], %3s\n", sc, sa, sb);
+            printf("%3s %3s,  %3s\n", sc, sa, sb);
             break;
 
         default:

@@ -5,8 +5,16 @@
 #include "Object.h"
 #include <new>
 
+Array::Array(int iniSize) : vect(iniSize) { }
+
 Array *Array::alloc(int iniSize) {
     return new (GC::alloc(ARRAY, sizeof(Array), true)) Array(iniSize);
+}
+
+Array *Array::alloc(Vector<Value> *v) {
+    Array *a = alloc(v->size);
+    a->vect.append(v);
+    return a;
 }
 
 bool Array::appendArray(Value v) {

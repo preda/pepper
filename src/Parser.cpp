@@ -33,7 +33,7 @@ void Parser::consume(int t) {
     if (t == lexer->token) {
         lexer->advance();
     } else {
-        error(E_EXPECTED + t);
+        ERR(true, E_EXPECTED + t);
     }
 }
 
@@ -128,9 +128,7 @@ void Parser::exprOrAssignStat() {
     Value lhs = expr(proto->localsTop);
     if (TOKEN == '=') {
         consume('=');
-        if (!IS_REGISTER(lhs)) {
-            error(E_ASSIGN_TO_CONST);
-        }
+        ERR(!IS_REGISTER(lhs), E_ASSIGN_TO_CONST);
         Value a, b, c;
         int op = unCode(proto->code.pop(), &c, &a, &b);
         // printValue(c); printValue(a); printValue(b);
@@ -176,7 +174,7 @@ void Parser::varStat() {
         patchOrEmitMove(top, a);
         ++proto->localsTop;
     } else {
-        error(E_VAR_NAME);
+        ERR(true, E_VAR_NAME);
     }
 }
 
@@ -190,7 +188,7 @@ static Value foldUnary(int op, Value a) {
         case '!': return IS_FALSE(a) ? TRUE : FALSE;
         case '-': return doSub(ZERO, a);
         case '~': return doXor(a, VAL_INT(-1));
-        case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) : error(E_WRONG_TYPE);
+        case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) : ERROR(E_WRONG_TYPE);
         }
     }
     return NIL;
@@ -289,29 +287,77 @@ SymbolData Parser::lookupName(u64 name) {
 
  int Parser::lookupSlot(u64 name) {
      SymbolData sym = lookupName(name);
-     if (sym.kind == KIND_EMPTY) {
-         error(E_NAME_NOT_FOUND);
-     }
+     ERR(sym.kind == KIND_EMPTY, E_NAME_NOT_FOUND);
      return sym.slot;
  }
 
 Value Parser::primaryExpr(int top) {
     printf("enter primaryExpr\n");
+    Value a = NIL;
     switch (lexer->token) {
-    case '(': {
-        consume('(');
-        Value a = expr(top);
-        consume(')');
-        return a;
-    }
-        
     case TK_NAME: {
         u64 name = lexer->info.nameHash;
         consume(TK_NAME);        
         return VAL_REG(lookupSlot(name));
     }
+
+    case '(':
+        consume('(');
+        a = expr(top);
+        consume(')');
+        return a;
+        
+    case TK_STRING:
+        a = VAL_STRING(lexer->info.strVal, lexer->info.strLen);
+        consume(TK_STRING);
+        return a;
+
+    case '[':
+        return arrayExpr(top);
+
+    default:
+        ERR(true, E_SYNTAX);            
     }
-    error(E_TODO);
+}
+
+Value Parser::arrayExpr(int top) {
+    consume('[');
+    if (TOKEN==']') {
+        consume(']');
+        return EMPTY_ARRAY;
+    }
+    int slot = top++;
+    int codePosInit = emitHole();
+
+    Vector<Value> vect;
+    int nConsts = 0;
+    for (int pos = 0; ; ++pos) {
+        if (TOKEN == ']') { break; }
+        Value elem = expr(top);
+        if (IS_REGISTER(elem) || elem==NIL) {
+            vect.push(NIL);
+            emitCode(makeCode(SET, VAL_REG(slot), VAL_INT(pos), elem));
+        } else {
+            vect.push(elem);
+            ++nConsts;
+        }
+        if (TOKEN == ']') { break; }
+        consume(',');
+    }
+    if (nConsts <= 2) {
+        int pos = 0;
+        for (Value *p = vect.buf, *end = p+vect.size; p < end; ++p, ++pos) {
+            Value v = *p;
+            if (v != NIL) {
+                emitCode(makeCode(SET, VAL_REG(slot), VAL_INT(pos), v));
+            }
+        }
+        emitPatch(codePosInit, makeCode(MOVE, VAL_REG(slot), EMPTY_ARRAY, UNUSED));
+    } else {
+        emitPatch(codePosInit, makeCode(ADD, VAL_REG(slot), EMPTY_ARRAY, VAL_OBJ(Array::alloc(&vect))));
+    }
+    consume(']');
+    return VAL_REG(slot);
 }
 
 Value Parser::suffixedExpr(int top) {
@@ -338,16 +384,12 @@ Value Parser::simpleExpr(int top) {
     switch (lexer->token) {
     case TK_INTEGER: ret = VAL_INT(lexer->info.intVal); break;
     case TK_DOUBLE:  ret = VAL_DOUBLE(lexer->info.doubleVal); break;
-    case TK_STRING:  ret = VAL_STRING(lexer->info.strVal, lexer->info.strLen); break;
     case TK_NIL:     ret = NIL; break;
 
-    case '[': error(E_TODO);
+    case '{': ERR(true, E_TODO);
         break;
 
-    case '{': error(E_TODO);
-        break;
-
-    case TK_FUNC:
+    case TK_FUNC: ERR(true, E_TODO);
         break;
 
     default:

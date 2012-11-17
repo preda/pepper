@@ -18,13 +18,13 @@ static void init() {
 #undef _
 }
 
-u64 error(int err) {
+u64 error(const char *file, int line, int err) {
     init();
     if (err >= E_EXPECTED) {
         int token = err - E_EXPECTED;
-        fprintf(stderr, "ERROR expected token %d '%c'\n", token, (char)(token>=32?token:' '));
+        fprintf(stderr, "ERROR expected token %d '%c' at %s:%d\n", token, (char)(token>=32?token:' '), file, line);
     } else {
-        fprintf(stderr, "ERROR %d %s\n", err, errorMes[err]);
+        fprintf(stderr, "ERROR %d %s at %s:%d\n", err, errorMes[err], file, line);
     }
     longjmp(jumpBuf, err); 
 }
