@@ -2,22 +2,27 @@
 
 #include "Value.h"
 
+template<typename T> class Vector;
 class Array;
 class String;
 
-struct Map {
+class Map {
+
     static const int EMPTY = -1;
     // static const int HOLE  = -2;
+    Map(unsigned iniSize);
+    void grow();
+    void set(Vector<Value> *keys, Vector<Value> *vals);
 
+ public:
     byte type;
     unsigned size, n;
     Value *buf;
 
-    void grow();
-
     static Map *alloc(unsigned iniSize);
+    static Map *alloc(Vector<Value> *keys, Vector<Value> *vals);
+    
         
-    Map(unsigned iniSize);
     void destroy();
 
     Map *copy();

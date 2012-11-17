@@ -48,6 +48,7 @@ public:
     Value suffixedExpr(int top);
     Value primaryExpr(int top);
     Value arrayExpr(int top);
+    Value mapExpr(int top);
 
     void block();
     void statList();

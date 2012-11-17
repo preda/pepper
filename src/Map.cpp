@@ -16,11 +16,23 @@ Map *Map::alloc(unsigned iniSize) {
     return new (GC::alloc(MAP, sizeof(Map), true)) Map(iniSize);
 }
 
-Map::Map(unsigned iniSize) {
+Map *Map::alloc(Vector<Value> *keys, Vector<Value> *vals) {
+    Map *m = alloc(keys->size);
+    m->set(keys, vals);
+    return m;
+}
+
+void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
+    for (Value *pk=keys->buf, *end=pk+keys->size, *pv=vals->buf; pk < end; ++pk, ++pv) {
+        set(*pk, *pv, true);
+    }
+}
+
+Map::Map(const unsigned iniSize) {
     printf("Map %p\n", this);
     size = 0;
     n = 8;
-    while (iniSize > (n>>1)) {
+    while ((iniSize << 1) > n) {
         n += n;
     }
     buf = (Value *) malloc(n * 12);

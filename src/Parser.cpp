@@ -315,9 +315,61 @@ Value Parser::primaryExpr(int top) {
     case '[':
         return arrayExpr(top);
 
+    case '{':
+        return mapExpr(top);
+
     default:
         ERR(true, E_SYNTAX);            
     }
+}
+
+Value Parser::mapExpr(int top) {
+    consume('{');
+    if (TOKEN=='}') {
+        consume('}');
+        return EMPTY_MAP;
+    }
+    int slot = top++;
+    int codePosInit = emitHole();
+
+    Vector<Value> keys;
+    Vector<Value> vals;
+    int nConsts = 0;
+
+    for (int pos = 0; ; ++pos) {
+        if (TOKEN == '}') { break; }
+        Value k = expr(top);
+        consume(':');
+        Value v = expr(top);
+        
+        if (IS_REGISTER(k) || IS_REGISTER(v) || (k==NIL && v == NIL)) {
+            keys.push(NIL);
+            vals.push(NIL);
+            emitCode(makeCode(SET, VAL_REG(slot), k, v));
+        } else {
+            keys.push(k);
+            vals.push(v);
+            ++nConsts;
+        }
+        if (TOKEN == '}') { break; }
+        consume(',');
+    }
+    if (nConsts <= 2) {
+        int pos = 0;
+        for (Value *pk = keys.buf, *endk = pk+keys.size, *pv = vals.buf; 
+             pk < endk; ++pk, ++pv, ++pos) {
+            Value k = *pk;
+            Value v = *pv;
+            if (k != NIL || v != NIL) {
+                emitCode(makeCode(SET, VAL_REG(slot), k, v));
+            }
+        }
+        emitPatch(codePosInit, makeCode(MOVE, VAL_REG(slot), EMPTY_MAP, UNUSED));
+    } else {
+        emitPatch(codePosInit, makeCode(ADD,  VAL_REG(slot), EMPTY_MAP, VAL_OBJ(Map::alloc(&keys, &vals))));
+    }
+    consume('}');
+    return VAL_REG(slot);
 }
 
 Value Parser::arrayExpr(int top) {
@@ -385,9 +437,6 @@ Value Parser::simpleExpr(int top) {
     case TK_INTEGER: ret = VAL_INT(lexer->info.intVal); break;
     case TK_DOUBLE:  ret = VAL_DOUBLE(lexer->info.doubleVal); break;
     case TK_NIL:     ret = NIL; break;
-
-    case '{': ERR(true, E_TODO);
-        break;
 
     case TK_FUNC: ERR(true, E_TODO);
         break;
