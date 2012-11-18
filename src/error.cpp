@@ -15,6 +15,7 @@ static void init() {
     _(DIV_ZERO);
     _(ASSIGN_TO_CONST);
     _(ASSIGN_RHS);
+    _(SYNTAX);
 #undef _
 }
 

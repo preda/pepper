@@ -11,6 +11,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define UNUSED VAL_REG(0)
 #define TOKEN (lexer->token)
@@ -88,6 +89,7 @@ void Parser::statement() {
 
     default: exprOrAssignStat(); break;
     }
+    if (TOKEN == ';') { advance(); }
 }
 
 void Parser::assignStat() {
@@ -121,8 +123,6 @@ static int topAbove(Value a, int top) {
     }
     return max((int)a + 1, top);
 }
-
-// void printValue(Value a);
 
 void Parser::exprOrAssignStat() {
     Value lhs = expr(proto->localsTop);
@@ -285,42 +285,10 @@ SymbolData Parser::lookupName(u64 name) {
     return s;
 }
 
- int Parser::lookupSlot(u64 name) {
-     SymbolData sym = lookupName(name);
-     ERR(sym.kind == KIND_EMPTY, E_NAME_NOT_FOUND);
-     return sym.slot;
- }
-
-Value Parser::primaryExpr(int top) {
-    printf("enter primaryExpr\n");
-    Value a = NIL;
-    switch (lexer->token) {
-    case TK_NAME: {
-        u64 name = lexer->info.nameHash;
-        consume(TK_NAME);        
-        return VAL_REG(lookupSlot(name));
-    }
-
-    case '(':
-        consume('(');
-        a = expr(top);
-        consume(')');
-        return a;
-        
-    case TK_STRING:
-        a = VAL_STRING(lexer->info.strVal, lexer->info.strLen);
-        consume(TK_STRING);
-        return a;
-
-    case '[':
-        return arrayExpr(top);
-
-    case '{':
-        return mapExpr(top);
-
-    default:
-        ERR(true, E_SYNTAX);            
-    }
+int Parser::lookupSlot(u64 name) {
+    SymbolData sym = lookupName(name);
+    ERR(sym.kind == KIND_EMPTY, E_NAME_NOT_FOUND);
+    return sym.slot;
 }
 
 Value Parser::mapExpr(int top) {
@@ -412,10 +380,47 @@ Value Parser::arrayExpr(int top) {
     return VAL_REG(slot);
 }
 
-Value Parser::suffixedExpr(int top) {
-    Value a = primaryExpr(top);
+/*
+Value Parser::primaryExpr(int top) {
+    printf("enter primaryExpr\n");
+    Value a = NIL;
+    switch (lexer->token) {
+    case TK_NAME: {
+        u64 name = lexer->info.nameHash;
+        consume(TK_NAME);        
+        return VAL_REG(lookupSlot(name));
+    }
+
+    case '(':
+        consume('(');
+        a = expr(top);
+        consume(')');
+        return a;
+        
+    case TK_STRING:
+        a = VAL_STRING(lexer->info.strVal, lexer->info.strLen);
+        consume(TK_STRING);
+        return a;
+
+    case '[':
+        return arrayExpr(top);
+
+    case '{':
+        return mapExpr(top);
+
+    default:
+        ERR(true, E_SYNTAX);            
+    }
+}
+*/
+
+Value Parser::suffixedExpr(int top, Value a, const char *tokenRestrict) {
     while (true) {
-        switch(TOKEN) {
+        int t = TOKEN;
+        if (tokenRestrict && !strchr(tokenRestrict, t)) {
+            return a;
+        }
+        switch(t) {
         case '[':
             consume('[');            
             emitCode(makeCode(GET, VAL_REG(top), a, expr(topAbove(a, top))));
@@ -423,29 +428,46 @@ Value Parser::suffixedExpr(int top) {
             consume(']');
             break;
 
-        default:
-            printf("exit suffixed %d\n", TOKEN);
-            return a;
+        default: return a;
         }
     }
 }
 
 Value Parser::simpleExpr(int top) {
-    // printf("enter simpleExpr\n");
-    Value ret = NIL;
+    Value a = NIL;
+    const char *restrict = 0;
     switch (lexer->token) {
-    case TK_INTEGER: ret = VAL_INT(lexer->info.intVal); break;
-    case TK_DOUBLE:  ret = VAL_DOUBLE(lexer->info.doubleVal); break;
-    case TK_NIL:     ret = NIL; break;
+    case TK_INTEGER: a = VAL_INT(lexer->info.intVal); advance(); return a;
+    case TK_DOUBLE:  a = VAL_DOUBLE(lexer->info.doubleVal); advance(); return a;
+    case TK_NIL:     a = NIL; advance(); return a;
 
-    case TK_FUNC: ERR(true, E_TODO);
+    case TK_FUNC: ERR(true, E_TODO); break;
+
+    case TK_NAME: {
+        u64 name = lexer->info.nameHash;
+        advance();
+        a = VAL_REG(lookupSlot(name));
+        break;
+    }
+
+    case '(':
+        advance();
+        a = expr(top);
+        consume(')');
         break;
 
-    default:
-        return suffixedExpr(top);
+    case TK_STRING:
+        a = VAL_STRING(lexer->info.strVal, lexer->info.strLen);
+        advance();
+        restrict = "[";
+        break;
+
+    case '[': a = arrayExpr(top); restrict = "["; break;
+    case '{': a = mapExpr(top);   restrict = "["; break;
+
+    default: ERR(true, E_SYNTAX);
     }
-    advance();
-    return ret;
+    return suffixedExpr(top, a, restrict);
 }
 
 Value Parser::subExpr(int top, int limit) {

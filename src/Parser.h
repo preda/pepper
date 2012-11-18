@@ -45,8 +45,7 @@ public:
     Value expr(int top);
     Value subExpr(int top, int limit);
     Value simpleExpr(int top);
-    Value suffixedExpr(int top);
-    Value primaryExpr(int top);
+    Value suffixedExpr(int top, Value primary, const char *tokenRestrict);
     Value arrayExpr(int top);
     Value mapExpr(int top);
 
