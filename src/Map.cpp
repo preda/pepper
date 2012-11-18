@@ -9,6 +9,22 @@
 #include <stdlib.h>
 #include <string.h>
 
+Map::Map(const unsigned iniSize) {
+    printf("Map %p\n", this);
+    size = 0;
+    n = 8;
+    while ((iniSize << 1) > n) {
+        n += n;
+    }
+    buf = (Value *) malloc(n * 12);
+    memset(buf + n, 0xff, n * 4); 
+}
+
+Map::~Map() {
+    free(buf);
+    buf = 0;
+}
+
 #define INC(h) h = (h + 1) & mask
 #define HASH(pos) (hashCode(keys[pos]) & mask)
 
@@ -26,22 +42,6 @@ void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
     for (Value *pk=keys->buf, *end=pk+keys->size, *pv=vals->buf; pk < end; ++pk, ++pv) {
         set(*pk, *pv, true);
     }
-}
-
-Map::Map(const unsigned iniSize) {
-    printf("Map %p\n", this);
-    size = 0;
-    n = 8;
-    while ((iniSize << 1) > n) {
-        n += n;
-    }
-    buf = (Value *) malloc(n * 12);
-    memset(buf + n, 0xff, n * 4); 
-}
-
-void Map::destroy() {
-    free(buf);
-    buf = 0;
 }
 
 void Map::traverse() {

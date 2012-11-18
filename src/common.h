@@ -22,5 +22,6 @@ enum {
     E_ASSIGN_TO_CONST,
     E_ASSIGN_RHS,
     E_SYNTAX,
+    E_OBJECT_TYPE,
     E_EXPECTED = 256,    
 };

@@ -162,10 +162,15 @@ int vmrun(unsigned *pc) {
         if (f->type == FUNC) {
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
+            bool hasEllipsis = false;
+            if (nArgs < 0) {
+                hasEllipsis = true;
+                nArgs = -nArgs - 1;
+            }
             for (Value *p=base+nEffArgs, *end=base+nArgs; p < end; ++p) {
                 *p = NIL;
             }
-            if (proto->hasEllipsis) {
+            if (hasEllipsis) {
                 if (nEffArgs < nArgs) {
                     base[nArgs-1] = EMPTY_ARRAY; // VALUE(ARRAY, 0);
                 } else {

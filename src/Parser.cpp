@@ -39,9 +39,11 @@ void Parser::consume(int t) {
 }
 
 Func *Parser::parseFunc(const char *text) {
+    /*
     Proto proto;
     SymbolTable syms;
     Lexer lexer(text);
+    */
     // Parser(&proto, &syms, &lexer).func();
     // TODO
     return 0;
@@ -380,68 +382,13 @@ Value Parser::arrayExpr(int top) {
     return VAL_REG(slot);
 }
 
-/*
-Value Parser::primaryExpr(int top) {
-    printf("enter primaryExpr\n");
-    Value a = NIL;
-    switch (lexer->token) {
-    case TK_NAME: {
-        u64 name = lexer->info.nameHash;
-        consume(TK_NAME);        
-        return VAL_REG(lookupSlot(name));
-    }
-
-    case '(':
-        consume('(');
-        a = expr(top);
-        consume(')');
-        return a;
-        
-    case TK_STRING:
-        a = VAL_STRING(lexer->info.strVal, lexer->info.strLen);
-        consume(TK_STRING);
-        return a;
-
-    case '[':
-        return arrayExpr(top);
-
-    case '{':
-        return mapExpr(top);
-
-    default:
-        ERR(true, E_SYNTAX);            
-    }
-}
-*/
-
-Value Parser::suffixedExpr(int top, Value a, const char *tokenRestrict) {
-    while (true) {
-        int t = TOKEN;
-        if (tokenRestrict && !strchr(tokenRestrict, t)) {
-            return a;
-        }
-        switch(t) {
-        case '[':
-            consume('[');            
-            emitCode(makeCode(GET, VAL_REG(top), a, expr(topAbove(a, top))));
-            a = VAL_REG(top);
-            consume(']');
-            break;
-
-        default: return a;
-        }
-    }
-}
-
-Value Parser::simpleExpr(int top) {
+Value Parser::suffixedExpr(int top) {
     Value a = NIL;
     const char *restrict = 0;
     switch (lexer->token) {
     case TK_INTEGER: a = VAL_INT(lexer->info.intVal); advance(); return a;
     case TK_DOUBLE:  a = VAL_DOUBLE(lexer->info.doubleVal); advance(); return a;
     case TK_NIL:     a = NIL; advance(); return a;
-
-    case TK_FUNC: ERR(true, E_TODO); break;
 
     case TK_NAME: {
         u64 name = lexer->info.nameHash;
@@ -465,9 +412,36 @@ Value Parser::simpleExpr(int top) {
     case '[': a = arrayExpr(top); restrict = "["; break;
     case '{': a = mapExpr(top);   restrict = "["; break;
 
+    case TK_FUNC: a = funcExpr(top); restrict = "("; break;
+
     default: ERR(true, E_SYNTAX);
     }
-    return suffixedExpr(top, a, restrict);
+
+    while (true) {
+        int t = TOKEN;
+        if (restrict && !strchr(restrict, t)) {
+            return a;
+        }
+        switch(t) {
+        case '[':
+            advance();
+            emitCode(makeCode(GET, VAL_REG(top), a, expr(top+1)));
+            a = VAL_REG(top);
+            consume(']');
+            break;
+
+        case '(':
+            advance();
+            ERR(true, E_TODO);
+            break;
+
+        default: return a;
+        }
+    }
+}
+
+Value Parser::funcExpr(int top) {
+    return NIL;
 }
 
 Value Parser::subExpr(int top, int limit) {
@@ -478,7 +452,7 @@ Value Parser::subExpr(int top, int limit) {
         advance();
         a = codeUnary(top, op, subExpr(top, 8));
     } else {
-        a = simpleExpr(top);
+        a = suffixedExpr(top);
     }
     while (binaryPriorityLeft(lexer->token) > limit) {
         int op = lexer->token;

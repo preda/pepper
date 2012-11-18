@@ -18,12 +18,12 @@ const char *test[] = {
 };
 
 int compileDecompile(const char *text) {
-    Proto proto;
+    Proto *proto = Proto::alloc(0);
     SymbolTable syms;
-    int err = Parser::parseStatList(&proto, &syms, text);
+    int err = Parser::parseStatList(proto, &syms, text);
     if (!err) {
         printf("\n\n");
-        printProto(&proto);
+        printProto(proto);
     }
     return err;
 }

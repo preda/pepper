@@ -23,6 +23,7 @@ enum {
     MAP,
     FUNC,
     CFUNC,
+    PROTO,
     // plus STRING
     // future INTEGER
 };

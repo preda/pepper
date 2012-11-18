@@ -2,7 +2,6 @@
 
 #include "Vector.h"
 #include "Value.h"
-#include "GC.h"
 #include "Object.h"
 
 class Array {
@@ -12,21 +11,11 @@ class Array {
     byte type;
     Vector<Value> vect;
 
+    ~Array();
     static Array *alloc(int iniSize = 0);
     static Array *alloc(Vector<Value> *vect);
     
-    /*
-    static int len(Value v) {
-        return TAG(v)==ARRAY ? 0 : ((Array *) v)->size();
-    }
-    */
-
-
-    void destroy() {
-        vect.~Vector();
-    }
-
-    void traverse() { GC::markVector(vect.buf, vect.size); }
+    void traverse();
 
     Value get(unsigned pos) {
         return pos < 0 || pos >= vect.size ? NIL : vect.buf[pos];
@@ -60,6 +49,4 @@ class Array {
             *p = c;            
         }
     }
-
-    // void remove(int pos) { v.remove(pos); }
 };

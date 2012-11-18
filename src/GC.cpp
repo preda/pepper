@@ -1,6 +1,12 @@
 #include "GC.h"
 #include "Object.h"
 #include "Vector.h"
+#include "Array.h"
+#include "Map.h"
+#include "String.h"
+#include "CFunc.h"
+#include "Proto.h"
+
 #include <stdlib.h>
 
 #define EMPTY_MARK ((unsigned long)-1L)
@@ -80,13 +86,37 @@ Object *GC::_alloc(int type, int bytes, bool traversable) {
     return p;
 }
 
+#define DISPATCH(o) switch(o->type) {\
+ case ARRAY:  ACTION(o, Array);  break;\
+ case MAP:    ACTION(o, Map);    break;\
+ case STRING: ACTION(o, String); break;\
+ case CFUNC:  ACTION(o, CFunc);  break;\
+ default: ERR(true, E_OBJECT_TYPE);\
+}
+
+// case FUNC:  ACTION(o, Func);  break;
+// case PROTO:
+
+static void destruct(Object *o) {
+#define ACTION(o, type) ((type *)o)->~type()
+    DISPATCH(o);
+#undef ACTION
+}
+
+
+static void traverse(Object *o) {
+#define ACTION(o, type) ((type *)o)->traverse()
+    DISPATCH(o);
+#undef ACTION
+}
+
 void GC::_markAndSweep(Object *root) {
     {
         Vector<Object*> stack(1024);
         grayStack = &stack;
         stack.push(root);
         while (stack.size) {
-            stack.pop()->traverse();
+            traverse(stack.pop());
         }
         grayStack = 0;
     }
@@ -95,7 +125,7 @@ void GC::_markAndSweep(Object *root) {
         if (*p && !(*p & BIT_MARK)) {
             Object *obj = (Object *) *p;
             *p = -1L;
-            obj->destroy();
+            destruct(obj);
             free(obj);
         }
     }

@@ -3,6 +3,9 @@
 #include "GC.h"
 #include <string.h>
 
+String::~String() {
+}
+
 String *String::alloc(int size) {
     String *s = (String *) GC::alloc(STRING, sizeof(String) - 4 + size, false);
     s->size = size;
@@ -14,14 +17,6 @@ String *String::alloc(const char *p, int size) {
     memcpy(s->s, p, size);
     return s;
 }
-
-/*
-int String::len(Value a) {
-    assert(IS_STRING(a));
-    int ta = TAG(a);
-    return ta >= STRING && ta <= STRING+6 ? ta - STRING : ((String *) a)->size;
-}
-*/
 
 unsigned String::hashCode(char *buf, int size) {
     unsigned char *p = (unsigned char *) buf;

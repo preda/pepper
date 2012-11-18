@@ -21,10 +21,8 @@ class Map {
 
     static Map *alloc(unsigned iniSize);
     static Map *alloc(Vector<Value> *keys, Vector<Value> *vals);
-    
+    ~Map();
         
-    void destroy();
-
     Map *copy();
     void traverse();
 

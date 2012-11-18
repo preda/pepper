@@ -44,10 +44,10 @@ public:
     
     Value expr(int top);
     Value subExpr(int top, int limit);
-    Value simpleExpr(int top);
-    Value suffixedExpr(int top, Value primary, const char *tokenRestrict);
+    Value suffixedExpr(int top);
     Value arrayExpr(int top);
     Value mapExpr(int top);
+    Value funcExpr(int top);
 
     void block();
     void statList();
