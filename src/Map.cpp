@@ -3,6 +3,7 @@
 #include "String.h"
 #include "GC.h"
 #include "Value.h"
+#include "Object.h"
 
 #include <new>
 #include <stdio.h>

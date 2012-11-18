@@ -6,44 +6,59 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 template<typename T>
-Vector<T>::Vector(int iniSize) {
-    allocSize = 0;
-    size = 0;
-    buf = 0;
-    reserve(iniSize);
+Vector<T>::Vector(unsigned sizeHint) : size(0), buf((T *) calloc(2, sizeof(T))) {
+    if (sizeHint) {
+        setSize(sizeHint);
+        setSize(0);
+    }
 }
 
 template<typename T>
 Vector<T>::~Vector() {
-    if (buf) {
-        free(buf);
-        buf = 0;
+    if (buf) { free(buf); }
+    buf  = 0;
+    size = 0;
+}
+
+static bool sameAllocSize(unsigned size1, unsigned size2) {
+    if (size1 <= 2 || size2 <= 2) {
+        return size1 <= 2 && size2 <= 2;
     }
+    --size1;
+    --size2;
+    const unsigned x = size1 ^ size2;
+    return x < size1 && x < size2;
+}
+
+static size_t getAllocSize(unsigned size) {
+    size_t a = 2;
+    while (a < size) { a += a; }
+    return a;
 }
 
 template<typename T>
-void Vector<T>::doReserve(unsigned capacity) {
-    while (capacity > allocSize) {
-        allocSize += allocSize ? allocSize : 4;
+void Vector<T>::setSize(unsigned newSize) {
+    if (!sameAllocSize(size, newSize)) {
+        buf = (T *) realloc(buf, getAllocSize(newSize) * sizeof(T));
     }
-    buf = (T*) realloc(buf, allocSize * sizeof(T));
-    // memset(buf+oldAlloc, 0, (allocSize - oldAlloc) * sizeof(T));
+    size = newSize;
 }
 
 template<typename T>
 void Vector<T>::append(Vector<T> *v) {
-    reserve(size + v->size);
-    memcpy(buf + size, v->buf, v->size * sizeof(T));
+    unsigned oldSize = size;
+    setSize(oldSize + v->size);
+    memcpy(buf + oldSize, v->buf, v->size * sizeof(T));
 }
 
 template<typename T>
 void Vector<T>::removeRange(unsigned a, unsigned b) {
-    if (b < size) {
-        memmove(buf + a, buf + b, (size - b) * sizeof(T));
-    }
-    size -= b - a;
+    assert(b <= size);
+    if (b < size) { memmove(buf + a, buf + b, (size - b) * sizeof(T)); }
+    setSize(size - (b - a));
 }
 
 template class Vector<unsigned>;

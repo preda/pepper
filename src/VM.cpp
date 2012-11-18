@@ -7,6 +7,7 @@
 #include "Proto.h"
 #include "Value.h"
 #include "RetInfo.h"
+#include "Object.h"
 
 #include <stdlib.h>
 #include <string.h>

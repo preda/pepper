@@ -3,49 +3,48 @@
 template <typename T>
 class Vector {
  public:
-    unsigned size, allocSize;
+    unsigned size;
     T *buf;
 
-    Vector(int iniSize = 0);
+    Vector(unsigned sizeHint = 0);
     ~Vector();
+
+    void incSize() {
+        if (size & (size-1)) {
+            ++size;
+        } else {
+            setSize(size + 1);
+        }
+    }
+
+    void setSize(unsigned newSize);
 
     void append(Vector<T> *v);
 
     unsigned push(T v) {
-        reserve(size + 1);
-        buf[size] = v;
-        return size++;
+        incSize();
+        buf[size - 1] = v;
+        return size - 1;
     }
     
     T *push() {
-        reserve(size + 1);
-        return buf + size++;
+        incSize();
+        return buf + (size - 1);
     }
 
-    T *top() {
-        return buf + (size-1);
-    }
+    T *top() { return buf + (size-1); }
 
-
-    T pop() {
-        return buf[--size];
-    }
+    T pop() { return buf[--size]; }
 
     void set(unsigned pos, T v) {
         if (pos < size) {
             buf[pos] = v;
         } else {
-            reserve(pos+1);
+            setSize(pos+1);
             buf[pos] = v;
-            size = pos + 1;
         }
     }
 
     void removeRange(unsigned a, unsigned b);
     void remove(unsigned pos) { removeRange(pos, pos + 1); }
-
-    void reserve(unsigned capacity) { if (capacity > allocSize) { doReserve(capacity); } }
-
- private:
-    void doReserve(unsigned capacity);
 };

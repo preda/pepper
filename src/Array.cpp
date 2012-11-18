@@ -25,6 +25,16 @@ void Array::traverse() {
     GC::markVector(vect.buf, vect.size);
 }
 
+void Array::appendArray(char *s, int size) {
+    Value c = VALUE(STRING+1, 0);
+    unsigned oldSize = vect.size;
+    vect.setSize(oldSize + size);
+    for (Value *p = vect.buf+oldSize, *end = p + size; p < end; ++p, ++s) {
+        *((char *) &c) = *s;
+        *p = c;            
+    }
+}
+
 bool Array::appendArray(Value v) {
     int t = TAG(v);
     switch (t) {
