@@ -23,7 +23,7 @@ Value doXor(Value a, Value b);
 
 enum {
     JMP,     // pc += int(A) if not B
-    CALL,    // nArgs = int(A), func(B), base=regs+C
+    CALL,    // base=C, nArgs = int(A), func(B)
     RET,     // return A;
     CLOSURE, // C = closure(proto(A))
     

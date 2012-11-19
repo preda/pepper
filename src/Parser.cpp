@@ -379,6 +379,18 @@ Value Parser::arrayExpr(int top) {
     return VAL_REG(slot);
 }
 
+#define ARG_LIST(element) if (TOKEN != ')') { while (true) { element; if (TOKEN == ')') { break; } consume(','); } }
+
+void Parser::parList() {
+    consume('(');
+    ARG_LIST(if (TOKEN == TK_NAME) {
+            ++proto->nArgs;
+            syms->set(lexer->info.nameHash, proto->localsTop++);
+        }
+        consume(TK_NAME););
+    consume(')');
+}
+
 Value Parser::suffixedExpr(int top) {
     Value a = NIL;
     const char *restrict = 0;
@@ -397,6 +409,7 @@ Value Parser::suffixedExpr(int top) {
     case '(':
         advance();
         a = expr(top);
+        // if (IS_REGISTER(a) && (int)a == top) { ++top; }
         consume(')');
         break;
 
@@ -427,32 +440,26 @@ Value Parser::suffixedExpr(int top) {
             consume(']');
             break;
 
-        case '(':
+        case '(': {
             advance();
-            ERR(true, E_TODO);
+            int base = top;
+            if (IS_REGISTER(a) && (int)a == base) { ++base; }
+            int nArg = 0;
+            ARG_LIST(int argPos = base + nArg;
+                     patchOrEmitMove(argPos, expr(argPos));
+                     ++nArg;);
+            consume(')');
+            emitCode(makeCode(CALL, VAL_REG(base), VAL_INT(nArg), a));
+            if (base != top) {
+                emitCode(makeCode(MOVE, VAL_REG(top), VAL_REG(base), UNUSED));
+            }
+            a = VAL_REG(top);
             break;
+        }
 
         default: return a;
         }
     }
-}
-
-void Parser::parList() {
-    consume('(');
-    if (TOKEN != ')') {
-        while (true) {
-            if (TOKEN == TK_NAME) {
-                ++proto->nArgs;
-                syms->set(lexer->info.nameHash, proto->localsTop++);
-            }
-            consume(TK_NAME);
-            if (TOKEN == ')') {
-                break;
-            }
-            consume(',');
-        }       
-    }
-    consume(')');
 }
 
 Value Parser::funcExpr(int top) {
@@ -461,6 +468,7 @@ Value Parser::funcExpr(int top) {
     consume(TK_FUNC);
     parList();
     block();
+    emitCode(makeCode(RET, UNUSED, NIL, UNUSED));
     proto->freeze();
     syms->popContext();
     Proto *funcProto = proto;

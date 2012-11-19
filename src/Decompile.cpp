@@ -35,6 +35,7 @@ static bool init() {
 #undef _
 #undef __
 #undef ENTRY
+    opNames[CLOSURE] = "FUNC";
     return true;
 }
 
@@ -101,18 +102,9 @@ void printBytecode(unsigned *p, int size) {
         printOperand(sc, sizeof(sc), fullOp & 0x80, c);
         printf("%2d: %02x%02x%02x%02x   %-4s ", i, fullOp, a, b, c, opNames[op]);
         switch (op) {
-        case JMP: {
-            // int offset  = a;
-            // int jmpDest = i+offset+1;
-            /*
-            if (fullOp & 0x20 && b==0) {
-                printf("%3d:\n", jmpDest);
-            } else {
-            */
+        case JMP:
             printf("%3s   %3s\n", sa, sb);
-            // }
             break;
-        }
 
         case RET:
             printf("%3s\n", sa);

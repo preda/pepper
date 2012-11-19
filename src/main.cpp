@@ -18,11 +18,12 @@ const char *test[] = {
     */
     "var a = func(x) { return x + x; }",
     "func() { return; }",
+    "var a = func(x) { x = 1 } a(a+2, 2, a)",
     0,
 };
 
 int compileDecompile(const char *text) {
-    printf("\"%s\"\n", text);
+    printf("\n\"%s\"\n\n", text);
     Proto *proto = Proto::alloc(0);
     SymbolTable syms;
     int err = Parser::parseStatList(proto, &syms, text);
