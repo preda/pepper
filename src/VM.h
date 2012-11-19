@@ -41,11 +41,14 @@ enum {
 
 bool opcodeHasDest(int opcode);
 
-int vmrun(unsigned *pc);
-
 class VM {
+    Value *stack;
+    unsigned stackSize;
+
+    Value *maybeGrowStack(Value *regs);
+
  public:
-    const char *error;
-    
+    VM();
+    ~VM();
     int run(unsigned *code);
 };

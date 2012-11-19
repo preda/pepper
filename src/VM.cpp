@@ -95,7 +95,28 @@ Value doXor(Value a, Value b) {
     return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
-int vmrun(unsigned *pc) {
+VM::VM() {
+    stackSize = 512;
+    stack = (Value *) calloc(stackSize, sizeof(Value));
+}
+
+VM::~VM() {
+    free(stack);
+    stack     = 0;
+    stackSize = 0;
+}
+
+Value *VM::maybeGrowStack(Value *regs) {
+    if (regs + 256 > stack + stackSize) {
+        int base = regs - stack;
+        stackSize += 512;
+        stack = (Value *) realloc(stack, stackSize * sizeof(Value));
+        return stack + base;
+    }
+    return regs;
+}
+
+int VM::run(unsigned *pc) {
     void *dispatch[256] = {
         &&jmp, &&call, &&return_, &&closure,
         &&move,
@@ -113,8 +134,6 @@ int vmrun(unsigned *pc) {
         }
     }
     
-    Value *stack = (Value *) calloc(1024, sizeof(Value));
-    // Value *stackTop = stack + 1024;
     Value *regs  = stack;
     Value *ups = 0;
     Vector<RetInfo> retInfo;
@@ -202,7 +221,7 @@ int vmrun(unsigned *pc) {
                 ret->ups  = ups;
             }
             pc   = proto->code.buf;
-            regs = base;
+            regs = maybeGrowStack(base);
             ups  = f->ups;
         } else if (f->type == CFUNC) {
             CFunc *cf = (CFunc *) A;
