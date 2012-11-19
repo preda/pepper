@@ -4,16 +4,15 @@
 #include <new>
 #include <stdlib.h>
 
-Func *Func::alloc(Proto *proto, Func *parent, Value *regs) {
-    return new (GC::alloc(FUNC, sizeof(Func), true)) Func(proto, parent, regs);
+Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs) {
+    return new (GC::alloc(FUNC, sizeof(Func), true)) Func(proto, contextUps, regs);
 }
 
-Func::Func(Proto *proto, Func *context, Value *regs) {
+Func::Func(Proto *proto, Value *contextUps, Value *regs) {
     this->proto = proto;
     int nup = proto->ups.size;
     ups = nup ? (Value *) calloc(nup, sizeof(Value)) : 0;
     Value *up = ups;
-    Value *contextUps = context->ups;
     Value *consts = proto->consts.buf;
     for (short *p = proto->ups.buf, *end = p+nup; p < end; ++p, ++up) {
         int where = *p;
@@ -21,7 +20,7 @@ Func::Func(Proto *proto, Func *context, Value *regs) {
     }
 }
 
-void Func::destroy() {
+Func::~Func() {
     if (ups) {
         free(ups);
         ups = 0;
@@ -32,4 +31,5 @@ void Func::destroy() {
 
 void Func::traverse() { 
     GC::markVector(ups, proto->ups.size);
+    GC::mark((Object *) proto);
 }

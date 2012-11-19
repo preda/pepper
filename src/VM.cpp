@@ -11,9 +11,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
-// ra=regs+OA(code); 
 
 #define INT(x) VAL_INT((signed char)x)
 
@@ -97,7 +97,8 @@ Value doXor(Value a, Value b) {
 
 int vmrun(unsigned *pc) {
     void *dispatch[256] = {
-        &&jmp, &&call, &&return_, &&move,
+        &&jmp, &&call, &&return_, &&closure,
+        &&move,
         &&add, &&sub, &&mul, &&div, &&mod, &&pow, &&and_, &&or_, &&xor_,
         &&end};
 
@@ -134,8 +135,16 @@ int vmrun(unsigned *pc) {
  decodeBC:  DECODE(B); // fall
  decodeC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
 
- jmp: if (IS_FALSE(B)) { pc += getInteger(A); } STEP;
+ jmp: 
+    assert(IS_INTEGER(A));
+    if (IS_FALSE(B)) { pc += getInteger(A); }
+    STEP;
     
+ closure:
+    assert(IS_PROTO(A));
+    *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
+    STEP;
+
  return_:
     if (retInfo.size == 0) {
         int ret = 0;
@@ -154,7 +163,7 @@ int vmrun(unsigned *pc) {
     }
 
  call: {
-        const int nEffArgs = (unsigned) A;
+        const int nEffArgs = getInteger(A);
         const Func *f = (Func *) B;
         Value *base = ptrC;
 
@@ -183,7 +192,7 @@ int vmrun(unsigned *pc) {
                     base[nArgs-1] = VAL_OBJ(a);
                 }
             }
-            if (*pc == RETURN) {
+            if (*pc == RET) {
                 memmove(regs, base, nArgs * sizeof(Value));
                 base = regs;
             } else {

@@ -5,14 +5,16 @@
 class Proto;
 
 class Func {
+ private:
+    Func(Proto *proto, Value *contextUps, Value *regs);
+
  public:
     byte type;
     Proto *proto;
     Value *ups;
 
-    static Func *alloc(Proto *proto, Func *parent, Value *regs);
+    static Func *alloc(Proto *proto, Value *contextUps, Value *regs);
+    ~Func();
 
-    Func(Proto *proto, Func *context, Value *regs);    
-    void destroy();
     void traverse();
 };

@@ -81,6 +81,11 @@ void Parser::statement() {
         }
         break;
 
+    case TK_RETURN:
+        advance();
+        emitCode(makeCode(RET, UNUSED, TOKEN==';'?NIL:expr(proto->localsTop), UNUSED));
+        break;        
+
     default: exprOrAssignStat(); break;
     }
     if (TOKEN == ';') { advance(); }
@@ -458,8 +463,9 @@ Value Parser::funcExpr(int top) {
     block();
     proto->freeze();
     syms->popContext();
+    Proto *funcProto = proto;
     proto = proto->up;
-    emitCode(makeCode(CLOSURE, VAL_REG(top), VAL_OBJ(proto), UNUSED));
+    emitCode(makeCode(CLOSURE, VAL_REG(top), VAL_OBJ(funcProto), UNUSED));
     return VAL_REG(top);
 }
 

@@ -26,7 +26,7 @@ static bool init() {
 #define ENTRY(t, n) t[n]=#n
 #define _(n) ENTRY(opNames, n)
 #define __(a, b, c, d) _(a); _(b); _(c); _(d);
-    __(JMP, CALL, RETURN, CLOSURE);
+    __(JMP, CALL, RET, CLOSURE);
     _(MOVE);
     _(GET); _(SET),
     __(ADD, SUB, MUL, DIV);
@@ -51,7 +51,7 @@ static void printValue(char *buf, int bufSize, Value a) {
             snprintf(buf, bufSize, "NIL");
         } else {
             int type = ((Object *) a)->type;
-            snprintf(buf, bufSize, "OBJECT(%s)", objTypeName[type]);
+            snprintf(buf, bufSize, "OBJECT(%s) %p", objTypeName[type], (Object *)a);
         }
     } else if (t == REGISTER) {
         snprintf(buf, bufSize, "register %d", (int)a);
@@ -114,6 +114,10 @@ void printBytecode(unsigned *p, int size) {
             break;
         }
 
+        case RET:
+            printf("%3s\n", sa);
+            break;
+
         case MOVE:
             printf("%3s,  %3s\n", sc, sa);
             break;
@@ -125,7 +129,7 @@ void printBytecode(unsigned *p, int size) {
         case SET:
             printf("%3s %3s,  %3s\n", sc, sa, sb);
             break;
-
+            
         default:
             printf("%3s,  %3s %3s\n", sc, sa, sb);
         }
@@ -144,8 +148,10 @@ void printProto(Proto *proto) {
         } else if (u < 0) {
             printf("%2d: [%d]\n", i, -u-1);
         } else {
-            printValue(buf, sizeof(buf), proto->consts.buf[c++]);
+            Value a = proto->consts.buf[c++];
+            printValue(buf, sizeof(buf), a);
             printf("%2d: #%s\n", i, buf);
+            if (IS_PROTO(a)) { printProto((Proto *)a); }
         }
     }
     printf("\nCode:\n");

@@ -50,7 +50,7 @@ static inline bool IS_NUMBER(Value v) {
 #define LOW(v) ((unsigned)v)
 #define UP(v) ((unsigned)(v>>32))
 
-#define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(INTEGER<<16) || (UP(v)&0x7fffffff)==0x7fffffff))
+#define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(INTEGER<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
 
 #define TRUE  VAL_INT(1)
 #define FALSE VAL_INT(0)
@@ -66,6 +66,7 @@ static inline bool IS_NUMBER(Value v) {
 #define IS_ARRAY(v) ISOBJ(v, ARRAY)
 #define IS_MAP(v) ISOBJ(v, MAP)
 #define IS_STRING(v) ((TAG(v)>=STRING && TAG(v)<=STRING+6) || ISOBJ(v, STRING))
+#define IS_PROTO(v) ISOBJ(v, PROTO)
 
 Value VAL_STRING(const char *s, int len);
 

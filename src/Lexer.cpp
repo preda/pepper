@@ -43,11 +43,13 @@ int Lexer::lookahead() {
 int Lexer::advance() {
     // printf("before advance ");
     token = advanceInt(&info);
+    /*
     if (token < 32) {
         printf("token %s\n", tokens[token]);
     } else {
         printf("token '%c' (%d)\n", (char) token, token);
     }
+    */
     return token;
 }
 

@@ -7,6 +7,7 @@
 #include <assert.h>
 
 const char *test[] = {
+    /*
     "var a = 1\n var b=2 var c = a+b",
     "var foo = 500 var boo = \"roo\"",
     "var cond = 1 if cond { cond = cond + 1 } var b = 3", 
@@ -14,15 +15,19 @@ const char *test[] = {
     "\"foo\"[3][\"bar\"] = 1",
     "[\"foo\"] + [1, 2, 3]",
     "var a var b = [1, a]",
+    */
+    "var a = func(x) { return x + x; }",
+    "func() { return; }",
     0,
 };
 
 int compileDecompile(const char *text) {
+    printf("\"%s\"\n", text);
     Proto *proto = Proto::alloc(0);
     SymbolTable syms;
     int err = Parser::parseStatList(proto, &syms, text);
     if (!err) {
-        printf("\n\n");
+        printf("\n\n%p\n", proto);
         printProto(proto);
     }
     return err;

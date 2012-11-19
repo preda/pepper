@@ -22,7 +22,10 @@ Value doXor(Value a, Value b);
 // #define OD(c) ((short) (c >> 16))
 
 enum {
-    JMP, CALL, RETURN, CLOSURE,
+    JMP,     // pc += int(A) if not B
+    CALL,    // nArgs = int(A), func(B), base=regs+C
+    RET,     // return A;
+    CLOSURE, // C = closure(proto(A))
     
     MOVE,
 
