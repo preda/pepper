@@ -9,7 +9,7 @@
 
 
 static const char *objTypeName[] = {
-    0, "ARRAY", "MAP", "FUNC", "CFUNC", 0, 0, 0, "STRING"
+    0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", 0, 0, "STRING"
 };
 
 static const char *emptyVals[] = {0, "[]", "{}", 0, 0, 0, 0, 0, "\"\""};
@@ -26,7 +26,8 @@ static bool init() {
 #define ENTRY(t, n) t[n]=#n
 #define _(n) ENTRY(opNames, n)
 #define __(a, b, c, d) _(a); _(b); _(c); _(d);
-    __(JMP, CALL, RETURN, MOVE);
+    __(JMP, CALL, RETURN, CLOSURE);
+    _(MOVE);
     _(GET); _(SET),
     __(ADD, SUB, MUL, DIV);
     __(MOD, POW, AND, OR);

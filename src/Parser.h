@@ -49,6 +49,7 @@ public:
     Value mapExpr(int top);
     Value funcExpr(int top);
 
+    void parList();
     void block();
     void statList();
     void statement();
@@ -57,7 +58,4 @@ public:
     void ifStat();
     void assignStat();
     void exprOrAssignStat();
-
-    void enterBlock();
-    void leaveBlock();
 };

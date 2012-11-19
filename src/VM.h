@@ -22,7 +22,9 @@ Value doXor(Value a, Value b);
 // #define OD(c) ((short) (c >> 16))
 
 enum {
-    JMP, CALL, RETURN, MOVE,
+    JMP, CALL, RETURN, CLOSURE,
+    
+    MOVE,
 
     // table e.g. a[i]
     GET, SET,

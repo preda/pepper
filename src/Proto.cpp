@@ -7,6 +7,9 @@ Proto::Proto(Proto *up) :
     level(0),
     localsTop(0),
     up(up) {
+    if (up) {
+        level = up->level + 1;
+    }
 }
 
 Proto::~Proto() {

@@ -58,16 +58,8 @@ int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
 
 void Parser::block() {
     consume('{');
-    enterBlock();
     statList();
-    leaveBlock();
     consume('}');
-}
-
-void Parser::enterBlock() {
-}
-
-void Parser::leaveBlock() {
 }
 
 void Parser::statList() {
@@ -440,8 +432,35 @@ Value Parser::suffixedExpr(int top) {
     }
 }
 
+void Parser::parList() {
+    consume('(');
+    if (TOKEN != ')') {
+        while (true) {
+            if (TOKEN == TK_NAME) {
+                ++proto->nArgs;
+                syms->set(lexer->info.nameHash, proto->localsTop++);
+            }
+            consume(TK_NAME);
+            if (TOKEN == ')') {
+                break;
+            }
+            consume(',');
+        }       
+    }
+    consume(')');
+}
+
 Value Parser::funcExpr(int top) {
-    return NIL;
+    proto = Proto::alloc(proto);
+    syms->pushContext();
+    consume(TK_FUNC);
+    parList();
+    block();
+    proto->freeze();
+    syms->popContext();
+    proto = proto->up;
+    emitCode(makeCode(CLOSURE, VAL_REG(top), VAL_OBJ(proto), UNUSED));
+    return VAL_REG(top);
 }
 
 Value Parser::subExpr(int top, int limit) {

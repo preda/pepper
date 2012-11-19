@@ -20,4 +20,5 @@ class Proto {
     ~Proto();
     static Proto *alloc(Proto *up);
     void traverse();
+    void freeze() {}
 };
