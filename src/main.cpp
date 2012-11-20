@@ -2,6 +2,7 @@
 #include "Proto.h"
 #include "SymbolTable.h"
 #include "Decompile.h"
+#include "VM.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -15,10 +16,11 @@ const char *test[] = {
     "\"foo\"[3][\"bar\"] = 1",
     "[\"foo\"] + [1, 2, 3]",
     "var a var b = [1, a]",
-    */
     "var a = func(x) { return x + x; }",
     "func() { return; }",
     "var a = func(x) { x = 1 } a(a+2, 2, a)",
+    */
+    "var a = 5; return a * 2",
     0,
 };
 
@@ -30,6 +32,10 @@ int compileDecompile(const char *text) {
     if (!err) {
         printf("\n\n%p\n", proto);
         printProto(proto);
+
+        VM vm;
+        int ret = vm.run(proto, 0);
+        printf("RET %d\n", ret);
     }
     return err;
 }

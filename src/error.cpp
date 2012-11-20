@@ -1,8 +1,9 @@
+#include "Parser.h"
 #include "common.h"
 #include <setjmp.h>
 #include <stdio.h>
 
-static __thread jmp_buf jumpBuf;
+__thread jmp_buf jumpBuf;
 
 static const char *errorMes[32];
 
@@ -30,6 +31,10 @@ u64 error(const char *file, int line, int err) {
     longjmp(jumpBuf, err); 
 }
 
-int catchError() {
-    return setjmp(jumpBuf);
+int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+    if (int err = setjmp(jumpBuf)) {
+        return err;
+    }
+    _parseStatList(proto, syms, text);
+    return 0;
 }

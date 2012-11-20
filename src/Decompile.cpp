@@ -26,7 +26,7 @@ static bool init() {
 #define ENTRY(t, n) t[n]=#n
 #define _(n) ENTRY(opNames, n)
 #define __(a, b, c, d) _(a); _(b); _(c); _(d);
-    __(JMP, CALL, RET, CLOSURE);
+    __(JMP, CALL, RET, FUNC);
     _(MOVE);
     _(GET); _(SET),
     __(ADD, SUB, MUL, DIV);
@@ -35,7 +35,7 @@ static bool init() {
 #undef _
 #undef __
 #undef ENTRY
-    opNames[CLOSURE] = "FUNC";
+    // opNames[CLOSURE] = "FUNC";
     return true;
 }
 

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Value.h"
+#include "Vector.h"
+#include "RetInfo.h"
+#include "Func.h"
 
 Value doAdd(Value a, Value b);
 Value doSub(Value a, Value b);
@@ -25,7 +28,7 @@ enum {
     JMP,      // pc += int(A) if not B
     CALL,     // base=C, nArgs = int(A), func(B)
     RET,      // return A;
-    CLOSURE,  // C = closure(proto(A))
+    FUNC,     // C = func(proto(A))
 
     GET, // C=A[B]
     SET, // C[A]=B
@@ -42,11 +45,13 @@ bool opcodeHasDest(int opcode);
 class VM {
     Value *stack;
     unsigned stackSize;
+    Vector<RetInfo> retInfo;
 
     Value *maybeGrowStack(Value *regs);
 
  public:
     VM();
     ~VM();
-    int run(unsigned *code);
+    int run(Func *f);
+    int run(Proto *proto, Value *ups) { return run(Func::alloc(proto, ups, 0)); }
 };

@@ -6,7 +6,6 @@
 #include "CFunc.h"
 #include "Proto.h"
 #include "Value.h"
-#include "RetInfo.h"
 #include "Object.h"
 
 #include <stdlib.h>
@@ -131,9 +130,9 @@ Value *VM::maybeGrowStack(Value *regs) {
 
 #define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
 
-int VM::run(unsigned *pc) {
+int VM::run(Func *f) {
     static void *dispatch[] = {
-        &&jmp, &&call, &&return_, &&closure,
+        &&jmp, &&call, &&return_, &&func,
         &&get, &&set, &&move, &&len,
         &&add, &&sub, &&mul, &&div, 
         &&mod, &&pow,
@@ -151,10 +150,9 @@ int VM::run(unsigned *pc) {
     };
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == 256);
  
-
     Value *regs  = stack;
-    Value *ups = 0;
-    Vector<RetInfo> retInfo;
+    Value *ups   = f->ups;
+    unsigned *pc = f->proto->code.buf;
 
     unsigned code;
     Value A, B;
@@ -177,7 +175,7 @@ int VM::run(unsigned *pc) {
     if (IS_FALSE(B)) { pc += getInteger(A); }
     STEP;
     
- closure:
+ func:
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
     STEP;
@@ -186,13 +184,9 @@ int VM::run(unsigned *pc) {
  set: doSet(*ptrC, A, B); STEP;
 
  return_:
+    regs[0] = A;
     if (retInfo.size == 0) {
-        int ret = 0;
-        Value v = regs[0];
-        if (IS_INT(v)) {
-            ret = (int) getInteger(v);
-        }
-        return ret;
+        return IS_INT(A) ? getInteger(A) : 0;
     } else {
         RetInfo *ri = retInfo.top();
         pc   = ri->pc;

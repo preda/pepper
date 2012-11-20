@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #define UNUSED      VAL_REG(0)
 #define EMPTY_ARRAY VAL_OBJ(1)
@@ -52,11 +53,9 @@ Func *Parser::parseFunc(const char *text) {
     return 0;
 }
 
-int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {    
-    if (int err = catchError()) { return err; }
+void Parser::_parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(text);
     Parser(proto, syms, &lexer).statList();
-    return 0;
 }
 
 void Parser::block() {
@@ -476,7 +475,7 @@ Value Parser::funcExpr(int top) {
     syms->popContext();
     Proto *funcProto = proto;
     proto = proto->up;
-    emitCode(makeCode(CLOSURE, VAL_REG(top), VAL_OBJ(funcProto), UNUSED));
+    emitCode(makeCode(FUNC, VAL_REG(top), VAL_OBJ(funcProto), UNUSED));
     return VAL_REG(top);
 }
 
