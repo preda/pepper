@@ -146,3 +146,7 @@ void printProto(Proto *proto) {
     printf("\nCode:\n");
     printBytecode(proto->code.buf, proto->code.size);
 }
+
+void printFunc(Func *func) {
+    printProto(func->proto);
+}

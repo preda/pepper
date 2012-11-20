@@ -16,6 +16,16 @@ Array *Array::alloc(Vector<Value> *v) {
     return a;
 }
 
+bool Array::equals(Array *a) {
+    if (vect.size != a->vect.size) { return false; }
+    for (Value *p1=vect.buf, *end=p1+vect.size, *p2=a->vect.buf; p1<end; ++p1, ++p2) {
+        if (!::equals(*p1, *p2)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 Value Array::_get(s64 pos) { 
     unsigned sz = size();
     if (pos < 0) { pos += sz; }

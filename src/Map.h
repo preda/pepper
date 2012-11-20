@@ -35,4 +35,5 @@ class Map {
     bool remove(Value key);
 
     void add(Value v);
+    bool equals(Map *o);
 };

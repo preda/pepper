@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Value.h"
+#include "common.h"
 
 class Proto;
+class Func;
 
 void printProto(Proto *proto);
-void printBytecode(unsigned *bytecode, int size);
-// void printValue(char *buf, int bufSize, Value a);
+void printFunc(Func *func);
+void printValue(u64 a);

@@ -54,11 +54,14 @@ static inline bool IS_NUMBER(Value v) {
 #define IS_DOUBLE(v) IS_DOUBLE_TAG(TAG(v))
 #define IS_SHORT_STR(v) (TAG(v) >= T_STR && TAG(v) <= T_STR+6)
 
-#define IS_OBJ(v,what) (v && TAG(v)==T_OBJ && ((Object*)v)->type==what)
+#define O_TYPE(v) (((Object *)v)->type)
+#define IS_OBJ(v,what) (v && TAG(v)==T_OBJ && O_TYPE(v)==what)
 #define IS_PROTO(v) IS_OBJ(v, O_PROTO)
 #define IS_ARRAY(v) IS_OBJ(v, O_ARRAY)
 #define IS_MAP(v)   IS_OBJ(v, O_MAP)
 #define IS_STRING(v) (IS_SHORT_STR(v) || IS_OBJ(v, O_STR))
+
+
 
 Value VAL_STRING(const char *s, int len);
 
@@ -95,4 +98,4 @@ static inline double getDouble(Value val) {
 
 unsigned hashCode(Value a);
 unsigned len(Value a);
-void printValue(Value a);
+bool equals(Value a, Value b);

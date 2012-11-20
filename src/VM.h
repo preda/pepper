@@ -53,5 +53,4 @@ class VM {
     VM();
     ~VM();
     Value run(Func *f);
-    Value run(Proto *proto, Value *ups) { return run(Func::alloc(proto, ups, 0)); }
 };

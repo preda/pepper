@@ -53,6 +53,14 @@ Func *Parser::parseFunc(const char *text) {
     return 0;
 }
 
+Func *Parser::parseStatList(const char *text) {
+    SymbolTable syms;
+    Proto *proto = Proto::alloc(0);
+    if (Parser::parseStatList(proto, &syms, text)) { return 0; }
+    close(proto);
+    return Func::alloc(proto, 0, 0);    
+}
+
 void Parser::_parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(text);
     Parser(proto, syms, &lexer).statList();

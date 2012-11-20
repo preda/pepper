@@ -259,7 +259,9 @@ Value VM::run(Func *f) {
  asr:  *ptrC = NIL; STEP;
 
  not_: *ptrC = NIL; STEP;
- eq:   *ptrC = NIL; STEP;
+ 
+ eq:   *ptrC = equals(A, B) ? TRUE : FALSE; STEP;
+
  lt:   *ptrC = NIL; STEP;
  le:   *ptrC = NIL; STEP;
  len:  *ptrC = len(A); STEP;
@@ -269,4 +271,16 @@ Value VM::run(Func *f) {
 
 bool opcodeHasDest(int op) {
     return (ADD <= op && op <= LEN) || op == MOVE || op == GET;
+}
+
+bool equals(Value a, Value b) {
+    if (a == b) { return true; }
+    if (TAG(a) == T_OBJ && TAG(b) == T_OBJ && O_TYPE(a) == O_TYPE(b)) {
+        switch (O_TYPE(a)) {
+        case O_STR: return ((String *) a)->equals((String *) b);
+        case O_ARRAY:  return ((Array *) a)->equals((Array *) b);
+        case O_MAP:    return ((Map *) a)->equals((Map *) b);
+        }
+    }
+    return false;
 }

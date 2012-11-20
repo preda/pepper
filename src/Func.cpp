@@ -1,8 +1,16 @@
 #include "Func.h"
 #include "Proto.h"
+#include "Value.h"
+#include "Array.h"
+#include "Map.h"
+
 #include <stdlib.h>
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs) {
+    static Value defaultUps[] = {NIL, EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc())};
+    if (!contextUps) {
+        contextUps = defaultUps;
+    }
     this->proto = proto;
     int nup = proto->ups.size;
     ups = nup ? (Value *) calloc(nup, sizeof(Value)) : 0;

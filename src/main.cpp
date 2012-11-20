@@ -3,14 +3,9 @@
 #include "SymbolTable.h"
 #include "Decompile.h"
 #include "VM.h"
-#include "Value.h"
-#include "Array.h"
-#include "Map.h"
 
 #include <stdio.h>
 #include <assert.h>
-
-
 
 const char *test[] = {
     /*
@@ -29,22 +24,21 @@ const char *test[] = {
     0,
 };
 
-int compileDecompile(const char *text) {
-    printf("\n\"%s\"\n\n", text);
-    Proto *proto = Proto::alloc(0);
-    SymbolTable syms;
-    int err = Parser::parseStatList(proto, &syms, text);
-    if (!err) {
-        Parser::close(proto);
-        printf("\n\n%p\n", proto);
-        printProto(proto);
+Value eval(const char *text) {
+    Func *f = Parser::parseStatList(text);
+    return f ? VM().run(f) : NIL;
+}
 
-        VM vm;
-        Value ups[] = {NIL, EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc())};
-        Value ret = vm.run(proto, ups);
+bool compileDecompile(const char *text) {
+    printf("\n\"%s\"\n\n", text);
+    Func *f = Parser::parseStatList(text);
+    if (f) { 
+        printFunc(f); 
+        Value ret = VM().run(f);
         printValue(ret);
+        return true;
     }
-    return err;
+    return false;
 }
 
 int main(int argc, char **argv) {
@@ -52,10 +46,21 @@ int main(int argc, char **argv) {
         compileDecompile(argv[1]);
     } else {
         for (const char **p = test; *p != 0; ++p) {
-            if (compileDecompile(*p)!=0) {
-                break;
-            }
+            if (!compileDecompile(*p)) { break; }
         }
     }
     return 0;
 }
+
+    /*
+    Proto *proto = Proto::alloc(0);
+    SymbolTable syms;
+    int err = Parser::parseStatList(proto, &syms, text);
+    if (!err) {
+        Parser::close(proto);
+        printf("\n\n%p\n", proto);
+        printProto(proto);
+        Func *f = Func::alloc(proto, 0, 0);
+    }
+    return err;
+    */

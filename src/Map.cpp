@@ -34,6 +34,13 @@ Map *Map::alloc(Vector<Value> *keys, Vector<Value> *vals) {
     return m;
 }
 
+bool Map::equals(Map *o) {
+    if (size != o->size) {
+        return false;
+    }
+    return true; // TODO
+}
+
 void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
     for (Value *pk=keys->buf, *end=pk+keys->size, *pv=vals->buf; pk < end; ++pk, ++pv) {
         set(*pk, *pv, true);
