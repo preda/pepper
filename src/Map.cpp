@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 Map::Map(const unsigned iniSize) {
     printf("Map %p\n", this);
@@ -59,7 +60,7 @@ Map *Map::copy() {
     return m;
 }
 
-Value Map::get(Value key) {
+Value Map::_get(Value key) {
     const unsigned mask = n - 1;
     int * const map = (int *)(buf + n);
     Value * const keys = buf;
@@ -70,6 +71,11 @@ Value Map::get(Value key) {
         if (keys[pos] == key) { return keys[pos + (n>>1)]; }
         INC(h);
     }
+}
+
+Value Map::get(Value map, Value key) {
+    assert(IS_MAP(map));
+    return ((Map *) map)->_get(key);
 }
 
 bool Map::set(Value key, Value val, bool overwrite) {

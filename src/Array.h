@@ -6,6 +6,9 @@
 class Array {
     Array(int iniSize);
 
+    Value _get(s64 pos);
+    void  _set(s64 pos, Value val);
+
  public:
     byte type;
     Vector<Value> vect;
@@ -13,13 +16,13 @@ class Array {
     ~Array();
     static Array *alloc(int iniSize = 0);
     static Array *alloc(Vector<Value> *vect);
+    static Value get(Value arr, Value pos);
+    static void  set(Value arr, Value pos, Value v);
     
     void traverse();
 
-    Value get(unsigned pos) { return pos >= vect.size ? NIL : vect.buf[pos]; }
-    void set(unsigned pos, Value val) { vect.set(pos, val); }
     void push(Value val) { vect.push(val); }
-    int size() { return vect.size; }
+    unsigned size() { return vect.size; }
 
     bool appendArray(Value v);
     void appendArray(char *s, int size);

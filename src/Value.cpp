@@ -32,8 +32,13 @@ unsigned hashCode(Value a) {
 }
 
 unsigned len(Value a) {
-    const int t = TAG(a);
-    return t>STRING && t<=STRING+6 ? t-STRING : t==OBJECT ? ((Object *) a)->size : 0;
+    const int tag = TAG(a);
+    if (tag >= STRING && tag <= STRING+6) { return tag-STRING; }
+    ERR(tag != OBJECT, E_LEN_NOT_COLLECTION);
+    Object *obj = (Object *) a;
+    int type = obj->type;
+    ERR(!(type==ARRAY || type==STRING || type==MAP), E_LEN_NOT_COLLECTION);
+    return obj->size;
 }
 
 /*

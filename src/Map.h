@@ -13,6 +13,7 @@ class Map {
     Map(unsigned iniSize);
     void grow();
     void set(Vector<Value> *keys, Vector<Value> *vals);
+    Value _get(Value key);
 
  public:
     byte type;
@@ -21,12 +22,13 @@ class Map {
 
     static Map *alloc(unsigned iniSize);
     static Map *alloc(Vector<Value> *keys, Vector<Value> *vals);
+    static Value get(Value a, Value key);
+
     ~Map();
         
     Map *copy();
     void traverse();
 
-    Value get(Value key);
     bool set(Value key, Value v, bool overwrite);
     bool remove(Value key);
 

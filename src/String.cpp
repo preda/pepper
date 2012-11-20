@@ -1,7 +1,9 @@
 #include "String.h"
 #include "Object.h"
 #include "GC.h"
+
 #include <string.h>
+#include <assert.h>
 
 String::~String() {
 }
@@ -16,6 +18,27 @@ String *String::alloc(const char *p, int size) {
     String *s = alloc(size);
     memcpy(s->s, p, size);
     return s;
+}
+
+Value String::get(Value s, Value p) {
+    assert(IS_STRING(s));
+    ERR(!IS_INTEGER(p), E_INDEX_NOT_INT);
+    s64 pos = getInteger(p);
+    int t = TAG(s);
+    unsigned size;
+    char *buf;
+    if (t >= STRING && t <= STRING+6) {
+        size = t - STRING;
+        buf = ((char *)&s);
+    } else { 
+        assert(t == OBJECT); // && ((Object *)s)->type == STRING);
+        String *str = (String *) s;
+        size = str->size;
+        buf  = str->s;
+    }
+    if (pos < 0) { pos += size; }
+    if (pos >= size || pos < 0) { return NIL; }
+    return VAL_STRING(buf + (unsigned)pos, 1);
 }
 
 unsigned String::hashCode(char *buf, int size) {
@@ -33,10 +56,7 @@ unsigned String::hashCode() {
 }
 
 bool String::equals(String *other) {
-    if (size != other->size || (cachedHash && other->cachedHash && cachedHash != other->cachedHash)) {
-        return false;
-    }
-    return !memcmp(s, other->s, size);
+    return size == other->size && *(int*)s==*(int*)other->s && !memcmp(s, other->s, size);
 }
 
 static Value stringConcat(Value a, char *pb, int sb) {

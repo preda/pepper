@@ -95,6 +95,22 @@ Value doXor(Value a, Value b) {
     return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
+Value doGet(Value a, Value b) {
+    return 
+        IS_ARRAY(a)  ? Array::get(a, b)  :
+        IS_STRING(a) ? String::get(a, b) :
+        IS_MAP(a)    ? Map::get(a, b)    :
+        ERROR(E_NOT_INDEXABLE);
+}
+
+void doSet(Value c, Value a, Value b) {
+    ERR(IS_STRING(c), E_STRING_WRITE);
+    if (IS_ARRAY(c)) {
+
+        
+    }
+}
+
 VM::VM() {
     stackSize = 512;
     stack = (Value *) calloc(stackSize, sizeof(Value));
@@ -116,24 +132,29 @@ Value *VM::maybeGrowStack(Value *regs) {
     return regs;
 }
 
-int VM::run(unsigned *pc) {
-    void *dispatch[256] = {
-        &&jmp, &&call, &&return_, &&closure,
-        &&move,
-        &&add, &&sub, &&mul, &&div, &&mod, &&pow, &&and_, &&or_, &&xor_,
-        &&end};
+#define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
 
-    {
-        void *tmp[7] = {&&decodeA, &&decodeB, &&decodeAB, &&decodeC, &&decodeAC, &&decodeBC, &&decodeABC};
-        void **p = dispatch+32;
-        for (int i = 0; i < 7; ++i) {
-            void *d = tmp[i];
-            for (int j = 0; j < 32; ++j) {
-                *p++ = d;
-            }
-        }
-    }
-    
+int VM::run(unsigned *pc) {
+    static void *dispatch[] = {
+        &&jmp, &&call, &&return_, &&closure,
+        &&get, &&set, &&move, &&len,
+        &&add, &&sub, &&mul, &&div, 
+        &&mod, &&pow,
+        &&and_, &&or_, &&xor_, 
+        &&lsl, &&lsr, &&asr, &&not_,
+        &&eq, &&lt, &&le,
+        0, 0, 0, 0, 0, 0, 0, 0,
+        _32TIMES(&&decA),
+        _32TIMES(&&decB),
+        _32TIMES(&&decAB),
+        _32TIMES(&&decC),
+        _32TIMES(&&decAC),
+        _32TIMES(&&decBC),
+        _32TIMES(&&decABC),
+    };
+    assert(sizeof(dispatch)/sizeof(dispatch[0]) == 256);
+ 
+
     Value *regs  = stack;
     Value *ups = 0;
     Vector<RetInfo> retInfo;
@@ -144,15 +165,15 @@ int VM::run(unsigned *pc) {
 
     STEP;
 
- decodeAB:  DECODE(A); // fall
- decodeB:   DECODE(B); goto *dispatch[OP(code) & 0x1f];
+ decAB:  DECODE(A); // fall
+ decB:   DECODE(B); goto *dispatch[OP(code) & 0x1f];
 
- decodeAC:  ptrC = ups + OC(code); // fall
- decodeA:   DECODE(A); goto *dispatch[OP(code) & 0x1f];
+ decAC:  ptrC = ups + OC(code); // fall
+ decA:   DECODE(A); goto *dispatch[OP(code) & 0x1f];
 
- decodeABC: DECODE(A); // fall
- decodeBC:  DECODE(B); // fall
- decodeC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
+ decABC: DECODE(A); // fall
+ decBC:  DECODE(B); // fall
+ decC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
 
  jmp: 
     assert(IS_INTEGER(A));
@@ -163,6 +184,9 @@ int VM::run(unsigned *pc) {
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
     STEP;
+
+ get: *ptrC = doGet(A, B); STEP;    
+ set: doSet(*ptrC, A, B); STEP;
 
  return_:
     if (retInfo.size == 0) {
@@ -240,7 +264,17 @@ int VM::run(unsigned *pc) {
  and_: *ptrC = NIL;         STEP;
  or_:  *ptrC = NIL;         STEP;
  xor_: *ptrC = NIL;         STEP;
- end: return 0;
+ lsl:  *ptrC = NIL; STEP;
+ lsr:  *ptrC = NIL; STEP;
+ asr:  *ptrC = NIL; STEP;
+
+ not_: *ptrC = NIL; STEP;
+ eq:   *ptrC = NIL; STEP;
+ lt:   *ptrC = NIL; STEP;
+ le:   *ptrC = NIL; STEP;
+ len:  *ptrC = len(A); STEP;
+
+    return 0;
 }
 
 bool opcodeHasDest(int op) {

@@ -9,10 +9,10 @@ class String {
     static String *alloc(int size);
     static unsigned hashCode(char *buf, int size);
     static Value concat(Value a, Value b);
+    static Value get(Value a, Value pos);
 
     byte type;
     unsigned size;
-    unsigned cachedHash;
     char s[4];
 
     ~String();

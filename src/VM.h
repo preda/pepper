@@ -22,21 +22,19 @@ Value doXor(Value a, Value b);
 // #define OD(c) ((short) (c >> 16))
 
 enum {
-    JMP,     // pc += int(A) if not B
-    CALL,    // base=C, nArgs = int(A), func(B)
-    RET,     // return A;
-    CLOSURE, // C = closure(proto(A))
-    
-    MOVE,
+    JMP,      // pc += int(A) if not B
+    CALL,     // base=C, nArgs = int(A), func(B)
+    RET,      // return A;
+    CLOSURE,  // C = closure(proto(A))
 
-    // table e.g. a[i]
-    GET, SET,
-    
-    // Binary
-    ADD, SUB, MUL, DIV, MOD, POW, AND, OR, XOR,
-    
-    // Unary
-    NOT, LEN,
+    GET, // C=A[B]
+    SET, // C[A]=B
+    MOVE,
+    LEN,
+
+    ADD, SUB, MUL, DIV, MOD, POW,     // Arithmetic binary
+    AND, OR, XOR, LSL, LSR, ASR, NOT, // Bit ops    
+    EQ, LT, LE, // numeric comparison ==, <, <=    
 };
 
 bool opcodeHasDest(int opcode);

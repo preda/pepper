@@ -3,6 +3,8 @@
 #include "GC.h"
 #include "Value.h"
 #include "Object.h"
+
+#include <assert.h>
 #include <new>
 
 Array::Array(int iniSize) : vect(iniSize) {
@@ -23,6 +25,32 @@ Array *Array::alloc(Vector<Value> *v) {
 
 void Array::traverse() {
     GC::markVector(vect.buf, vect.size);
+}
+
+Value Array::_get(s64 pos) { 
+    unsigned sz = size();
+    if (pos < 0) { pos += sz; }
+    if (pos >= sz || pos < 0) { return NIL; } // index out of range
+    return vect.buf[(unsigned) pos]; 
+}
+
+void Array::_set(s64 pos, Value v) {
+    unsigned sz = size();
+    if (pos < 0) { pos += sz; }
+    ERR(pos < 0, E_SET_NEGATIVE_INDEX);
+    vect.set((unsigned) pos, v);
+}
+
+Value Array::get(Value arr, Value pos) {
+    assert(IS_ARRAY(arr));
+    ERR(!IS_INTEGER(pos), E_INDEX_NOT_INT);
+    return ((Array *) arr)->_get(getInteger(pos));
+}
+
+void Array::set(Value arr, Value pos, Value v) {
+    assert(IS_ARRAY(arr));
+    ERR(!IS_INTEGER(pos), E_INDEX_NOT_INT);
+    ((Array *) arr)->_set(getInteger(pos), v); 
 }
 
 void Array::appendArray(char *s, int size) {
