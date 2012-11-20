@@ -20,9 +20,8 @@ unsigned hashCode(Value a) {
     switch (tag) {
     case OBJECT:  return a ? ((Object *)a)->hashCode() : 0;
     case INTEGER: return (unsigned) a * FNV;
-    case ARRAY: case MAP: case STRING: return 0;
-    default: // STR1-6 or double
-        if (tag > STRING && tag <= STRING+6) {
+    default: // STR0-6 or double
+        if (tag >= STRING && tag <= STRING+6) {
             Value b = a;
             return String::hashCode((char *)&b, tag-STRING);
         } else {

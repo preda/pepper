@@ -8,6 +8,8 @@ class Array {
 
     Value _get(s64 pos);
     void  _set(s64 pos, Value val);
+    void appendChars(char *s, int size);
+    void appendArray(Array *a) { vect.append(&(a->vect)); }
 
  public:
     byte type;
@@ -23,8 +25,5 @@ class Array {
 
     void push(Value val) { vect.push(val); }
     unsigned size() { return vect.size; }
-
-    bool appendArray(Value v);
-    void appendArray(char *s, int size);
-    void appendArray(Array *a) { vect.append(&(a->vect)); }
+    void add(Value v);
 };

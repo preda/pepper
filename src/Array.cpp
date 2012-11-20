@@ -53,7 +53,7 @@ void Array::set(Value arr, Value pos, Value v) {
     ((Array *) arr)->_set(getInteger(pos), v); 
 }
 
-void Array::appendArray(char *s, int size) {
+void Array::appendChars(char *s, int size) {
     Value c = VALUE(STRING+1, 0);
     unsigned oldSize = vect.size;
     vect.setSize(oldSize + size);
@@ -63,37 +63,16 @@ void Array::appendArray(char *s, int size) {
     }
 }
 
-bool Array::appendArray(Value v) {
-    int t = TAG(v);
-    switch (t) {
-    case ARRAY: case MAP: case STRING: return true;
-    case STRING+1: case STRING+2: case STRING+3: case STRING+4: case STRING+5: case STRING+6:
-        appendArray((char *) &v, t - STRING);
-        return true;
-
-    case OBJECT: break;
-        
-    default: return false;
-    }
-    
-    if (!v) { return false; }
-    
-    switch (((Object *) v)->type) {
-    case ARRAY:
-        appendArray((Array *) v);
-        return true;
-        
-    case STRING: {
-        String *s = (String *) v;
-        appendArray(s->s, s->size);
-        return true;
-    }
-
-    case MAP:
-        appendArray((Array *) v);
-        return true;
-        
-    default:
-        return false;
+void Array::add(Value v) {
+    assert(IS_ARRAY(v) || IS_STRING(v) || IS_MAP(v));
+    if (TAG(v) >= STRING && TAG(v) <= STRING+6) {
+        appendChars((char *) &v, TAG(v)-STRING);
+    } else {
+        assert(TAG(v) == OBJECT);
+        switch (((Object *) v)->type) {
+        case ARRAY:  appendArray((Array *) v); break;            
+        case STRING: appendChars(((String *) v)->s, ((String *) v)->size); break;
+        case MAP:    appendArray((Array *) v); break;
+        }
     }
 }

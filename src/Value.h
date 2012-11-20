@@ -6,15 +6,11 @@ typedef u64 Value;
 
 // Value tags
 enum {
-    OBJECT = 0,
-    // ARRAY indicates empty array
-    // MAP   indicates empty map
-    INTEGER  = 3,
-    REGISTER, // flag used during compilation only
-    
-    DOUBLE = 7,
-    STRING = 8,
-    // future T_FLAG_ARR1 = 0x8000,
+    OBJECT   = 0,
+    INTEGER,
+    REGISTER,   // used during compilation only, to indicate register position
+    DOUBLE = 7, // special, related to double format
+    STRING = 8, // up to STRING+6
 };
 
 // Object types
@@ -25,7 +21,6 @@ enum {
     CFUNC,
     PROTO,
     // plus STRING
-    // future INTEGER
 };
 
 #define VALUE(tag,x) ((((u64)(tag)) << 48) | (x))
@@ -34,10 +29,7 @@ enum {
 #define VAL_REG(i)   VALUE(REGISTER, (i) & 0xffffffffffffLL)
 
 #define NIL VAL_OBJ(0)
-
 #define EMPTY_STRING VALUE(STRING, 0)
-#define EMPTY_ARRAY  VALUE(ARRAY, 0)
-#define EMPTY_MAP    VALUE(MAP, 0)
 
 #define TAG(v) ((unsigned) ((v) >> 48))
 
@@ -61,12 +53,11 @@ static inline bool IS_NUMBER(Value v) {
 #define IS_NUMBER_TAG(t) (t==INTEGER || IS_DOUBLE_TAG(t)) 
 #define IS_DOUBLE(v) IS_DOUBLE_TAG(TAG(v))
 
-// #define IS_NUMBER(v) (IS_INTEGER(v) || IS_DOUBLE(v))
-#define ISOBJ(v,what) (TAG(v)==what || (v && TAG(v)==OBJECT && ((Object*)v)->type==what))
-#define IS_ARRAY(v) ISOBJ(v, ARRAY)
-#define IS_MAP(v) ISOBJ(v, MAP)
-#define IS_STRING(v) ((TAG(v)>=STRING && TAG(v)<=STRING+6) || ISOBJ(v, STRING))
-#define IS_PROTO(v) ISOBJ(v, PROTO)
+#define IS_OBJ(v,what) (v && TAG(v)==OBJECT && ((Object*)v)->type==what)
+#define IS_PROTO(v) IS_OBJ(v, PROTO)
+#define IS_ARRAY(v) IS_OBJ(v, ARRAY)
+#define IS_MAP(v)   IS_OBJ(v, MAP)
+#define IS_STRING(v) ((TAG(v)>=STRING && TAG(v)<=STRING+6) || IS_OBJ(v, STRING))
 
 Value VAL_STRING(const char *s, int len);
 

@@ -24,21 +24,10 @@ Value String::get(Value s, Value p) {
     assert(IS_STRING(s));
     ERR(!IS_INTEGER(p), E_INDEX_NOT_INT);
     s64 pos = getInteger(p);
-    int t = TAG(s);
-    unsigned size;
-    char *buf;
-    if (t >= STRING && t <= STRING+6) {
-        size = t - STRING;
-        buf = ((char *)&s);
-    } else { 
-        assert(t == OBJECT); // && ((Object *)s)->type == STRING);
-        String *str = (String *) s;
-        size = str->size;
-        buf  = str->s;
-    }
+    unsigned size = len(s);
     if (pos < 0) { pos += size; }
     if (pos >= size || pos < 0) { return NIL; }
-    return VAL_STRING(buf + (unsigned)pos, 1);
+    return VAL_STRING(GET_CSTR(s) + (unsigned)pos, 1);
 }
 
 unsigned String::hashCode(char *buf, int size) {

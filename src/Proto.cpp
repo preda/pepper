@@ -10,6 +10,12 @@ Proto::Proto(Proto *up) :
     if (up) {
         level = up->level + 1;
     }
+    /*
+    ups.push(-1); // NIL
+    ups.push(-2); // ""
+    ups.push(-3); // []
+    ups.push(-4); // {}
+    */
 }
 
 Proto::~Proto() {

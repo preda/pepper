@@ -13,7 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define UNUSED VAL_REG(0)
+#define UNUSED      VAL_REG(0)
+#define EMPTY_ARRAY VAL_OBJ(1)
+#define EMPTY_MAP   VAL_OBJ(2)
+
 #define TOKEN (lexer->token)
 
 Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
@@ -524,7 +527,8 @@ void Parser::patchOrEmitMove(int dest, Value src) {
 
 Value Parser::maybeAllocConst(Value a) {
     int ta = TAG(a);
-    if (ta==REGISTER || ta==ARRAY || ta==MAP || ta==STRING || a==NIL ||
+    if (a==NIL || a==EMPTY_ARRAY || a==EMPTY_MAP ||
+        ta==REGISTER || ta==STRING ||
         (ta==INTEGER && getInteger(a)>=-64 && getInteger(a)<64)) {
         return a;
     }
@@ -539,7 +543,11 @@ byte Parser::getRegValue(Value a) {
     return
         ta==REGISTER && (int)a >= 0 ? (int) a :
         ta==REGISTER ? 0x80 | (-(int)a-1) :
-        ta==ARRAY || ta==MAP || ta==STRING || a==NIL? (0xf0 | ta) : ((unsigned)a & 0x7f);
+        a==NIL ? 0x80 :
+        ta==STRING ? 0x81 :
+        a==EMPTY_ARRAY ? 0x82 :
+        a==EMPTY_MAP   ? 0x83 :
+        ((unsigned)a & 0x7f);
 }
 
 static inline unsigned PACK4(unsigned b0, unsigned b1, unsigned b2, unsigned b3) {
@@ -555,6 +563,13 @@ static byte flags(Value a, Value b, Value c) {
 }
 
 unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
+    if (op == MOVE && (a == EMPTY_ARRAY || a == EMPTY_MAP)) {
+        assert(b == UNUSED);
+        op = ADD;
+        b = a;
+    } else if (op == SET && (c == EMPTY_ARRAY || c == EMPTY_MAP)) {
+        op = MOVE; c = a = b = UNUSED;
+    }    
     return PACK4(op | flags(a, b, c), getRegValue(a), getRegValue(b), getRegValue(c));
 }
 

@@ -20,23 +20,20 @@
 #define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : v<0xf0 ? ups[v & 0x7f] : VALUE((v&0xf), 0); }
 
 static Value arrayAdd(Value a, Value b) {
-    int sz = len(a) + len(b);
-    if (sz == 0) {
-        int tb = TAG(b);
-        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_ARRAY : ERROR(E_WRONG_TYPE);
-    }
-    Array *array = Array::alloc(sz);
-    return (array->appendArray(a) && array->appendArray(b)) ? VAL_OBJ(array) : ERROR(E_WRONG_TYPE);
+    assert(IS_ARRAY(a));
+    ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
+    Array *array = Array::alloc();
+    array->add(a);
+    array->add(b);
+    return VAL_OBJ(array);
 }
 
 static Value mapAdd(Value a, Value b) {
-    int sz = len(a) + len(b);
-    if (sz == 0) {
-        int tb = TAG(b);
-        return (tb == ARRAY || tb == MAP || tb == STRING) ? EMPTY_MAP : ERROR(E_WRONG_TYPE);
-    }
+    assert(IS_MAP(a));
+    ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
     Map *map = ((Map *) a)->copy();
-    return map->appendArray(b) ? VAL_OBJ(map) : ERROR(E_WRONG_TYPE);
+    map->appendArray(b);
+    return VAL_OBJ(map);
 }
 
 Value doAdd(Value a, Value b) {
@@ -225,7 +222,7 @@ int VM::run(unsigned *pc) {
             }
             if (hasEllipsis) {
                 if (nEffArgs < nArgs) {
-                    base[nArgs-1] = EMPTY_ARRAY; // VALUE(ARRAY, 0);
+                    base[nArgs-1] = VAL_OBJ(Array::alloc());
                 } else {
                     int nExtra = nEffArgs - nArgs;
                     Array *a = Array::alloc(nExtra);
