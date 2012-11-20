@@ -2,5 +2,5 @@
 #include "String.h"
 
 unsigned Object::hashCode() {
-    return type==STRING ? ((String *) this)->hashCode() : PTR_HASH(this);
+    return type==O_STR ? ((String *) this)->hashCode() : PTR_HASH(this);
 }

@@ -12,7 +12,7 @@ static const char *objTypeName[] = {
     0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", 0, 0, "STRING"
 };
 
-static const char *emptyVals[] = {0, "[]", "{}", 0, 0, 0, 0, 0, "\"\""};
+// static const char *emptyVals[] = {0, "[]", "{}", 0, 0, 0, 0, 0, "\"\""};
 
 static const char *opNames[32];
 
@@ -42,24 +42,21 @@ static bool init() {
 static void printValue(char *buf, int bufSize, Value a) {
     const int t = TAG(a);
     // printf("tag %d\n", t);
-    if (t == INTEGER) {
+    if (t == T_INT) {
         snprintf(buf, bufSize, "%lld", getInteger(a));
         // printf("foo %s\n", buf);
     } else if (IS_DOUBLE_TAG(t)) {
         snprintf(buf, bufSize, "%g", getDouble(a));
-    } else if (t == OBJECT) {
-        if (a==NIL) {
-            snprintf(buf, bufSize, "NIL");
-        } else {
-            int type = ((Object *) a)->type;
-            snprintf(buf, bufSize, "OBJECT(%s) %p", objTypeName[type], (Object *)a);
-        }
-    } else if (t == REGISTER) {
+    } else if (a==NIL) {
+        snprintf(buf, bufSize, "NIL");
+    } else if (t == T_OBJ) {
+        int type = ((Object *) a)->type;
+        snprintf(buf, bufSize, "OBJECT(%s) %p", objTypeName[type], (Object *)a);
+    } else if (t == T_REG) {
         snprintf(buf, bufSize, "register %d", (int)a);
-    } else if (t <= STRING) {
-        snprintf(buf, bufSize, "%s", emptyVals[t]);
-    } else if (t > STRING && t <= STRING+6) {
-        int sz = t - STRING;
+        // } else if (t <= STRING) { snprintf(buf, bufSize, "%s", emptyVals[t]);
+    } else if (IS_SHORT_STR(a)) {
+        int sz = t - T_STR;
         char tmp[8] = {0};
         memcpy(tmp, (char *)&a, sz);
         snprintf(buf, bufSize, "\"%s\"", tmp);

@@ -6,58 +6,59 @@ typedef u64 Value;
 
 // Value tags
 enum {
-    OBJECT   = 0,
-    INTEGER,
-    REGISTER,   // used during compilation only, to indicate register position
-    DOUBLE = 7, // special, related to double format
-    STRING = 8, // up to STRING+6
+    T_OBJ  = 0,
+    T_INT,
+    T_REG,   // used during compilation only, to indicate register position
+    T_DBL  = 7, // special, related to double format
+    T_STR  = 8, // up to STRING+6
 };
 
 // Object types
 enum {
-    ARRAY = 1,
-    MAP,
-    FUNC,
-    CFUNC,
-    PROTO,
-    // plus STRING
+    O_ARRAY = 1,
+    O_MAP,
+    O_FUNC,
+    O_CFUNC,
+    O_PROTO,
+    O_STR,
 };
 
 #define VALUE(tag,x) ((((u64)(tag)) << 48) | (x))
 #define VAL_OBJ(obj) ((Value)(obj))
-#define VAL_INT(i)   VALUE(INTEGER,  (i) & 0xffffffffffffLL)
-#define VAL_REG(i)   VALUE(REGISTER, (i) & 0xffffffffffffLL)
+#define VAL_INT(i)   VALUE(T_INT,  (i) & 0xffffffffffffLL)
+#define VAL_REG(i)   VALUE(T_REG, (i) & 0xffffffffffffLL)
 
 #define NIL VAL_OBJ(0)
-#define EMPTY_STRING VALUE(STRING, 0)
+// #define EMPTY_STRING VALUE(T_STR, 0)
 
 #define TAG(v) ((unsigned) ((v) >> 48))
 
-#define IS_INTEGER(v) (TAG(v)==INTEGER)
+#define IS_INT(v) (TAG(v)==T_INT)
 static inline bool IS_NUMBER(Value v) {
     unsigned t = TAG(v);
-    return t==INTEGER || t==DOUBLE || (t&0x7ff0);
+    return t==T_INT || t==T_DBL || (t&0x7ff0);
 }
 
 #define LOW(v) ((unsigned)v)
-#define UP(v) ((unsigned)(v>>32))
+#define UP(v)  ((unsigned)(v>>32))
 
-#define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(INTEGER<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
+#define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(T_INT<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
 
 #define TRUE  VAL_INT(1)
 #define FALSE VAL_INT(0)
 #define ZERO  VAL_INT(0)
 
-#define IS_REGISTER(v) (TAG(v) == REGISTER)
-#define IS_DOUBLE_TAG(t) (t==DOUBLE || t&0x7ff0)
-#define IS_NUMBER_TAG(t) (t==INTEGER || IS_DOUBLE_TAG(t)) 
+#define IS_REG(v) (TAG(v) == T_REG)
+#define IS_DOUBLE_TAG(t) (t==T_DBL || t&0x7ff0)
+#define IS_NUMBER_TAG(t) (t==T_INT || IS_DOUBLE_TAG(t)) 
 #define IS_DOUBLE(v) IS_DOUBLE_TAG(TAG(v))
+#define IS_SHORT_STR(v) (TAG(v) >= T_STR && TAG(v) <= T_STR+6)
 
-#define IS_OBJ(v,what) (v && TAG(v)==OBJECT && ((Object*)v)->type==what)
-#define IS_PROTO(v) IS_OBJ(v, PROTO)
-#define IS_ARRAY(v) IS_OBJ(v, ARRAY)
-#define IS_MAP(v)   IS_OBJ(v, MAP)
-#define IS_STRING(v) ((TAG(v)>=STRING && TAG(v)<=STRING+6) || IS_OBJ(v, STRING))
+#define IS_OBJ(v,what) (v && TAG(v)==T_OBJ && ((Object*)v)->type==what)
+#define IS_PROTO(v) IS_OBJ(v, O_PROTO)
+#define IS_ARRAY(v) IS_OBJ(v, O_ARRAY)
+#define IS_MAP(v)   IS_OBJ(v, O_MAP)
+#define IS_STRING(v) (IS_SHORT_STR(v) || IS_OBJ(v, O_STR))
 
 Value VAL_STRING(const char *s, int len);
 
@@ -81,7 +82,7 @@ static inline s64 getInteger(Value val) {
 }
 
 static inline double getDouble(Value val) {
-    if (TAG(val)==INTEGER) {
+    if (TAG(val)==T_INT) {
         return getInteger(val);
     } else {
         ValueUnion u{v: val};
@@ -90,7 +91,7 @@ static inline double getDouble(Value val) {
     }
 }
 
-#define GET_CSTR(v) (TAG(v)==OBJECT ? ((String*) v)->s : ((char *) &v))
+#define GET_CSTR(v) (TAG(v)==T_OBJ ? ((String*) v)->s : ((char *) &v))
 
 unsigned hashCode(Value a);
 unsigned len(Value a);

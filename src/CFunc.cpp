@@ -2,7 +2,7 @@
 #include "GC.h"
 
 CFunc *CFunc::alloc(void *f, int dataSize) {
-    return (CFunc *) GC::alloc(CFUNC, sizeof(CFunc) + dataSize, true);
+    return (CFunc *) GC::alloc(O_CFUNC, sizeof(CFunc) + dataSize, true);
 }
 
 CFunc::~CFunc() {

@@ -22,7 +22,7 @@ Proto::~Proto() {
 }
 
 Proto *Proto::alloc(Proto *up) {
-    return new (GC::alloc(PROTO, sizeof(Proto), true)) Proto(up);
+    return new (GC::alloc(O_PROTO, sizeof(Proto), true)) Proto(up);
 }
 
 void Proto::traverse() {

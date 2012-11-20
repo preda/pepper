@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs) {
-    return new (GC::alloc(FUNC, sizeof(Func), true)) Func(proto, contextUps, regs);
+    return new (GC::alloc(O_FUNC, sizeof(Func), true)) Func(proto, contextUps, regs);
 }
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs) {

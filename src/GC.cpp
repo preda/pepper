@@ -69,9 +69,8 @@ void GC::_mark(Object *o) {
 
 void GC::_markVector(Value *p, int size) {
     for (Value *end = p + size; p < end; ++p) {
-        if (TAG(*p) == OBJECT && *p) {
-            _mark((Object *) *p);
-        }
+        Value v = *p;
+        if (TAG(v) == T_OBJ && v) { _mark((Object *) v); }
     }
 }
 
@@ -87,15 +86,12 @@ Object *GC::_alloc(int type, int bytes, bool traversable) {
 }
 
 #define DISPATCH(o) switch(o->type) {\
- case ARRAY:  ACTION(o, Array);  break;\
- case MAP:    ACTION(o, Map);    break;\
- case STRING: ACTION(o, String); break;\
- case CFUNC:  ACTION(o, CFunc);  break;\
+ case O_ARRAY: ACTION(o, Array);  break;\
+ case O_MAP:   ACTION(o, Map);    break;\
+ case O_STR:   ACTION(o, String); break;\
+ case O_CFUNC: ACTION(o, CFunc);  break;\
  default: ERR(true, E_OBJECT_TYPE);\
 }
-
-// case FUNC:  ACTION(o, Func);  break;
-// case PROTO:
 
 static void destruct(Object *o) {
 #define ACTION(o, type) ((type *)o)->~type()

@@ -7,13 +7,15 @@ class Array;
 class String;
 
 class Map {
-
     static const int EMPTY = -1;
     // static const int HOLE  = -2;
     Map(unsigned iniSize);
     void grow();
     void set(Vector<Value> *keys, Vector<Value> *vals);
     Value _get(Value key);
+    void appendChars(char *s, int len);
+    void appendMap(Map *m);
+    void appendArray(Array *a);
 
  public:
     byte type;
@@ -32,8 +34,5 @@ class Map {
     bool set(Value key, Value v, bool overwrite);
     bool remove(Value key);
 
-    void appendString(char *s, int len);
-    void appendMap(Map *m);
-    void appendArray(Array *a);
-    bool appendArray(Value v);
+    void add(Value v);
 };

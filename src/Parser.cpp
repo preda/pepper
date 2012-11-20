@@ -120,7 +120,7 @@ static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
 static int max(int a, int b) { return a < b ? b : a; }
 
 static int topAbove(Value a, int top) {
-    if (!IS_REGISTER(a)) {
+    if (!IS_REG(a)) {
         return top;
     }
     return max((int)a + 1, top);
@@ -130,7 +130,7 @@ void Parser::exprOrAssignStat() {
     Value lhs = expr(proto->localsTop);
     if (TOKEN == '=') {
         consume('=');
-        ERR(!IS_REGISTER(lhs), E_ASSIGN_TO_CONST);
+        ERR(!IS_REG(lhs), E_ASSIGN_TO_CONST);
         Value a, b, c;
         int op = unCode(proto->code.pop(), &c, &a, &b);
         // printValue(c); printValue(a); printValue(b);
@@ -185,7 +185,7 @@ static bool isUnaryOp(int token) {
 }
 
 static Value foldUnary(int op, Value a) {
-    if (!IS_REGISTER(a)) {
+    if (!IS_REG(a)) {
         switch (op) {
         case '!': return IS_FALSE(a) ? TRUE : FALSE;
         case '-': return doSub(ZERO, a);
@@ -197,7 +197,7 @@ static Value foldUnary(int op, Value a) {
 }
 
 static Value foldBinary(int op, Value a, Value b) {
-    if (!IS_REGISTER(a) && !IS_REGISTER(b)) {
+    if (!IS_REG(a) && !IS_REG(b)) {
         switch (op) {
         case '+': return doAdd(a, b);
         case '-': return doSub(a, b);
@@ -312,7 +312,7 @@ Value Parser::mapExpr(int top) {
         consume(':');
         Value v = expr(top);
         
-        if (IS_REGISTER(k) || IS_REGISTER(v) || (k==NIL && v == NIL)) {
+        if (IS_REG(k) || IS_REG(v) || (k==NIL && v == NIL)) {
             keys.push(NIL);
             vals.push(NIL);
             emitCode(makeCode(SET, VAL_REG(slot), k, v));
@@ -356,7 +356,7 @@ Value Parser::arrayExpr(int top) {
     for (int pos = 0; ; ++pos) {
         if (TOKEN == ']') { break; }
         Value elem = expr(top);
-        if (IS_REGISTER(elem) || elem==NIL) {
+        if (IS_REG(elem) || elem==NIL) {
             vect.push(NIL);
             emitCode(makeCode(SET, VAL_REG(slot), VAL_INT(pos), elem));
         } else {
@@ -412,7 +412,7 @@ Value Parser::suffixedExpr(int top) {
     case '(':
         advance();
         a = expr(top);
-        // if (IS_REGISTER(a) && (int)a == top) { ++top; }
+        // if (IS_REG(a) && (int)a == top) { ++top; }
         consume(')');
         break;
 
@@ -446,7 +446,7 @@ Value Parser::suffixedExpr(int top) {
         case '(': {
             advance();
             int base = top;
-            if (IS_REGISTER(a) && (int)a == base) { ++base; }
+            if (IS_REG(a) && (int)a == base) { ++base; }
             int nArg = 0;
             ARG_LIST(int argPos = base + nArg;
                      patchOrEmitMove(argPos, expr(argPos));
@@ -506,7 +506,7 @@ Value Parser::expr(int top) {
 // code generation below
 
 void Parser::patchOrEmitMove(int dest, Value src) {
-    if (IS_REGISTER(src)) {
+    if (IS_REG(src)) {
         int srcSlot = (int) src;        
         if (srcSlot == dest) { return; } // everything is in the right place, do nothing
 
@@ -514,7 +514,7 @@ void Parser::patchOrEmitMove(int dest, Value src) {
         Value a, b, c;
         int op = unCode(code, &c, &a, &b);
         if (opcodeHasDest(op)) {
-            assert(IS_REGISTER(c));
+            assert(IS_REG(c));
             if (srcSlot == (int) c) {
                 proto->code.pop();
                 emitCode(makeCode(op, VAL_REG(dest), a, b));
@@ -528,8 +528,8 @@ void Parser::patchOrEmitMove(int dest, Value src) {
 Value Parser::maybeAllocConst(Value a) {
     int ta = TAG(a);
     if (a==NIL || a==EMPTY_ARRAY || a==EMPTY_MAP ||
-        ta==REGISTER || ta==STRING ||
-        (ta==INTEGER && getInteger(a)>=-64 && getInteger(a)<64)) {
+        ta==T_REG || ta==T_STR ||
+        (ta==T_INT && getInteger(a)>=-64 && getInteger(a)<64)) {
         return a;
     }
     proto->ups.push(0);
@@ -541,10 +541,10 @@ byte Parser::getRegValue(Value a) {
     a = maybeAllocConst(a);
     const int ta = TAG(a);
     return
-        ta==REGISTER && (int)a >= 0 ? (int) a :
-        ta==REGISTER ? 0x80 | (-(int)a-1) :
-        a==NIL ? 0x80 :
-        ta==STRING ? 0x81 :
+        ta==T_REG && (int)a >= 0 ? (int) a :
+        ta==T_REG ? 0x80 | (-(int)a-1) :
+        a==NIL    ? 0x80 :
+        ta==T_STR ? 0x81 :
         a==EMPTY_ARRAY ? 0x82 :
         a==EMPTY_MAP   ? 0x83 :
         ((unsigned)a & 0x7f);
@@ -555,7 +555,7 @@ static inline unsigned PACK4(unsigned b0, unsigned b1, unsigned b2, unsigned b3)
 }
 
 static bool isNormal(Value a) {
-    return IS_REGISTER(a) && (int)a >= 0;
+    return IS_REG(a) && (int)a >= 0;
 }
 
 static byte flags(Value a, Value b, Value c) {

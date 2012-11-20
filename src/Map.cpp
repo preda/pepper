@@ -31,7 +31,7 @@ Map::~Map() {
 #define HASH(pos) (hashCode(keys[pos]) & mask)
 
 Map *Map::alloc(unsigned iniSize) {
-    return new (GC::alloc(MAP, sizeof(Map), true)) Map(iniSize);
+    return new (GC::alloc(O_MAP, sizeof(Map), true)) Map(iniSize);
 }
 
 Map *Map::alloc(Vector<Value> *keys, Vector<Value> *vals) {
@@ -108,32 +108,18 @@ bool Map::set(Value key, Value val, bool overwrite) {
     }
 }
 
-bool Map::appendArray(Value v) {
-    int t = TAG(v);
-    if (t == ARRAY || t == MAP || t == STRING) {
-        return true;
-    }
-    if (t >= STRING+1 && t <= STRING+6) {
-        appendString((char *) &v, t - STRING);
-        return true;
-    }
-    if (t == OBJECT && v) {
-        t = ((Object *) v)->type;
-        if (t == MAP) {
-            appendMap((Map *) v);
-            return true;
-        }
-        if (t == ARRAY) {
-            appendArray((Array *) v);
-            return true;
-        }
-        if (t == STRING) {
-            String *s = (String *) v;
-            appendString(s->s, s->size);
-            return true;
+void Map::add(Value v) {
+    ERR(!(IS_ARRAY(v) || IS_STRING(v) || IS_MAP(v)), E_ADD_NOT_COLLECTION);
+    if (IS_SHORT_STR(v)) {
+        appendChars((char *) &v, TAG(v) - T_STR);
+    } else {
+        assert(TAG(v) == T_OBJ);
+        switch (((Object *) v)->type) {
+        case O_ARRAY:  appendArray((Array *) v); break;
+        case O_STR:    appendChars(((String *) v)->s, ((String *) v)->size); break;
+        case O_MAP:    appendArray((Array *) v); break;
         }
     }
-    return false;
 }
 
 void Map::appendMap(Map *m) {
@@ -151,8 +137,8 @@ void Map::appendArray(Array *a) {
     }
 }
 
-void Map::appendString(char *s, int size) {
-    Value c = VALUE(STRING+1, 0);
+void Map::appendChars(char *s, int size) {
+    Value c = VALUE(T_STR + 1, 0);
     Value ONE = VAL_INT(1);
     for (char *end = s + size; s < end; ++s) {
         *((char *) &c) = *s;

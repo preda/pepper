@@ -32,13 +32,13 @@ static Value mapAdd(Value a, Value b) {
     assert(IS_MAP(a));
     ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
     Map *map = ((Map *) a)->copy();
-    map->appendArray(b);
+    map->add(b);
     return VAL_OBJ(map);
 }
 
 Value doAdd(Value a, Value b) {
     return 
-        IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) + getInteger(b))  :
+        IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) + getInteger(b))  :
         IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) + getDouble(b)) :
         IS_STRING(a) ? String::concat(a, b) :
         IS_ARRAY(a)  ? arrayAdd(a, b) :
@@ -48,20 +48,20 @@ Value doAdd(Value a, Value b) {
 
 Value doSub(Value a, Value b) {
     return 
-        IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) - getInteger(b))  :
+        IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) - getInteger(b))  :
         IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) - getDouble(b)) :
         ERROR(E_WRONG_TYPE);
 }
 
 Value doMul(Value a, Value b) {
     return 
-        IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) * getInteger(b))  :
+        IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) * getInteger(b))  :
         IS_NUMBER(a)  && IS_NUMBER(b)  ? VAL_DOUBLE(getDouble(a) * getDouble(b)) :
         ERROR(E_WRONG_TYPE);
 }
 
 Value doDiv(Value a, Value b) {
-    if (IS_INTEGER(a) && IS_INTEGER(b)) {
+    if (IS_INT(a) && IS_INT(b)) {
         s64 vc = getInteger(b);
         return vc == 0 ? ERROR(E_DIV_ZERO) : VAL_INT(getInteger(a) / vc);
     } else if (IS_NUMBER(a) && IS_NUMBER(b)) {
@@ -81,15 +81,15 @@ Value doPow(Value a, Value b) {
 }
 
 Value doAnd(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) & getInteger(b)) : ERROR(E_WRONG_TYPE);
+    return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) & getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
 Value doOr(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) | getInteger(b)) : ERROR(E_WRONG_TYPE);
+    return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) | getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
 Value doXor(Value a, Value b) {
-    return IS_INTEGER(a) && IS_INTEGER(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
+    return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
 
 Value doGet(Value a, Value b) {
@@ -173,7 +173,7 @@ int VM::run(unsigned *pc) {
  decC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
 
  jmp: 
-    assert(IS_INTEGER(A));
+    assert(IS_INT(A));
     if (IS_FALSE(B)) { pc += getInteger(A); }
     STEP;
     
@@ -189,7 +189,7 @@ int VM::run(unsigned *pc) {
     if (retInfo.size == 0) {
         int ret = 0;
         Value v = regs[0];
-        if (IS_INTEGER(v)) {
+        if (IS_INT(v)) {
             ret = (int) getInteger(v);
         }
         return ret;
@@ -203,13 +203,14 @@ int VM::run(unsigned *pc) {
     }
 
  call: {
+        assert(IS_INT(A));
+        assert(TAG(B)==T_OBJ && B != NIL);
+
         const int nEffArgs = getInteger(A);
         const Func *f = (Func *) B;
         Value *base = ptrC;
 
-        if (TAG(A) != INTEGER || TAG(B) != OBJECT) { return 1; }
-
-        if (f->type == FUNC) {
+        if (f->type == O_FUNC) {
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
             bool hasEllipsis = false;
@@ -244,7 +245,7 @@ int VM::run(unsigned *pc) {
             pc   = proto->code.buf;
             regs = maybeGrowStack(base);
             ups  = f->ups;
-        } else if (f->type == CFUNC) {
+        } else if (f->type == O_CFUNC) {
             CFunc *cf = (CFunc *) A;
             cf->call(base, nEffArgs);
         } else { return 2; }

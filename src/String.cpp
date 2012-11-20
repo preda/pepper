@@ -9,7 +9,7 @@ String::~String() {
 }
 
 String *String::alloc(int size) {
-    String *s = (String *) GC::alloc(STRING, sizeof(String) - 4 + size, false);
+    String *s = (String *) GC::alloc(O_STR, sizeof(String) - 4 + size, false);
     s->size = size;
     return s;
 }
@@ -22,7 +22,7 @@ String *String::alloc(const char *p, int size) {
 
 Value String::get(Value s, Value p) {
     assert(IS_STRING(s));
-    ERR(!IS_INTEGER(p), E_INDEX_NOT_INT);
+    ERR(!IS_INT(p), E_INDEX_NOT_INT);
     s64 pos = getInteger(p);
     unsigned size = len(s);
     if (pos < 0) { pos += size; }
@@ -54,8 +54,8 @@ static Value stringConcat(Value a, char *pb, int sb) {
     int sa;
     Value ret;
 
-    if (ta>=STRING && ta<=STRING+6) {
-        sa = ta - STRING;
+    if (IS_SHORT_STR(a)) {
+        sa = ta - T_STR;
         pa = (char *) &a;
     } else {
         String *s = (String *) a;
@@ -64,7 +64,7 @@ static Value stringConcat(Value a, char *pb, int sb) {
     }
     char *pr;
     if (sa + sb <= 6) {
-        ret = VALUE(STRING+(sa+sb), 0);
+        ret = VALUE(T_STR + (sa+sb), 0);
         pr = (char *) &ret;
     } else {
         String *s = String::alloc(sa + sb);
@@ -77,7 +77,7 @@ static Value stringConcat(Value a, char *pb, int sb) {
 }
 
 static void numberToString(Value a, char *out, int outSize) {
-    if (TAG(a)==INTEGER) {
+    if (IS_INT(a)) {
         snprintf(out, outSize, "%d", (int)(unsigned)a);
     } else {
         snprintf(out, outSize, "%.17g", getDouble(a));
@@ -89,8 +89,8 @@ Value String::concat(Value a, Value b) {
     int tb = TAG(b);
     int sb;
     char *pb;
-    if (tb>=STRING && tb<=STRING+6) {
-        sb = tb - STRING;
+    if (IS_SHORT_STR(b)) {
+        sb = tb - T_STR;
         pb = (char *) &b;
     } else if (IS_NUMBER(b)) {
         numberToString(b, buf, sizeof(buf));
@@ -101,6 +101,7 @@ Value String::concat(Value a, Value b) {
         sb = s->size;
         pb = s->s;
     } else {
+        ERR(true, E_STR_ADD_TYPE);
         // error();
         return NIL;
     }

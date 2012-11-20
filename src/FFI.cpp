@@ -102,13 +102,13 @@ uint64 castValue(Value v, int t) {
     } else if (t & CPTR) {
         // TODO: array -> pointer
     } else if ((t & 0xf) == CDOUBLE) {
-        if (IS_DOUBLE(v) || IS_INTEGER(v)) {
+        if (IS_NUMBER(v)) {
             uint64 tmp;
             *(double*)(&tmp) = getDouble(v);
             return tmp;
         }
     } else if (t==CCHAR || t==CINT || t==CLONG || t==CLONGLONG) {
-        if (IS_INTEGER(v)) {
+        if (IS_INT(v)) {
             return getInteger(v);
         }
     }
