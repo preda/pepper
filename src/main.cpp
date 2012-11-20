@@ -3,9 +3,14 @@
 #include "SymbolTable.h"
 #include "Decompile.h"
 #include "VM.h"
+#include "Value.h"
+#include "Array.h"
+#include "Map.h"
 
 #include <stdio.h>
 #include <assert.h>
+
+
 
 const char *test[] = {
     /*
@@ -30,12 +35,14 @@ int compileDecompile(const char *text) {
     SymbolTable syms;
     int err = Parser::parseStatList(proto, &syms, text);
     if (!err) {
+        Parser::close(proto);
         printf("\n\n%p\n", proto);
         printProto(proto);
 
         VM vm;
-        int ret = vm.run(proto, 0);
-        printf("RET %d\n", ret);
+        Value ups[] = {NIL, EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc())};
+        Value ret = vm.run(proto, ups);
+        printValue(ret);
     }
     return err;
 }

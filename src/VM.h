@@ -52,6 +52,6 @@ class VM {
  public:
     VM();
     ~VM();
-    int run(Func *f);
-    int run(Proto *proto, Value *ups) { return run(Func::alloc(proto, ups, 0)); }
+    Value run(Func *f);
+    Value run(Proto *proto, Value *ups) { return run(Func::alloc(proto, ups, 0)); }
 };

@@ -130,7 +130,7 @@ Value *VM::maybeGrowStack(Value *regs) {
 
 #define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
 
-int VM::run(Func *f) {
+Value VM::run(Func *f) {
     static void *dispatch[] = {
         &&jmp, &&call, &&return_, &&func,
         &&get, &&set, &&move, &&len,
@@ -183,11 +183,9 @@ int VM::run(Func *f) {
  get: *ptrC = doGet(A, B); STEP;    
  set: doSet(*ptrC, A, B); STEP;
 
- return_:
-    regs[0] = A;
-    if (retInfo.size == 0) {
-        return IS_INT(A) ? getInteger(A) : 0;
-    } else {
+ return_: {
+        regs[0] = A;
+        if (retInfo.size == 0) { return A; }
         RetInfo *ri = retInfo.top();
         pc   = ri->pc;
         regs = ri->regs;

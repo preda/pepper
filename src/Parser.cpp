@@ -572,6 +572,11 @@ unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
     return PACK4(op | flags(a, b, c), getRegValue(a), getRegValue(b), getRegValue(c));
 }
 
+void Parser::close(Proto *proto) {
+    proto->code.push(PACK4(RET, 0, 0, 0));
+    proto->freeze();
+}
+
 void Parser::emitCode(unsigned code) {
     proto->code.push(code);
 }

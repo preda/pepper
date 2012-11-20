@@ -22,7 +22,7 @@ class Map {
     unsigned size, n;
     Value *buf;
 
-    static Map *alloc(unsigned iniSize);
+    static Map *alloc(unsigned iniSize = 0);
     static Map *alloc(Vector<Value> *keys, Vector<Value> *vals);
     static Value get(Value a, Value key);
 

@@ -127,10 +127,10 @@ void printBytecode(unsigned *p, int size) {
 
 void printProto(Proto *proto) {
     printf("UpVals:\n");
-    int i = 0;
+    int i = 4;
     int c = 0;
     char buf[64];
-    for (short *p = proto->ups.buf, *end = p + proto->ups.size; p < end; ++p, ++i) {
+    for (short *p = proto->ups.buf+4, *end = p-4 + proto->ups.size; p < end; ++p, ++i) {
         int u = *p;
         if (u > 0) {
             printf("%2d: %d\n", i, u-1);

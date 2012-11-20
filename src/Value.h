@@ -29,7 +29,7 @@ enum {
 #define VAL_REG(i)   VALUE(T_REG, (i) & 0xffffffffffffLL)
 
 #define NIL VAL_OBJ(0)
-// #define EMPTY_STRING VALUE(T_STR, 0)
+#define EMPTY_STRING VALUE(T_STR, 0)
 
 #define TAG(v) ((unsigned) ((v) >> 48))
 
