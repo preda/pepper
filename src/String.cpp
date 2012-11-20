@@ -1,17 +1,11 @@
 #include "String.h"
 #include "Object.h"
-#include "GC.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
 String::~String() {
-}
-
-String *String::alloc(int size) {
-    String *s = (String *) GC::alloc(O_STR, sizeof(String) - 4 + size, false);
-    s->size = size;
-    return s;
 }
 
 String *String::alloc(const char *p, int size) {

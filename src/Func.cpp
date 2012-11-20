@@ -1,12 +1,6 @@
 #include "Func.h"
 #include "Proto.h"
-#include "GC.h"
-#include <new>
 #include <stdlib.h>
-
-Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs) {
-    return new (GC::alloc(O_FUNC, sizeof(Func), true)) Func(proto, contextUps, regs);
-}
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs) {
     this->proto = proto;
@@ -27,9 +21,4 @@ Func::~Func() {
     }
     proto = 0;
     type  = 0;
-}
-
-void Func::traverse() { 
-    GC::markVector(ups, proto->ups.size);
-    GC::mark((Object *) proto);
 }

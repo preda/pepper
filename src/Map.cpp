@@ -1,11 +1,9 @@
 #include "Map.h"
 #include "Array.h"
 #include "String.h"
-#include "GC.h"
 #include "Value.h"
 #include "Object.h"
 
-#include <new>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,10 +28,6 @@ Map::~Map() {
 #define INC(h) h = (h + 1) & mask
 #define HASH(pos) (hashCode(keys[pos]) & mask)
 
-Map *Map::alloc(unsigned iniSize) {
-    return new (GC::alloc(O_MAP, sizeof(Map), true)) Map(iniSize);
-}
-
 Map *Map::alloc(Vector<Value> *keys, Vector<Value> *vals) {
     Map *m = alloc(keys->size);
     m->set(keys, vals);
@@ -44,11 +38,6 @@ void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
     for (Value *pk=keys->buf, *end=pk+keys->size, *pv=vals->buf; pk < end; ++pk, ++pv) {
         set(*pk, *pv, true);
     }
-}
-
-void Map::traverse() {
-    GC::markVector(buf, size);
-    GC::markVector(buf+(n>>1), size);
 }
 
 Map *Map::copy() {

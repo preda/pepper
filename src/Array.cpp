@@ -1,11 +1,8 @@
 #include "Array.h"
 #include "String.h"
-#include "GC.h"
 #include "Value.h"
 #include "Object.h"
-
 #include <assert.h>
-#include <new>
 
 Array::Array(int iniSize) : vect(iniSize) {
 }
@@ -13,18 +10,10 @@ Array::Array(int iniSize) : vect(iniSize) {
 Array::~Array() {
 }
 
-Array *Array::alloc(int iniSize) {
-    return new (GC::alloc(O_ARRAY, sizeof(Array), true)) Array(iniSize);
-}
-
 Array *Array::alloc(Vector<Value> *v) {
     Array *a = alloc(v->size);
     a->vect.append(v);
     return a;
-}
-
-void Array::traverse() {
-    GC::markVector(vect.buf, vect.size);
 }
 
 Value Array::_get(s64 pos) { 
