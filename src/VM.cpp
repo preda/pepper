@@ -199,10 +199,11 @@ Value VM::run(Func *f) {
         assert(TAG(B)==T_OBJ && B != NIL);
 
         const int nEffArgs = getInteger(A);
-        const Func *f = (Func *) B;
         Value *base = ptrC;
-
-        if (f->type == O_FUNC) {
+        int type = O_TYPE(B);
+        assert(type == O_FUNC || type == O_CFUNC);
+        if (type == O_FUNC) {
+            const Func *f = (Func *) B;
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
             bool hasEllipsis = false;
@@ -237,10 +238,10 @@ Value VM::run(Func *f) {
             pc   = proto->code.buf;
             regs = maybeGrowStack(base);
             ups  = f->ups;
-        } else if (f->type == O_CFUNC) {
-            CFunc *cf = (CFunc *) A;
+        } else { // O_CFUNC
+            CFunc *cf = (CFunc *) B;
             cf->call(base, nEffArgs);
-        } else { return 2; }
+        }
         STEP;
     }
 

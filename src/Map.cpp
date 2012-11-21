@@ -106,14 +106,12 @@ bool Map::set(Value key, Value val, bool overwrite) {
 
 void Map::add(Value v) {
     ERR(!(IS_ARRAY(v) || IS_STRING(v) || IS_MAP(v)), E_ADD_NOT_COLLECTION);
-    if (IS_SHORT_STR(v)) {
-        appendChars((char *) &v, TAG(v) - T_STR);
+    if (IS_STRING(v)) {
+        appendChars(GET_CSTR(v), len(v));
     } else {
-        assert(TAG(v) == T_OBJ);
-        switch (((Object *) v)->type) {
-        case O_ARRAY:  appendArray((Array *) v); break;
-        case O_STR:    appendChars(((String *) v)->s, ((String *) v)->size); break;
-        case O_MAP:    appendArray((Array *) v); break;
+        switch (O_TYPE(v)) {
+        case O_ARRAY: appendArray((Array *) v);
+        case O_MAP:   appendMap((Map *) v);
         }
     }
 }
@@ -134,11 +132,11 @@ void Map::appendArray(Array *a) {
 }
 
 void Map::appendChars(char *s, int size) {
-    Value c = VALUE(T_STR + 1, 0);
-    Value ONE = VAL_INT(1);
+    Value c = String::makeVal(1);
+    char *pc = GET_CSTR(c);
     for (char *end = s + size; s < end; ++s) {
-        *((char *) &c) = *s;
-        set(c, ONE, false);
+        *pc = *s;
+        set(c, VAL_INT(1), false);
     }
 }
 

@@ -1,37 +1,25 @@
 #include "Value.h"
 #include "String.h"
 #include "Object.h"
-
-#include <string.h>
-#include <stdio.h>
-
-Value VAL_STRING(const char *s, int len) {
-    if (len <= 6) {
-        Value v = VALUE(T_STR+len, 0);
-        memcpy(&v, s, len);
-        return v;
-    } else {
-        return VAL_OBJ(String::alloc(s, len));
-    }
-}
+#include <assert.h>
+// #include <string.h>
+// #include <stdio.h>
 
 unsigned hashCode(Value a) {
-    int tag = TAG(a);
-    switch (tag) {
-    case T_OBJ:  return a ? ((Object *)a)->hashCode() : 0;
-    case T_INT:  return (unsigned) a * FNV;
-    default: // STR0-6 or double        
-        if (IS_SHORT_STR(a)) {
-            Value b = a;
-            return String::hashCode((char *)&b, tag-T_STR);
-        } else {
-            return (((unsigned) a) ^ ((unsigned) (a >> 32))) * FNV;
-        }
+    if (IS_STRING(a)) {
+        return String::hashCode(GET_CSTR(a), len(a));
+    } else {
+        switch (TAG(a)) {
+        case T_OBJ:  return a ? ((Object *)a)->hashCode() : 0;
+        case T_INT:  return (unsigned) a * FNV;
+        default: return (((unsigned) a) ^ ((unsigned) (a >> 32))) * FNV;
+        }        
     }
+    assert(false);
 }
 
 unsigned len(Value a) {
-    if (IS_SHORT_STR(a)) { return TAG(a) - T_STR; }
+    if (IS_SHORT_STR(a)) { return SHORT_STR_LEN(a); }
     ERR(!(IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a)), E_LEN_NOT_COLLECTION);
     return ((Object *) a)->size;
 }

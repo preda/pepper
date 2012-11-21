@@ -20,6 +20,8 @@ const char *test[] = {
     "func() { return; }",
     "var a = func(x) { x = 1 } a(a+2, 2, a)",
     */
+    // 'var strlen = ffi("strlen", "int (const char *)"); return strlen("bar hello foo")'
+    // 'var p = ffi("printf", "void (const char *, ...)"); var a=5; p("hello %d\n", a)'
     "var a = 5; return a * 2",
     0,
 };
@@ -51,16 +53,3 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
-
-    /*
-    Proto *proto = Proto::alloc(0);
-    SymbolTable syms;
-    int err = Parser::parseStatList(proto, &syms, text);
-    if (!err) {
-        Parser::close(proto);
-        printf("\n\n%p\n", proto);
-        printProto(proto);
-        Func *f = Func::alloc(proto, 0, 0);
-    }
-    return err;
-    */

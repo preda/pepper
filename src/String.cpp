@@ -5,12 +5,25 @@
 #include <string.h>
 #include <assert.h>
 
+Value String::makeVal(unsigned len) {
+    return len <= 6 ? VALUE(T_STR0 - len, 0) : VAL_OBJ(String::alloc(len));
+}
+
+Value String::makeVal(const char *s, unsigned len) {
+    Value v = makeVal(len);
+    char *p = GET_CSTR(v);
+    memcpy(p, s, len);
+    p[len] = 0;    
+    return v;
+}
+
 String::~String() {
 }
 
-String *String::alloc(const char *p, int size) {
+String *String::alloc(const char *p, unsigned size) {
     String *s = alloc(size);
     memcpy(s->s, p, size);
+    s->s[size] = 0;
     return s;
 }
 
@@ -21,7 +34,7 @@ Value String::get(Value s, Value p) {
     unsigned size = len(s);
     if (pos < 0) { pos += size; }
     if (pos >= size || pos < 0) { return NIL; }
-    return VAL_STRING(GET_CSTR(s) + (unsigned)pos, 1);
+    return VALUE(T_STR1, (u64)(GET_CSTR(s) + (unsigned)pos));
 }
 
 unsigned String::hashCode(char *buf, int size) {
@@ -42,32 +55,16 @@ bool String::equals(String *other) {
     return size == other->size && *(int*)s==*(int*)other->s && !memcmp(s, other->s, size);
 }
 
-static Value stringConcat(Value a, char *pb, int sb) {
-    int ta = TAG(a);
-    char *pa;
-    int sa;
-    Value ret;
-
-    if (IS_SHORT_STR(a)) {
-        sa = ta - T_STR;
-        pa = (char *) &a;
-    } else {
-        String *s = (String *) a;
-        sa = s->size;
-        pa = s->s;
-    }
-    char *pr;
-    if (sa + sb <= 6) {
-        ret = VALUE(T_STR + (sa+sb), 0);
-        pr = (char *) &ret;
-    } else {
-        String *s = String::alloc(sa + sb);
-        pr = s->s;
-        ret = VAL_OBJ(s);
-    }
-    memcpy(pr, pa, sa);
-    memcpy(pr+sa, pb, sb);
-    return ret;    
+static Value stringConcat(Value a, char *pb, unsigned sb) {
+    assert(IS_STRING(a));
+    unsigned sa = len(a);
+    Value v = String::makeVal(sa + sb);
+    char *pv = GET_CSTR(v);
+    char *pa = GET_CSTR(a);
+    memcpy(pv, pa, sa);
+    memcpy(pv + sa, pb, sb);
+    pv[sa + sb] = 0;
+    return v;
 }
 
 static void numberToString(Value a, char *out, int outSize) {
@@ -80,24 +77,16 @@ static void numberToString(Value a, char *out, int outSize) {
 
 Value String::concat(Value a, Value b) {
     char buf[32];
-    int tb = TAG(b);
     int sb;
-    char *pb;
-    if (IS_SHORT_STR(b)) {
-        sb = tb - T_STR;
-        pb = (char *) &b;
-    } else if (IS_NUMBER(b)) {
+    char *pb;    
+    if (IS_NUMBER(b)) {
         numberToString(b, buf, sizeof(buf));
-        sb = strlen(buf);
         pb = buf;
-    } else if (IS_STRING(b)) {    
-        String *s = (String *) b;
-        sb = s->size;
-        pb = s->s;
+        sb = strlen(buf);
     } else {
-        ERR(true, E_STR_ADD_TYPE);
-        // error();
-        return NIL;
+        ERR(!IS_STRING(b), E_STR_ADD_TYPE);
+        pb = GET_CSTR(b);
+        sb = len(b);
     }
     return stringConcat(a, pb, sb);
 }

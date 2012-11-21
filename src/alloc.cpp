@@ -43,12 +43,12 @@ void Proto::traverse() {
     GC::markVector(consts.buf, consts.size);
 }
 
-CFunc *CFunc::alloc(void *f, int dataSize) {
-    return (CFunc *) GC::alloc(O_CFUNC, sizeof(CFunc) + dataSize, true);
+CFunc *CFunc::alloc(tfunc f, int dataSize) {
+    return new (GC::alloc(O_CFUNC, sizeof(CFunc) + dataSize, true)) CFunc(f);
 }
 
-String *String::alloc(int size) {
-    String *s = (String *) GC::alloc(O_STR, sizeof(String) - 4 + size, false);
+String *String::alloc(unsigned size) {
+    String *s = (String *) GC::alloc(O_STR, sizeof(String) + size + 1, false);
     s->size = size;
     return s;
 }

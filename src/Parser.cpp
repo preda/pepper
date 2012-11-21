@@ -8,6 +8,8 @@
 #include "Func.h"
 #include "Proto.h"
 #include "SymbolTable.h"
+#include "CFunc.h"
+#include "FFI.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -58,12 +60,14 @@ Func *Parser::parseStatList(const char *text) {
     Proto *proto = Proto::alloc(0);
     if (Parser::parseStatList(proto, &syms, text)) { return 0; }
     close(proto);
-    return Func::alloc(proto, 0, 0);    
+    return Func::alloc(proto, 0, 0);
 }
 
 void Parser::_parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(text);
-    Parser(proto, syms, &lexer).statList();
+    Parser parser(proto, syms, &lexer);
+    parser.defineName("ffi", VAL_OBJ(CFunc::alloc(ffiConstruct, sizeof(FFIData))));
+    parser.statList();
 }
 
 void Parser::block() {
@@ -274,6 +278,13 @@ static int binaryPriorityRight(int token) {
     return token == '^' ? left-1 : left;
 }
 
+void Parser::defineName(const char *sname, Value a) {
+    u64 name = hash64(sname);
+    proto->ups.push(0);
+    proto->consts.push(a);
+    syms->set(name, -proto->ups.size);
+}
+
 SymbolData Parser::createUpval(Proto *proto, u64 name, SymbolData sym) {
     if (sym.level < proto->level - 1) {
         sym = createUpval(proto->up, name, sym);
@@ -424,7 +435,7 @@ Value Parser::suffixedExpr(int top) {
         break;
 
     case TK_STRING:
-        a = VAL_STRING(lexer->info.strVal, lexer->info.strLen);
+        a = String::makeVal(lexer->info.strVal, lexer->info.strLen);
         advance();
         restrict = "[";
         break;
@@ -534,9 +545,8 @@ void Parser::patchOrEmitMove(int dest, Value src) {
 
 Value Parser::maybeAllocConst(Value a) {
     int ta = TAG(a);
-    if (a==NIL || a==EMPTY_ARRAY || a==EMPTY_MAP ||
-        ta==T_REG || ta==T_STR ||
-        (ta==T_INT && getInteger(a)>=-64 && getInteger(a)<64)) {
+    if (a==NIL || a==EMPTY_ARRAY || a==EMPTY_MAP || a==EMPTY_STRING ||
+        ta==T_REG || (ta==T_INT && getInteger(a)>=-64 && getInteger(a)<64)) {
         return a;
     }
     proto->ups.push(0);
@@ -550,10 +560,10 @@ byte Parser::getRegValue(Value a) {
     return
         ta==T_REG && (int)a >= 0 ? (int) a :
         ta==T_REG ? 0x80 | (-(int)a-1) :
-        a==NIL    ? 0x80 :
-        ta==T_STR ? 0x81 :
-        a==EMPTY_ARRAY ? 0x82 :
-        a==EMPTY_MAP   ? 0x83 :
+        a==NIL          ? 0x80 :
+        a==EMPTY_STRING ? 0x81 :
+        a==EMPTY_ARRAY  ? 0x82 :
+        a==EMPTY_MAP    ? 0x83 :
         ((unsigned)a & 0x7f);
 }
 

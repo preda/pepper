@@ -1,6 +1,6 @@
 #pragma once
 
-#include "CFunc.h"
+#include "Value.h"
 
 struct FFIData {
     void *f;
@@ -18,10 +18,11 @@ enum CTypes {
     CLONGLONG,
     CDOUBLE,
     CELLIPSE,
+    PTRDIFF,
     CPTR   = 16,
     CPTR2  = 32,
     CCONST = 64
 };
 
-int ffiCall(int op, byte *data, Value *stack, int nCallArg);
-int ffiConstruct(int op, byte *data, Value *stack, int nCallArg);
+int ffiCall(int op, FFIData *data, Value *stack, int nCallArg);
+int ffiConstruct(int op, void *data, Value *stack, int nCallArg);

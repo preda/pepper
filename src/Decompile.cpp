@@ -3,13 +3,14 @@
 #include "VM.h"
 #include "Proto.h"
 #include "Object.h"
+#include "String.h"
 
 #include <stdio.h>
 #include <string.h>
 
 
 static const char *objTypeName[] = {
-    0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", 0, 0, "STRING"
+    0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", "O_STR",
 };
 
 // static const char *emptyVals[] = {0, "[]", "{}", 0, 0, 0, 0, 0, "\"\""};
@@ -40,33 +41,33 @@ static bool init() {
 }
 
 static void printValue(char *buf, int bufSize, Value a) {
-    const int t = TAG(a);
-    // printf("tag %d\n", t);
-    if (t == T_INT) {
+    if (IS_INT(a)) {
         snprintf(buf, bufSize, "%lld", getInteger(a));
-        // printf("foo %s\n", buf);
-    } else if (IS_DOUBLE_TAG(t)) {
+    } else if (IS_DOUBLE(a)) {
         snprintf(buf, bufSize, "%g", getDouble(a));
     } else if (a==NIL) {
         snprintf(buf, bufSize, "NIL");
-    } else if (t == T_OBJ) {
-        int type = ((Object *) a)->type;
-        snprintf(buf, bufSize, "OBJECT(%s) %p", objTypeName[type], (Object *)a);
-    } else if (t == T_REG) {
+    } else if (IS_STRING(a)) {
+        snprintf(buf, bufSize, "\"%s\"", GET_CSTR(a));
+    } else if (TAG(a) == T_OBJ) {
+        int type = O_TYPE(a);
+        snprintf(buf, bufSize, "%5s %p", objTypeName[type], (Object *)a);
+    } else if (IS_REG(a)) {
         snprintf(buf, bufSize, "register %d", (int)a);
-        // } else if (t <= STRING) { snprintf(buf, bufSize, "%s", emptyVals[t]);
-    } else if (IS_SHORT_STR(a)) {
-        int sz = t - T_STR;
-        char tmp[8] = {0};
-        memcpy(tmp, (char *)&a, sz);
-        snprintf(buf, bufSize, "\"%s\"", tmp);
     } else {
-        snprintf(buf, bufSize, "<?%d>", t);
+        snprintf(buf, bufSize, "<?%d>", TAG(a));
     }
 }
 
+    /* else if (IS_SHORT_STR(a)) {
+        int sz = TAG(a) - T_STR;
+        char tmp[8] = {0};
+        memcpy(tmp, (char *)&a, sz);
+        snprintf(buf, bufSize, "\"%s\"", tmp);
+        } */
+
 void printValue(Value a) {
-    char buf[32];
+    char buf[256];
     printValue(buf, sizeof(buf), a);
     fprintf(stderr, "%s\n", buf);
 }

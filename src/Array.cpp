@@ -53,25 +53,21 @@ void Array::set(Value arr, Value pos, Value v) {
 }
 
 void Array::appendChars(char *s, int size) {
-    Value c = VALUE(T_STR + 1, 0);
+    Value c = String::makeVal(1);
+    char *pc = GET_CSTR(c);
     unsigned oldSize = vect.size;
     vect.setSize(oldSize + size);
     for (Value *p = vect.buf+oldSize, *end = p + size; p < end; ++p, ++s) {
-        *((char *) &c) = *s;
-        *p = c;            
+        *pc = *s;
+        *p  = c;            
     }
 }
 
 void Array::add(Value v) {
     ERR(!(IS_ARRAY(v) || IS_STRING(v) || IS_MAP(v)), E_ADD_NOT_COLLECTION);
-    if (IS_SHORT_STR(v)) {
-        appendChars((char *) &v, TAG(v) - T_STR);
+    if (IS_STRING(v)) {
+        appendChars(GET_CSTR(v), len(v));
     } else {
-        assert(TAG(v) == T_OBJ);
-        switch (((Object *) v)->type) {
-        case O_ARRAY:  appendArray((Array *) v); break;
-        case O_STR:    appendChars(((String *) v)->s, ((String *) v)->size); break;
-        case O_MAP:    appendArray((Array *) v); break;
-        }
+        appendArray((Array *) v); // handles both MAP & ARRAY
     }
 }

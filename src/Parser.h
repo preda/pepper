@@ -36,16 +36,8 @@ class Parser {
     Value codeBinary(int top, int op, Value a, Value b);
 
     void advance();
-
-public:
-    static Func *parseFunc(const char *text);
-    static Func *parseStatList(const char *text);
-
-    static int parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
-    static void close(Proto *proto);
-
     void consume(int t);
-    
+
     Value expr(int top);
     Value subExpr(int top, int limit);
     Value suffixedExpr(int top);
@@ -62,4 +54,13 @@ public:
     void ifStat();
     void assignStat();
     void exprOrAssignStat();
+
+public:
+    static Func *parseFunc(const char *text);
+    static Func *parseStatList(const char *text);
+
+    static int parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
+    static void close(Proto *proto);
+
+    void defineName(const char *name, Value a);
 };
