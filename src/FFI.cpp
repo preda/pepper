@@ -7,7 +7,7 @@
 #include <dlfcn.h>
 #include <stdio.h>
 
-#define SIZE(t) (((t) | CPTR) ? sizeof(void*) : typeSize[(t) & 0xf])
+#define SIZE(t) (((t) & CPTR) ? sizeof(void*) : typeSize[(t) & 0xf])
 
 const char *nextType(const char *s, const char *delims, int *len, const char **next) {
     while (*s == ' ') { ++s; }
@@ -21,6 +21,9 @@ const char *nextType(const char *s, const char *delims, int *len, const char **n
     return s;    
 }
 
+#define CHAR_PTR (CPTR|CCHAR)
+#define CONST_CHAR_PTR (CCONST|CPTR|CCHAR)
+
 static int strToType(const char *s, int len) {
     const char *names[] = {
         "void", "const char *", "char *", "void *", 
@@ -28,7 +31,7 @@ static int strToType(const char *s, int len) {
         "double", "char", "...", "ptrdiff",
     };
     int types[] = {
-        CVOID, CCONST|CPTR|CCHAR, CPTR|CCHAR, CPTR|CVOID,
+        CVOID, CONST_CHAR_PTR, CHAR_PTR, CPTR|CVOID,
         CINT, CINT, CLONG, CLONG, CLONGLONG, CLONGLONG,
         CDOUBLE, CINT, CELLIPSE, PTRDIFF,
     };
@@ -47,19 +50,24 @@ int parseTypesC(const char *decl, int maxSize, byte *outTypes, byte *retType, bo
     const char *next;
     int len;
     const char *s = nextType(decl, "(", &len, &next);
-    unsigned t = strToType(s, len);
-    if (t < 0) { return 0; }
+    int t = strToType(s, len);
+    ERR(t < 0, E_FFI_INVALID_SIGNATURE);
     *retType = t;
     int n = 0;
     while (next) {
         s = nextType(next, ",)", &len, &next);
         t = strToType(s, len);
-        if (t < 0) { return 0; }
+        ERR(t < 0, E_FFI_INVALID_SIGNATURE);
         outTypes[n++] = t;
     }
     if (n > 1 && outTypes[n-1]==CELLIPSE) {
         --n;
         *hasEllipsis = true;
+        int prev = outTypes[n-1];
+        ERR(!(prev==CONST_CHAR_PTR || prev==CHAR_PTR), E_FFI_INVALID_SIGNATURE);
+    }
+    for (int i = 0; i < n; ++i) {
+        ERR(outTypes[i] == CELLIPSE, E_FFI_INVALID_SIGNATURE);
     }
     return n;
 }
@@ -72,11 +80,11 @@ int parseTypesVararg(const char *decl, int maxSize, byte *outTypes) {
         if (p == 0) { return n; }
         char c;
         while ((c=*p) && !(('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z'))) { ++p; }
+        int lng = 0;
     again:
         c = *p;
         if (!c) { return n; }
         int t = 0;
-        int lng = 0;
         switch (c) {
         case 's': t = CPTR | CCHAR; break;
         case 'p': t = CPTR; break;
@@ -101,11 +109,11 @@ u64 castValue(Value &v, int t) {
     } else if (t & CPTR) {
         // TODO: array -> pointer
     } else if ((t & 0xf) == CDOUBLE) {
-        if (IS_NUMBER(v)) {
-            u64 tmp;
-            *(double*)(&tmp) = getDouble(v);
-            return tmp;
-        }
+        ERR(!IS_NUMBER(v), E_FFI_TYPE_MISMATCH);
+        u64 tmp;
+        *(double*)(&tmp) = getDouble(v);
+        printf("* %d %f %llx\n", t, getDouble(v), tmp);
+        return tmp;
     } else if (t==CCHAR || t==CINT || t==CLONG || t==CLONGLONG) {
         if (IS_INT(v)) {
             return getInteger(v);
@@ -124,54 +132,51 @@ unsigned makeCode(byte *types, int n) {
     return code;
 }
 
-int ffiConstruct(int op, void *data, Value *stack, int nCallArg) {
-    Value a = stack[0];
-    stack[0] = NIL;
-    if (op == 0) {
-        if (nCallArg != 2) { return 1; }
-
-        Value b = stack[1];
-        if (!IS_STRING(a) || !IS_STRING(b)) {
-            return 2;
-        }
-        const char *fname = GET_CSTR(a);
-        const char *signature = GET_CSTR(b);
-        void *f = dlsym(0, fname);
-        if (!f) { return 1; }
-        FFIData d;
-        d.f = f;            
-        d.nArg = parseTypesC(signature, 8, d.argType, &d.retType, &d.hasEllipsis);
-        CFunc *cfunc = CFunc::alloc((tfunc) ffiCall, sizeof(d));
-        *(FFIData *)(cfunc->data) = d;
-        stack[0] = VAL_OBJ(cfunc);
-    }
-    return 0;
+static Value ffiConstructInt(Value *stack, int nCallArg) {
+    ERR(nCallArg != 2, E_FFI_N_ARGS);
+    Value a = stack[0], b = stack[1];
+    ERR(!IS_STRING(a) || !IS_STRING(b), E_FFI_TYPE_MISMATCH);
+    void *func = dlsym(0, GET_CSTR(a));
+    if (!func) { return NIL; }
+    FFIData d;
+    d.f = func;
+    d.nArg = parseTypesC(GET_CSTR(b), 8, d.argType, &d.retType, &d.hasEllipsis);
+    if (d.nArg < 0) { return NIL; }
+    CFunc *cfunc = CFunc::alloc((tfunc) ffiCall, sizeof(FFIData));
+    *(FFIData *)(cfunc->data) = d;
+    return VAL_OBJ(cfunc);
 }
 
-int ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
+void ffiConstruct(int op, void *data, Value *stack, int nCallArg) {
+    stack[0] = op == 0 ? ffiConstructInt(stack, nCallArg) : NIL;
+}
+
+void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
     if (op == 0) {
         u64 p1[8] = {0};        
         int nArg = d->nArg;
         byte *argType = d->argType;
-        // byte retType = d->retType;
-        // unsigned code = 4 | (SIZE(retType) >> 2);
         for (int i = 0; i < nArg; ++i) {
             p1[i] = castValue(stack[i], argType[i]);
         }
         unsigned code = makeCode(argType, nArg);        
         bool hasEllipsis = d->hasEllipsis;
-        if (hasEllipsis && nArg >= 1 && argType[nArg-1] == (CCONST|CPTR|CCHAR) && nCallArg >= nArg && IS_STRING(stack[nArg-1])) {
+        if (hasEllipsis) {
+            ERR(nCallArg < nArg, E_FFI_N_ARGS);
             Value v = stack[nArg-1];
+            ERR(!IS_STRING(v), E_FFI_TYPE_MISMATCH);
             const char *str = GET_CSTR(v);
             byte elipseTypes[8];
             int n = parseTypesVararg(str, 8, elipseTypes);
-            if (nCallArg != nArg + n) {
-                return 1;
+            for (int i = 0; i < n; ++i) {
+                printf("elipse %d\n", (int) elipseTypes[i]);
             }
+            ERR(nCallArg != nArg + n, E_FFI_N_ARGS);
             for (int i = nArg; i < nCallArg; ++i) {
                 p1[i] = castValue(stack[i], elipseTypes[i - nArg]);
             }
             code = (code>>1) | (makeCode(elipseTypes, n) << 4);
+            printf("* code %x\n", code);
         }
         unsigned p0[8] = {0};
         for (int i = 0; i < nCallArg; ++i) {
@@ -179,8 +184,9 @@ int ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
         }
         void *f = d->f;
 
-#define T0 unsigned
-#define T1 u64
+        typedef unsigned T0;
+        typedef u64 T1;
+
 #define F0        case 0b1:          ret = ((u64 (*)()) f)(); break;
 #define F1(a)     case 0b1##a:       ret=((u64(*)(T##a))f)(p##a[0]); break;
 #define F2(a,b)   case 0b1##a##b:    ret=((u64(*)(T##a,T##b))f)(p##a[0],p##b[1]); break;
@@ -247,53 +253,9 @@ int ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
             v = String::makeVal(p, strlen(p));
             break;
         }
-        case PTRDIFF: return VAL_INT(ret - p1[0]); break;
+        case PTRDIFF: v = VAL_INT(ret - p1[0]); break;
         }
 
         stack[0] = v;
     }
-    return 0;
 }
-
-
-/*
-        case   0b100001: ret=((u64(*)(char*, ...))f)(p[0]); break;
-        case  0b1000001: ret=((u64(*)(char*, ...))f)(p[0],(int)p[1]); break;
-        case  0b1100001: ret=((u64(*)(char*, ...))f)(p[0],p[1]); break;
-        case 0b10000001: ret=((u64(*)(char*, ...))f)(p[0],(int)p[1],(int)p[2]); break;
-        case 0b10100001: ret=((u64(*)(char*, ...))f)(p[0],(int)p[1],     p[2]); break;
-        case 0b11000001: ret=((u64(*)(char*, ...))f)(p[0],     p[1],(int)p[2]); break;
-        case 0b11100001: ret=((u64(*)(char*, ...))f)(p[0],     p[1],     p[2]); break;
-
-        case 0b1000010: ret=((u64(*)(int,    char*, ...))f)(p[0], p[1], (int)p[2]);break;
-        case 0b1000011: ret=((u64(*)(u64, char*, ...))f)(p[0], p[1], (int)p[2]);break;
-        case 0b1100010: ret=((u64(*)(int,    char*, ...))f)(p[0], p[1], p[2]); break;
-        case 0b1100011: ret=((u64(*)(u64, char*, ...))f)(p[0], p[1], p[2]); break;
-*/
-            /*
-        case 0b1000: ret = ((u64 (*)(int, int, int)) f)(p[0], p[1], p[2]); break;
-        case 0b1001: ret = ((u64 (*)(int, int, u64)) f)(p[0], p[1], p[2]); break;
-        case 0b1010: ret = ((u64 (*)(int, u64, int)) f)(p[0], p[1], p[2]); break;
-        case 0b1011: ret = ((u64 (*)(int, u64, u64)) f)(p[0], p[1], p[2]); break;
-        case 0b1100: ret = ((u64 (*)(u64, int, int)) f)(p[0], p[1], p[2]); break;
-        case 0b1101: ret = ((u64 (*)(u64, int, u64)) f)(p[0], p[1], p[2]); break;
-        case 0b1110: ret = ((u64 (*)(u64, u64, int)) f)(p[0], p[1], p[2]); break;
-        case 0b1111: ret = ((u64 (*)(u64, u64, u64)) f)(p[0], p[1], p[2]);break;
-            */
-/*
-        case   0b1: 
-            F1(0);
-            F1(1);
-            F2(0,0);
-            F2(0,1);
-            F2(1,0);
-            F2(1,1);
-            F3(0,0,0);
-            F3(0,0,1);
-            F3(0,1,0);
-            F3(0,1,1);
-            F3(1,0,0);
-            F3(1,0,1);
-            F3(1,1,0);
-            F3(1,1,1);
-*/

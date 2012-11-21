@@ -24,5 +24,5 @@ enum CTypes {
     CCONST = 64
 };
 
-int ffiCall(int op, FFIData *data, Value *stack, int nCallArg);
-int ffiConstruct(int op, void *data, Value *stack, int nCallArg);
+void ffiCall(int op, FFIData *data, Value *stack, int nCallArg);
+void ffiConstruct(int op, void *data, Value *stack, int nCallArg);

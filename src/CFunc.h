@@ -2,7 +2,7 @@
 
 #include "Value.h"
 
-typedef int (*tfunc)(int op, void *data, Value *stack, int nCallArg);
+typedef void (*tfunc)(int op, void *data, Value *stack, int nCallArg);
 
 class CFunc {
     CFunc(tfunc f);
@@ -16,7 +16,7 @@ class CFunc {
     static CFunc *alloc(tfunc f, int dataSize);
     void traverse() { func(1, data, 0, 0); }
 
-    int call(Value *stack, int nCallArg) {
-        return func(0, data, stack, nCallArg);
+    void call(Value *stack, int nCallArg) {
+        func(0, data, stack, nCallArg);
     }
 };

@@ -66,7 +66,7 @@ Func *Parser::parseStatList(const char *text) {
 void Parser::_parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(text);
     Parser parser(proto, syms, &lexer);
-    parser.defineName("ffi", VAL_OBJ(CFunc::alloc(ffiConstruct, sizeof(FFIData))));
+    parser.defineName("ffi", VAL_OBJ(CFunc::alloc(ffiConstruct, 0)));
     parser.statList();
 }
 
