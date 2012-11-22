@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <setjmp.h>
 
 #define UNUSED      VAL_REG(0)
 #define EMPTY_ARRAY VAL_OBJ(1)
@@ -63,11 +64,17 @@ Func *Parser::parseStatList(const char *text) {
     return Func::alloc(proto, 0, 0);
 }
 
-void Parser::_parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+extern __thread jmp_buf jumpBuf;
+
+int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+    if (int err = setjmp(jumpBuf)) {
+        return err;
+    }
     Lexer lexer(text);
     Parser parser(proto, syms, &lexer);
     parser.defineName("ffi", VAL_OBJ(CFunc::alloc(ffiConstruct, 0)));
     parser.statList();
+    return 0;
 }
 
 void Parser::block() {

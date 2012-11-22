@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <setjmp.h>
 
 #define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
 
@@ -130,7 +131,13 @@ Value *VM::maybeGrowStack(Value *regs) {
 
 #define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
 
+extern __thread jmp_buf jumpBuf;
 Value VM::run(Func *f) {
+    if (int err = setjmp(jumpBuf)) {
+        (void) err;
+        return NIL;
+    }
+
     static void *dispatch[] = {
         &&jmp, &&call, &&return_, &&func,
         &&get, &&set, &&move, &&len,

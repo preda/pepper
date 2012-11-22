@@ -17,6 +17,20 @@ static void init() {
     _(ASSIGN_TO_CONST);
     _(ASSIGN_RHS);
     _(SYNTAX);
+    _(OBJECT_TYPE);
+    _(SET_NEGATIVE_INDEX);
+    _(INDEX_NOT_INT);
+    _(NOT_INDEXABLE);
+    _(STRING_WRITE);
+    _(LEN_NOT_COLLECTION);
+    _(ADD_NOT_COLLECTION);
+    _(STR_ADD_TYPE);
+
+    _(FFI_TYPE_MISMATCH);
+    _(FFI_VARARG);
+    _(FFI_INVALID_SIGNATURE);
+    _(FFI_N_ARGS);
+    _(FFI_CIF);
 #undef _
 }
 
@@ -29,12 +43,4 @@ u64 error(const char *file, int line, int err) {
         fprintf(stderr, "ERROR %d %s at %s:%d\n", err, errorMes[err], file, line);
     }
     longjmp(jumpBuf, err); 
-}
-
-int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
-    if (int err = setjmp(jumpBuf)) {
-        return err;
-    }
-    _parseStatList(proto, syms, text);
-    return 0;
 }

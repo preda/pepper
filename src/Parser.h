@@ -12,7 +12,6 @@ class Parser {
     Proto *proto;
     SymbolTable *syms;
     Lexer *lexer;
-    static void _parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
 
     Parser(Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();
