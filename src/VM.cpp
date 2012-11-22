@@ -80,20 +80,6 @@ Value doPow(Value a, Value b) {
     return NIL;
 }
 
-/*
-Value doAnd(Value a, Value b) {
-    return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) & getInteger(b)) : ERROR(E_WRONG_TYPE);
-}
-
-Value doOr(Value a, Value b) {
-    return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) | getInteger(b)) : ERROR(E_WRONG_TYPE);
-}
-
-Value doXor(Value a, Value b) {
-    return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
-}
-*/
-
 Value doGet(Value a, Value b) {
     return 
         IS_ARRAY(a)  ? Array::get(a, b)  :
@@ -141,15 +127,23 @@ Value VM::run(Func *f) {
     }
 
     static void *dispatch[] = {
-        &&jmp, &&call, &&return_, &&func,
-        &&get, &&set, &&move, &&len,
-        &&add, &&sub, &&mul, &&div, 
+        &&jmp, &&call, 
+        &&return_, &&func,
+        &&get, &&set,
+        &&move, &&len,
+
+        &&add, &&sub,
+        &&mul, &&div,
         &&mod, &&pow,
-        &&and_, &&or_, &&xor_, 
+
+        &&andb, &&orb, 
+        &&xorb, &&notb,
         &&shl, &&shr,
-        &&bnot, &&lnot,
-        &&eq, &&lt, &&le,
-        0, 0, 0, 0, 0, 0, 0, 0,
+
+        &&notl,
+        &&eq, &&neq,
+        &&lt, &&le,
+        0, 0, 0, 0, 0, 0, 0,
         _32TIMES(&&decA),
         _32TIMES(&&decB),
         _32TIMES(&&decAB),
@@ -264,19 +258,19 @@ Value VM::run(Func *f) {
  pow:  *ptrC = doPow(A, B); STEP;
 
 #define BITOP(op, A, B) IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) op getInteger(B)) : ERROR(E_WRONG_TYPE)
- and_: *ptrC = BITOP(&,  A, B); STEP;
- xor_: *ptrC = BITOP(^,  A, B); STEP;
- or_:  *ptrC = BITOP(|,  A, B); STEP;
+ andb: *ptrC = BITOP(&,  A, B); STEP;
+ orb:  *ptrC = BITOP(|,  A, B); STEP;
+ xorb: *ptrC = BITOP(^,  A, B); STEP;
+ notb: *ptrC = IS_INT(A) ? VAL_INT(~getInteger(A)) : ERROR(E_WRONG_TYPE); STEP;
  shl:  *ptrC = BITOP(<<, A, B); STEP;
  shr:  *ptrC = BITOP(>>, A, B); STEP;
 
- bnot: *ptrC = IS_INT(A) ? VAL_INT(~getInteger(A)) : ERROR(E_WRONG_TYPE); STEP;
- lnot: *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
- 
- eq:   *ptrC = equals(A, B) ? TRUE : FALSE; STEP;
+ notl: *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
+ eq:   *ptrC = A==B || equals(A, B) ? TRUE  : FALSE; STEP;
+ neq:  *ptrC = A==B || equals(A, B) ? FALSE : TRUE;  STEP;
 
- lt:   *ptrC = NIL; STEP;
- le:   *ptrC = NIL; STEP;
+ lt:   *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
+ le:   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
  len:  *ptrC = len(A); STEP;
 
     return 0;
@@ -286,9 +280,30 @@ bool opcodeHasDest(int op) {
     return (ADD <= op && op <= LEN) || op == MOVE || op == GET;
 }
 
+bool lessThan(Value a, Value b) {
+    if (IS_INT(a) && IS_INT(b)) {
+        return getInteger(a) < getInteger(b);
+    }
+    if (IS_NUMBER(a) && IS_NUMBER(b)) {
+        return getDouble(a) < getDouble(b);
+    }
+    if (IS_STRING(a) && IS_STRING(b)) {
+        char *p1 = GET_CSTR(a);
+        char *p2 = GET_CSTR(b);
+        unsigned len1 = len(a);
+        unsigned len2 = len(b);
+        int cmp = strncmp(p1, p2, min(len1, len2));
+        return cmp < 0 || (cmp == 0 && len1 < len2);
+    }
+    if (IS_ARRAY(a) && IS_ARRAY(b)) {
+        return ((Array *) a)->lessThan((Array *) b);
+    }
+    return false;
+}
+
 bool equals(Value a, Value b) {
     if (a == b) { return true; }
-    if (TAG(a) == T_OBJ && TAG(b) == T_OBJ && O_TYPE(a) == O_TYPE(b)) {
+    if (IS_OBJ(a) && IS_OBJ(b) && O_TYPE(a) == O_TYPE(b)) {
         switch (O_TYPE(a)) {
         case O_STR: return ((String *) a)->equals((String *) b);
         case O_ARRAY:  return ((Array *) a)->equals((Array *) b);

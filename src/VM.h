@@ -13,11 +13,6 @@ Value doDiv(Value a, Value b);
 Value doMod(Value a, Value b);
 Value doPow(Value a, Value b);
 
-
-Value doAnd(Value a, Value b);
-Value doOr(Value a, Value b);
-Value doXor(Value a, Value b);
-
 #define OP(c) ((byte)  (c))
 #define OA(c) ((byte)  (c >> 8))
 #define OB(c) ((byte)  (c >> 16))
@@ -35,10 +30,17 @@ enum {
     MOVE,
     LEN,
 
-    ADD, SUB, MUL, DIV, MOD, POW, // Arithmetic ops
-    AND, OR, XOR, SHL, SHR,       // Bit ops
-    BNOT, LNOT,
-    EQ, LT, LE, // numeric comparison ==, <, <=    
+    ADD, SUB,
+    MUL, DIV, 
+    MOD, POW,
+
+    AND, OR,
+    XOR, NOTB,
+    SHL, SHR,
+
+    NOTL, 
+    EQ, NEQ,
+    LT, LE, // numeric comparison ==, <, <=    
 };
 
 bool opcodeHasDest(int opcode);

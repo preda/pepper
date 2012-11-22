@@ -79,11 +79,11 @@ static inline s64 getInteger(Value val) {
 }
 
 static inline double getDouble(Value val) {
-    if (TAG(val)==T_INT) {
+    if (IS_INT(val)) {
         return getInteger(val);
     } else {
         ValueUnion u{v: val};
-        u.w.w2 ^= 0xffffffff;
+        u.w.w2 = ~u.w.w2;
         return u.d;
     }
 }
@@ -93,3 +93,5 @@ static inline double getDouble(Value val) {
 unsigned hashCode(Value a);
 unsigned len(Value a);
 bool equals(Value a, Value b);
+bool lessThan(Value a, Value b);
+// bool lessEqual(Value a, Value b);

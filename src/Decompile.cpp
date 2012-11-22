@@ -34,7 +34,9 @@ static bool init() {
     __(MOD, POW, AND, OR);
     __(AND, OR, SHL, SHR);
     _(XOR);
-    _(LNOT); _(BNOT); _(LEN);
+    _(NOTL); _(NOTB); _(LEN);
+    _(EQ); _(NEQ);
+    _(LT); _(LE);
     
 #undef _
 #undef __

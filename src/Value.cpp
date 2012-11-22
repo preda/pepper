@@ -2,8 +2,6 @@
 #include "String.h"
 #include "Object.h"
 #include <assert.h>
-// #include <string.h>
-// #include <stdio.h>
 
 unsigned hashCode(Value a) {
     if (IS_STRING(a)) {
@@ -23,16 +21,3 @@ unsigned len(Value a) {
     ERR(!(IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a)), E_LEN_NOT_COLLECTION);
     return ((Object *) a)->size;
 }
-
-/*
-void Value::setString(int len, const char *s) {
-    t.tag = STR0 + len;
-    memcpy(ptr, s, len);
-}
-    
-int Value::getString(char *s) {
-    int len = t.tag - STR0;
-    memcpy(s, ptr, len);
-    return len;
-}
-*/

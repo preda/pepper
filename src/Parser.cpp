@@ -135,8 +135,6 @@ static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
     return bigop & 0x1f;
 }
 
-static int max(int a, int b) { return a < b ? b : a; }
-
 static int topAbove(Value a, int top) {
     if (!IS_REG(a)) {
         return top;
@@ -236,7 +234,7 @@ Value Parser::codeUnary(int top, int op, Value a) {
     Value b = UNUSED;
     int opcode = 0;
     switch (op) {
-    case '!': opcode = LNOT; break;
+    case '!': opcode = NOTL; break;
     case '-': opcode = SUB; b = a; a = ZERO; break;
     case '~': opcode = XOR; b = VAL_INT(-1); break;
     case '#': opcode = LEN; break;
@@ -252,6 +250,7 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
         Value c = foldBinary(op, a, b);
         if (c != NIL) { return c; }
     }
+    Value c;
     int opcode = 0;
     switch (op) {
         // arithmetic
@@ -270,9 +269,18 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
     case TK_SHIFT_L: opcode = SHL; break;
     case TK_SHIFT_R: opcode = SHR; break;
 
+    case '<':          opcode = LT; break;
+    case '<'+TK_EQUAL: opcode = LE; break;
+
+    case '>':          c=a; a=b; b=c; opcode = LT; break;
+    case '>'+TK_EQUAL: c=a; a=b; b=c; opcode = LE; break;
+
+    case '='+TK_EQUAL: opcode = EQ; break;
+    case '!'+TK_EQUAL: opcode = NEQ; break;
+
     default: assert(false);
     }
-    Value c = VAL_REG(top);
+    c = VAL_REG(top);
     emitCode(makeCode(opcode, c, a, b));
     return c;
 }

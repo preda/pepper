@@ -13,6 +13,9 @@ int catchError();
 #define ERR(cond, mes) if (cond) { error(__FILE__, __LINE__, mes); }
 #define ERROR(mes) error(__FILE__, __LINE__, mes)
 
+#define min(a, b) ((a)<(b)?(a):(b))
+#define max(a, b) ((a)<(b)?(b):(a))
+
 enum {
     E_VAR_NAME = 1,
     E_NAME_NOT_FOUND,

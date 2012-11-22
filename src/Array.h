@@ -27,4 +27,5 @@ class Array {
     unsigned size() { return vect.size; }
     void add(Value v);
     bool equals(Array *a);
+    bool lessThan(Array *a);
 };

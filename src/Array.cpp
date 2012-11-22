@@ -16,6 +16,20 @@ Array *Array::alloc(Vector<Value> *v) {
     return a;
 }
 
+bool Array::lessThan(Array *a) {
+    if (vect.size != a->vect.size) {
+        return vect.size < a->vect.size;
+    }
+    for (Value *p1=vect.buf, *end=p1+vect.size, *p2=a->vect.buf; p1<end; ++p1, ++p2) {
+        if (::lessThan(*p1, *p2)) {
+            return true;
+        } else if (::lessThan(*p2, *p1)) {
+            return false;
+        }
+    }
+    return false;
+}
+
 bool Array::equals(Array *a) {
     if (vect.size != a->vect.size) { return false; }
     for (Value *p1=vect.buf, *end=p1+vect.size, *p2=a->vect.buf; p1<end; ++p1, ++p2) {
