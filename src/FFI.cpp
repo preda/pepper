@@ -13,10 +13,10 @@ enum CTypes {
     ELLIPSE,
 
     // return only
-    VOID = 1,
-    PTRDIFF,
+    VOID,
 
     // pointers
+    PTRDIFF,
     CHAR_PTR,
     VOID_PTR,
 
@@ -28,11 +28,15 @@ enum CTypes {
     LLONG,
     DOUBLE,
 
+    // for pointer base only
+    CHAR,
+    SHORT,
 };
 
 ffi_type *ffiTypes[]  = {
-    0, &ffi_type_void, &ffi_type_pointer,
-    &ffi_type_pointer, &ffi_type_pointer,
+    0, 0,
+    &ffi_type_void, 
+    &ffi_type_pointer, &ffi_type_pointer, &ffi_type_pointer,
     &ffi_type_sint32, &ffi_type_float,
     &ffi_type_sint64, &ffi_type_double,
 };
@@ -51,23 +55,45 @@ static const char *nextType(const char *s, const char *delims, int *len, const c
 
 static int strToType(const char *s, int len) {
     const char *names[] = {
-        "void", "ptrdiff", "...",
-        "const char *", "char *", "void *", 
-        "int", "unsigned", "unsigned int", "char", "short",
-        "long long", "unsigned long long",
-        "float", "double",
+        "void", "offset", "...",
+        "char", "short", "int", "unsigned", 
+        "long long", "float", "double",
     };
+
     int types[] = {
         VOID, PTRDIFF, ELLIPSE,
-        CHAR_PTR, CHAR_PTR, VOID_PTR,
-        INT, INT, INT, INT, INT,
-        LLONG, LLONG, 
-        FLOAT, DOUBLE,
+        CHAR, SHORT, INT, INT,
+        LLONG, FLOAT, DOUBLE,
     };
+
+    bool isPtr = false;
+    if (s[len-1] == '*') {
+        isPtr = true;
+        --len;
+        while (len>0 && s[len-1]==' ') {
+            --len;
+        }
+    }
+    if (len >= 6 && !strncmp(s, "const ", 6)) {
+        s += 6; len -= 6;
+
+    } else if (len >= 9 && !strncmp(s, "unsigned ", 9)) {
+        s += 9; len -= 9;
+    }
+    while (len && *s == ' ') { ++s; --len; } 
     int n = sizeof(types) / sizeof(types[0]);
     for (int i = 0; i < n; ++i) {
         if (!strncmp(s, names[i], len)) {
-            return types[i];
+            int t = types[i];            
+            if (t == CHAR) {
+                t = isPtr ? CHAR_PTR : INT;
+            } else if (t == SHORT) {
+                assert(!isPtr);
+                t = INT;
+            } else if (t == VOID && isPtr) {
+                t = VOID_PTR;
+            }
+            return t;
         }
     }
     return 0;
@@ -145,23 +171,25 @@ static Value ffiConstructInt(Value *stack, int nCallArg) {
     ERR(!IS_STRING(a) || !IS_STRING(b), E_FFI_TYPE_MISMATCH);
     void (*func)() = (void(*)()) dlsym(0, GET_CSTR(a));
     if (!func) { return NIL; }
-    FFIData d;
-    d.func = func;
-    const int nArg = parseTypesC(GET_CSTR(b), 8, d.argType, &d.retType, &d.hasEllipsis);
+    CFunc *cfunc = CFunc::alloc((tfunc) ffiCall, sizeof(FFIData));
+    FFIData *d = (FFIData *) cfunc->data;
+    d->func = func;
+    int nArg = d->nArg = parseTypesC(GET_CSTR(b), 8, d->argType, &d->retType, &d->hasEllipsis);
     if (nArg < 0) { return NIL; }
-    d.nArg = nArg;
-    makeFfiSignature(d.ffiArgs, nArg, d.argType);
-    if (!d.hasEllipsis) {
-        int ret = ffi_prep_cif(&d.cif, FFI_DEFAULT_ABI, nArg, ffiTypes[d.retType], d.ffiArgs);
+    makeFfiSignature(d->ffiArgs, nArg, d->argType);
+    if (!d->hasEllipsis) {
+        int ret = ffi_prep_cif(&d->cif, FFI_DEFAULT_ABI, nArg, ffiTypes[d->retType], d->ffiArgs);
         ERR(ret != FFI_OK, E_FFI_CIF);
     }
-    CFunc *cfunc = CFunc::alloc((tfunc) ffiCall, sizeof(FFIData));
-    *(FFIData *)(cfunc->data) = d;
     return VAL_OBJ(cfunc);
 }
 
 void ffiConstruct(int op, void *data, Value *stack, int nCallArg) {
     stack[0] = op == 0 ? ffiConstructInt(stack, nCallArg) : NIL;
+}
+
+extern "C" const char *mytest(const char *a, const char *b) {
+    return a;
 }
 
 void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
@@ -179,7 +207,7 @@ void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
         int ret = ffi_prep_cif_var(&d->cif, FFI_DEFAULT_ABI, nFixArg, nArg, ffiTypes[d->retType], d->ffiArgs);
         ERR(ret != FFI_OK, E_FFI_CIF);
     }
-    ERR(nCallArg != nArg, E_FFI_N_ARGS);
+    ERR(nCallArg < nArg, E_FFI_N_ARGS);
     ffi_raw args[16];
     byte *argType = d->argType;
     ffi_raw *p = args;
