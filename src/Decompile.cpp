@@ -32,7 +32,10 @@ static bool init() {
     _(GET); _(SET),
     __(ADD, SUB, MUL, DIV);
     __(MOD, POW, AND, OR);
-    _(XOR); _(NOT); _(LEN);
+    __(AND, OR, SHL, SHR);
+    _(XOR);
+    _(LNOT); _(BNOT); _(LEN);
+    
 #undef _
 #undef __
 #undef ENTRY

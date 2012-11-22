@@ -80,6 +80,7 @@ Value doPow(Value a, Value b) {
     return NIL;
 }
 
+/*
 Value doAnd(Value a, Value b) {
     return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) & getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
@@ -91,6 +92,7 @@ Value doOr(Value a, Value b) {
 Value doXor(Value a, Value b) {
     return IS_INT(a) && IS_INT(b) ? VAL_INT(getInteger(a) ^ getInteger(b)) : ERROR(E_WRONG_TYPE);
 }
+*/
 
 Value doGet(Value a, Value b) {
     return 
@@ -144,7 +146,8 @@ Value VM::run(Func *f) {
         &&add, &&sub, &&mul, &&div, 
         &&mod, &&pow,
         &&and_, &&or_, &&xor_, 
-        &&lsl, &&lsr, &&asr, &&not_,
+        &&shl, &&shr,
+        &&bnot, &&lnot,
         &&eq, &&lt, &&le,
         0, 0, 0, 0, 0, 0, 0, 0,
         _32TIMES(&&decA),
@@ -259,14 +262,16 @@ Value VM::run(Func *f) {
  div:  *ptrC = doDiv(A, B); STEP;
  mod:  *ptrC = doMod(A, B); STEP;
  pow:  *ptrC = doPow(A, B); STEP;
- and_: *ptrC = NIL;         STEP;
- or_:  *ptrC = NIL;         STEP;
- xor_: *ptrC = NIL;         STEP;
- lsl:  *ptrC = NIL; STEP;
- lsr:  *ptrC = NIL; STEP;
- asr:  *ptrC = NIL; STEP;
 
- not_: *ptrC = NIL; STEP;
+#define BITOP(op, A, B) IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) op getInteger(B)) : ERROR(E_WRONG_TYPE)
+ and_: *ptrC = BITOP(&,  A, B); STEP;
+ xor_: *ptrC = BITOP(^,  A, B); STEP;
+ or_:  *ptrC = BITOP(|,  A, B); STEP;
+ shl:  *ptrC = BITOP(<<, A, B); STEP;
+ shr:  *ptrC = BITOP(>>, A, B); STEP;
+
+ bnot: *ptrC = IS_INT(A) ? VAL_INT(~getInteger(A)) : ERROR(E_WRONG_TYPE); STEP;
+ lnot: *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
  
  eq:   *ptrC = equals(A, B) ? TRUE : FALSE; STEP;
 

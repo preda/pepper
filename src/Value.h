@@ -75,7 +75,7 @@ static inline Value VAL_DOUBLE(double dbl) {
 }
 
 static inline s64 getInteger(Value val) {
-    return (((s64)val) << 16) >> 16;
+    return ((s64) val << 16) >> 16;
 }
 
 static inline double getDouble(Value val) {

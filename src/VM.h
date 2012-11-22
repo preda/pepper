@@ -35,8 +35,9 @@ enum {
     MOVE,
     LEN,
 
-    ADD, SUB, MUL, DIV, MOD, POW,     // Arithmetic binary
-    AND, OR, XOR, LSL, LSR, ASR, NOT, // Bit ops    
+    ADD, SUB, MUL, DIV, MOD, POW, // Arithmetic ops
+    AND, OR, XOR, SHL, SHR,       // Bit ops
+    BNOT, LNOT,
     EQ, LT, LE, // numeric comparison ==, <, <=    
 };
 

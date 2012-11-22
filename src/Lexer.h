@@ -15,8 +15,15 @@ enum TOKENS {
     TK_NIL,
     TK_RETURN,
     TK_VAR,
+
+    TK_LOG_AND,
+    TK_LOG_OR,
+    TK_BIT_XOR,
+
     TK_END_KEYWORD,
 
+    TK_SHIFT_L, TK_SHIFT_R,
+   
     TK_INTEGER, TK_DOUBLE, TK_NAME, TK_STRING, TK_END,
     TK_EQUAL = 257,
 };

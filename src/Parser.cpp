@@ -207,7 +207,7 @@ static Value foldUnary(int op, Value a) {
         switch (op) {
         case '!': return IS_FALSE(a) ? TRUE : FALSE;
         case '-': return doSub(ZERO, a);
-        case '~': return doXor(a, VAL_INT(-1));
+        case '~': return IS_INT(a) ? VAL_INT(~getInteger(a)) : ERROR(E_WRONG_TYPE);
         case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) : ERROR(E_WRONG_TYPE);
         }
     }
@@ -236,7 +236,7 @@ Value Parser::codeUnary(int top, int op, Value a) {
     Value b = UNUSED;
     int opcode = 0;
     switch (op) {
-    case '!': opcode = NOT; break;
+    case '!': opcode = LNOT; break;
     case '-': opcode = SUB; b = a; a = ZERO; break;
     case '~': opcode = XOR; b = VAL_INT(-1); break;
     case '#': opcode = LEN; break;
@@ -254,12 +254,22 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
     }
     int opcode = 0;
     switch (op) {
+        // arithmetic
     case '+': opcode = ADD; break;
     case '-': opcode = SUB; break;
     case '*': opcode = MUL; break;
     case '/': opcode = DIV; break;
     case '%': opcode = MOD; break;
     case '^': opcode = POW; break;
+
+        // bit operations
+    case '&': opcode = AND; break;
+    case '|': opcode = OR;  break;
+
+    case TK_BIT_XOR: opcode = XOR; break;
+    case TK_SHIFT_L: opcode = SHL; break;
+    case TK_SHIFT_R: opcode = SHR; break;
+
     default: assert(false);
     }
     Value c = VAL_REG(top);
@@ -269,13 +279,27 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
 
 static int binaryPriorityLeft(int token) {
     switch (token) {
-    case '+': case '-': return 6;
-    case '*': case '/': case '%': return 7;
     case '^': return 10;
-    case '='+TK_EQUAL: case '<': case '<'+TK_EQUAL: case '!'+TK_EQUAL:
-    case '>': case '>'+TK_EQUAL: return 3;
+    case '*': case '/': case '%': return 8;
+    case '+': case '-': return 7;
+
+    case TK_LOG_AND: return 6;
+        
+    case TK_LOG_OR: return 5;
+
+    case '='+TK_EQUAL: case '!'+TK_EQUAL:
+    case '<': case '<'+TK_EQUAL: 
+    case '>': case '>'+TK_EQUAL: 
+        return 4;
+
+    case TK_SHIFT_L:
+    case TK_SHIFT_R:
+        return 3;
+
     case '&': return 2;
-    case '|': return 1;
+
+    case TK_BIT_XOR: case '|': return 1;
+
     default : return -1;
     }
 }

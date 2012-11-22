@@ -14,7 +14,8 @@ static const char *tokens[] = {
     "break", "continue", 
     "else", "for", "func", "goto",
     "if", "nil", "return", "var",
-    "<end-keyword>", 
+    "and", "or", "xor",
+    "<end-keyword>",
 
     "<integer>", "<double>", "<name>", "<string>", "<end>",
 };
@@ -43,13 +44,6 @@ int Lexer::lookahead() {
 int Lexer::advance() {
     // printf("before advance ");
     token = advanceInt(&info);
-    /*
-    if (token < 32) {
-        printf("token %s\n", tokens[token]);
-    } else {
-        printf("token '%c' (%d)\n", (char) token, token);
-    }
-    */
     return token;
 }
 
@@ -105,7 +99,19 @@ int Lexer::advanceInt(TokenInfo *info) {
             }
             break;
             
-        case '=': case '<': case '>': case '!': case ':': case '-': case '+':
+        case '<': case '>':
+            if (*p == '=' || *p == c) {
+                int t = *p++ == '=' ? c + TK_EQUAL :
+                    c == '<' ? TK_SHIFT_L : TK_SHIFT_R;
+                return t;
+            } else {
+                return c;
+            }
+
+        case '&': return *p == '&' ? ++p, TK_LOG_AND : c;
+        case '|': return *p == '|' ? ++p, TK_LOG_OR  : c;
+
+        case '=': case '!': case ':': case '-': case '+':
             return *p == '=' ? ++p, c + TK_EQUAL : c;
                 
         case '"':
