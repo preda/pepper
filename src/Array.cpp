@@ -54,16 +54,14 @@ void Array::_set(s64 pos, Value v) {
     vect.set((unsigned) pos, v);
 }
 
-Value Array::get(Value arr, Value pos) {
-    assert(IS_ARRAY(arr));
+Value Array::get(Value pos) {
     ERR(!IS_INT(pos), E_INDEX_NOT_INT);
-    return ((Array *) arr)->_get(getInteger(pos));
+    return _get(getInteger(pos));
 }
 
-void Array::set(Value arr, Value pos, Value v) {
-    assert(IS_ARRAY(arr));
+void Array::set(Value pos, Value v) {
     ERR(!IS_INT(pos), E_INDEX_NOT_INT);
-    ((Array *) arr)->_set(getInteger(pos), v); 
+    _set(getInteger(pos), v); 
 }
 
 void Array::appendChars(char *s, int size) {

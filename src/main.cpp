@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <stdlib.h>
 
 struct T {
     T(const char *s, Value v) : source(s), result(v) {}
@@ -70,7 +71,14 @@ bool compileDecompile(const char *text) {
 
 int main(int argc, char **argv) {
     if (argc > 1) {
-        compileDecompile(argv[1]);
+        const char *s;
+        if (argv[1][0] == '-') {
+            int n = atoi(argv[2]);
+            s = tests[n].source;
+        } else {
+            s = argv[1];
+        }
+        compileDecompile(s);
     } else {
         int n = sizeof(tests) / sizeof(tests[0]);
         int nFail = 0;

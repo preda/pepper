@@ -12,7 +12,8 @@ class Map {
     Map(unsigned iniSize);
     void grow();
     void set(Vector<Value> *keys, Vector<Value> *vals);
-    Value _get(Value key);
+    bool set(Value key, Value v, bool overwrite);
+
     void appendChars(char *s, int len);
     void appendMap(Map *m);
     void appendArray(Array *a);
@@ -24,14 +25,15 @@ class Map {
 
     static Map *alloc(unsigned iniSize = 0);
     static Map *alloc(Vector<Value> *keys, Vector<Value> *vals);
-    static Value get(Value a, Value key);
+
+    Value get(Value key);
+    void set(Value key, Value v) { set(key, v, true); }
 
     ~Map();
         
     Map *copy();
     void traverse();
 
-    bool set(Value key, Value v, bool overwrite);
     bool remove(Value key);
 
     void add(Value v);

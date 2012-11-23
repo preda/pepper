@@ -82,17 +82,21 @@ Value doPow(Value a, Value b) {
 
 Value doGet(Value a, Value b) {
     return 
-        IS_ARRAY(a)  ? Array::get(a, b)  :
+        IS_ARRAY(a)  ? ((Array*)a)->get(b)  :
         IS_STRING(a) ? String::get(a, b) :
-        IS_MAP(a)    ? Map::get(a, b)    :
+        IS_MAP(a)    ? ((Map*)a)->get(b)    :
         ERROR(E_NOT_INDEXABLE);
 }
 
 void doSet(Value c, Value a, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);
     if (IS_ARRAY(c)) {
-
-        
+        // ERR(!IS_INT(a), E_INDEX_NOT_INT);
+        ((Array *) c)->set(a, b);
+    } else if (IS_MAP(c)){
+        ((Map *) c)->set(a, b);
+    } else {
+        ERROR(E_NOT_INDEXABLE);
     }
 }
 
@@ -184,7 +188,7 @@ Value VM::run(Func *f) {
     STEP;
 
  get: *ptrC = doGet(A, B); STEP;    
- set: doSet(*ptrC, A, B); STEP;
+ set: doSet(*ptrC, A, B);  STEP;
 
  return_: {
         regs[0] = A;

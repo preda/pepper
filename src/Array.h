@@ -18,8 +18,8 @@ class Array {
     ~Array();
     static Array *alloc(int iniSize = 0);
     static Array *alloc(Vector<Value> *vect);
-    static Value get(Value arr, Value pos);
-    static void  set(Value arr, Value pos, Value v);
+    Value get(Value pos);
+    void  set(Value pos, Value v);
     
     void traverse();
 
