@@ -26,6 +26,8 @@ static void init() {
     _(ADD_NOT_COLLECTION);
     _(STR_ADD_TYPE);
 
+    _(OPEN_STRING);
+
     _(FFI_TYPE_MISMATCH);
     _(FFI_VARARG);
     _(FFI_INVALID_SIGNATURE);

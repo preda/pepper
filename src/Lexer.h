@@ -31,22 +31,16 @@ enum TOKENS {
 union TokenInfo {
     s64 intVal;
     double doubleVal;
-    struct {
-        const char *strVal;
-        int strLen;
-    };
+    Value stringVal;
     u64 nameHash;
 };
 
 class Lexer {
     const char *string, *p, *end;
     int lineNumber;
-    char *readString();
-    // int error, errorPos, errorExpected;
+
     SymbolMap keywords;
-
-    char *readString(int *outLen);
-
+    Value readString();
     int advanceInt(TokenInfo *info);
 
  public:

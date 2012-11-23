@@ -3,6 +3,7 @@
 typedef unsigned char byte;
 typedef unsigned long long u64;
 typedef long long s64;
+typedef u64 Value;
 
 u64 hash64(byte *p, int len, u64 h=0);
 u64 hash64(const char *p);
@@ -33,6 +34,8 @@ enum {
     E_LEN_NOT_COLLECTION,
     E_ADD_NOT_COLLECTION,
     E_STR_ADD_TYPE,
+
+    E_OPEN_STRING,
 
     E_FFI_TYPE_MISMATCH,
     E_FFI_VARARG,

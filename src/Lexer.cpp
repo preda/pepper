@@ -1,5 +1,7 @@
 #include "Lexer.h"
 #include "Vector.h"
+#include "String.h"
+#include "Value.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -115,7 +117,7 @@ int Lexer::advanceInt(TokenInfo *info) {
             return *p == '=' ? ++p, c + TK_EQUAL : c;
                 
         case '"':
-            info->strVal = readString(&info->strLen);
+            info->stringVal = readString();
             return TK_STRING;
         }
     }
@@ -125,7 +127,7 @@ int Lexer::advanceInt(TokenInfo *info) {
     return TK_END; // error
 }
 
-char *Lexer::readString(int *outLen) {
+Value Lexer::readString() {
     char c;
     Vector<char> s;
     while (p < end && (c=*p) != '"') {
@@ -144,11 +146,7 @@ char *Lexer::readString(int *outLen) {
         }
         s.push(c);
     }
-    if (++p > end) {
-        return 0;
-    }
-    s.push('\0');
-    char *ret = strdup(s.buf);
-    *outLen = strlen(ret);
-    return ret;
+    ERR(p >= end, E_OPEN_STRING);
+    ++p;
+    return String::makeVal(s.buf, s.size);
 }
