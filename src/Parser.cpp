@@ -181,13 +181,29 @@ void Parser::varStat() {
     advance();
     int top = proto->localsTop;
     Value a = NIL;
+    int aSlot = -1;
     if (TOKEN == '=') {
         consume('=');
         a = expr(top);
+        SymbolData s = syms->get(name);
+        if (s.kind != KIND_EMPTY && s.level == proto->level && s.slot >= 0) {
+            aSlot = s.slot; // reuse existing local with same name
+        }
+    } else {
+        SymbolData s = lookupName(name);
+        if (s.kind != KIND_EMPTY) {
+            if (s.slot < 0) {
+                a = VAL_REG(s.slot); // init from upval with same name
+            } else {
+                return; // reuse existing local unchanged
+            }
+        }
     }
-    syms->set(name, top);
-    patchOrEmitMove(top, a);
-    ++proto->localsTop;
+    if (aSlot < 0) {
+        aSlot = proto->localsTop++;
+        syms->set(name, aSlot);
+    }
+    patchOrEmitMove(aSlot, a);
 }
 
 static bool isUnaryOp(int token) {
