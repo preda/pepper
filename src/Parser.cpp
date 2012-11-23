@@ -161,16 +161,16 @@ void Parser::ifStat() {
     block();
     if (lexer->token == TK_ELSE) {
         int pos2 = emitHole();
-        emitPatchJumpHere(pos1, a);
+        emitJumpFalse(pos1, a);
         consume(TK_ELSE);
         if (lexer->token == '{') {
             block();
         } else { 
             ifStat();
         }
-        emitPatchJumpHere(pos2, ZERO);
+        emitJumpFalse(pos2, ZERO);
     } else {
-        emitPatchJumpHere(pos1, a);
+        emitJumpFalse(pos1, a);
     }
 }
 
@@ -552,7 +552,38 @@ Value Parser::subExpr(int top, int limit) {
     int prio;
     while ((prio = binaryPriorityLeft(op = TOKEN)) > limit) {
         advance();
-        a = codeBinary(top, op, a, subExpr(topAbove(a, top), op=='^' ? prio-1 : prio));
+        const int rightPrio = op=='^' ? prio-1 : prio;
+        if (op == TK_LOG_AND || op == TK_LOG_OR) {
+            if (!IS_REG(a)) {
+                int saveCodeSize = proto->code.size;
+                Value b = subExpr(top, rightPrio);
+                if ((op==TK_LOG_AND && IS_FALSE(a)) ||
+                    (op==TK_LOG_OR  && !IS_FALSE(a))) {
+                    // drop b
+                    proto->code.size = saveCodeSize;                    
+                } else {
+                    a = b;
+                }
+            } else {
+                int aSlot = (int) a;
+                if (aSlot < top) {
+                    emitCode(makeCode(MOVE, VAL_REG(top), a, UNUSED));
+                    a = VAL_REG(top);
+                    aSlot = top;
+                }
+                int pos1 = emitHole();
+                Value b = subExpr(aSlot, rightPrio);
+                patchOrEmitMove(aSlot, b);
+                if (op == TK_LOG_AND) {
+                    emitJumpFalse(pos1, a);
+                } else {
+                    emitJumpTrue(pos1, a);
+                }
+                a |= FLAG_DONT_PATCH;
+            }
+        } else {
+            a = codeBinary(top, op, a, subExpr(topAbove(a, top), rightPrio));
+        }
     }
     return a;
 }
@@ -565,7 +596,7 @@ Value Parser::expr(int top) {
 // code generation below
 
 void Parser::patchOrEmitMove(int dest, Value src) {
-    if (IS_REG(src)) {
+    if (IS_REG(src) && !(src & FLAG_DONT_PATCH)) {
         int srcSlot = (int) src;        
         if (srcSlot == dest) { return; } // everything is in the right place, do nothing
 
@@ -577,7 +608,7 @@ void Parser::patchOrEmitMove(int dest, Value src) {
             if (srcSlot == (int) c) {
                 proto->code.pop();
                 emitCode(makeCode(op, VAL_REG(dest), a, b));
-                return; // last instruction patched
+                return; // patched
             }
         }
     }
@@ -650,7 +681,12 @@ void Parser::emitPatch(unsigned pos, unsigned code) {
     proto->code.buf[pos] = code;
 }
 
-void Parser::emitPatchJumpHere(unsigned pos, Value cond) {
+void Parser::emitJumpFalse(unsigned pos, Value cond) {
     int offset = proto->code.size - pos - 1;
     emitPatch(pos, makeCode(JMPF, UNUSED, VAL_INT(offset), cond));
+}
+
+void Parser::emitJumpTrue(unsigned pos, Value cond) {
+    int offset = proto->code.size - pos - 1;
+    emitPatch(pos, makeCode(JMPT, UNUSED, VAL_INT(offset), cond));
 }

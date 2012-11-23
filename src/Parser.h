@@ -27,7 +27,8 @@ class Parser {
     void emitCode(unsigned code);
     int  emitHole();
     void emitPatch(unsigned pos, unsigned code);
-    void emitPatchJumpHere(unsigned pos, Value cond);
+    void emitJumpFalse(unsigned pos, Value cond);
+    void emitJumpTrue(unsigned pos, Value cond);
     void patchOrEmitMove(int dest, Value a);
 
     Value codeUnary(int top, int op, Value a);

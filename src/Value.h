@@ -41,12 +41,15 @@ enum {
 #define FALSE VAL_INT(0)
 #define ZERO  VAL_INT(0)
 
-#define IS_INT(v) (TAG(v)==T_INT)
-#define IS_REG(v) (TAG(v) == T_REG)
+#define IS_INT(v) (TAG(v) == T_INT)
 #define IS_DOUBLE_TAG(t) (t&0x7ff0 || t==7 || t==0xf)
 #define IS_NUMBER_TAG(t) (t==T_INT || IS_DOUBLE_TAG(t)) 
 #define IS_DOUBLE(v) IS_DOUBLE_TAG(TAG(v))
 static inline bool IS_NUMBER(Value v) { unsigned t = TAG(v); return IS_NUMBER_TAG(t); }
+
+// REG values used during compilation only
+#define IS_REG(v) (TAG(v) == T_REG)
+#define FLAG_DONT_PATCH (1ull << 32)
 
 #define IS_SHORT_STR(v) (TAG(v) >= T_STR6 && TAG(v) <= T_STR0)
 #define SHORT_STR_LEN(v) (T_STR0 - TAG(v))
