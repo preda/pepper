@@ -27,8 +27,8 @@ static bool init() {
 #define ENTRY(t, n) t[n]=#n
 #define _(n) ENTRY(opNames, n)
 #define __(a, b, c, d) _(a); _(b); _(c); _(d);
-    __(JMP, CALL, RET, FUNC);
-    _(MOVE);
+    _(JMPF); _(JMPT);
+    __(CALL, RET, FUNC, MOVE);
     _(GET); _(SET),
     __(ADD, SUB, MUL, DIV);
     __(MOD, POW, AND, OR);
@@ -105,7 +105,8 @@ void printBytecode(unsigned *p, int size) {
         printOperand(sc, sizeof(sc), fullOp & 0x80, c);
         printf("%2d: %02x%02x%02x%02x   %-4s ", i, fullOp, a, b, c, opNames[op]);
         switch (op) {
-        case JMP:
+        case JMPF:
+        case JMPT:
             printf("%3s   %3s\n", sa, sb);
             break;
 

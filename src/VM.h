@@ -20,10 +20,11 @@ Value doPow(Value a, Value b);
 // #define OD(c) ((short) (c >> 16))
 
 enum {
-    JMP,      // pc += int(A) if not B
-    CALL,     // base=C, nArgs = int(A), func(B)
-    RET,      // return A;
-    FUNC,     // C = func(proto(A))
+    JMPF, // pc += int(A) if isFalse(B)
+    JMPT, // pc += int(A) if isTrue(B)
+    CALL, // base=C, nArgs = int(A), func(B)
+    RET,  // return A;
+    FUNC, // C = func(proto(A))
 
     GET, // C=A[B]
     SET, // C[A]=B

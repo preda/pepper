@@ -136,10 +136,7 @@ static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
 }
 
 static int topAbove(Value a, int top) {
-    if (!IS_REG(a)) {
-        return top;
-    }
-    return max((int)a + 1, top);
+    return IS_REG(a) ? max((int)a + 1, top) : top;
 }
 
 void Parser::exprOrAssignStat() {
@@ -535,13 +532,14 @@ static int binaryPriorityLeft(int token) {
     }
 }
 
+/*
 static int binaryPriorityRight(int token) {
     int left = binaryPriorityLeft(token);
     return token == '^' ? left-1 : left;
 }
+*/
 
 Value Parser::subExpr(int top, int limit) {
-    // printf("enter subExpr %d\n", limit);
     Value a;
     if (isUnaryOp(lexer->token)) {
         int op = lexer->token;
@@ -550,10 +548,11 @@ Value Parser::subExpr(int top, int limit) {
     } else {
         a = suffixedExpr(top);
     }
-    while (binaryPriorityLeft(lexer->token) > limit) {
-        int op = lexer->token;
+    int op;
+    int prio;
+    while ((prio = binaryPriorityLeft(op = TOKEN)) > limit) {
         advance();
-        a = codeBinary(top, op, a, subExpr(topAbove(a, top), binaryPriorityRight(op)));
+        a = codeBinary(top, op, a, subExpr(topAbove(a, top), op=='^' ? prio-1 : prio));
     }
     return a;
 }
@@ -653,5 +652,5 @@ void Parser::emitPatch(unsigned pos, unsigned code) {
 
 void Parser::emitPatchJumpHere(unsigned pos, Value cond) {
     int offset = proto->code.size - pos - 1;
-    emitPatch(pos, makeCode(JMP, UNUSED, VAL_INT(offset), cond));
+    emitPatch(pos, makeCode(JMPF, UNUSED, VAL_INT(offset), cond));
 }

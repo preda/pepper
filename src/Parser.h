@@ -24,7 +24,6 @@ class Parser {
     byte getRegValue(Value a);
 
     unsigned makeCode(int op, Value c, Value a, Value b);
-    // unsigned makeCode(int op, Value a, int offset);
     void emitCode(unsigned code);
     int  emitHole();
     void emitPatch(unsigned pos, unsigned code);
@@ -35,7 +34,7 @@ class Parser {
     Value codeBinary(int top, int op, Value a, Value b);
 
     void advance();
-    void consume(int t);
+    void consume(int token);
 
     Value expr(int top);
     Value subExpr(int top, int limit);

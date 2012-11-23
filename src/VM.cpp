@@ -127,7 +127,8 @@ Value VM::run(Func *f) {
     }
 
     static void *dispatch[] = {
-        &&jmp, &&call, 
+        &&jmpf, &&jmpt,
+        &&call, 
         &&return_, &&func,
         &&get, &&set,
         &&move, &&len,
@@ -143,7 +144,7 @@ Value VM::run(Func *f) {
         &&notl,
         &&eq, &&neq,
         &&lt, &&le,
-        0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
         _32TIMES(&&decA),
         _32TIMES(&&decB),
         _32TIMES(&&decAB),
@@ -174,11 +175,9 @@ Value VM::run(Func *f) {
  decBC:  DECODE(B); // fall
  decC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
 
- jmp: 
-    assert(IS_INT(A));
-    if (IS_FALSE(B)) { pc += getInteger(A); }
-    STEP;
-    
+ jmpf: if ( IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;    
+ jmpt: if (!IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
+
  func:
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
