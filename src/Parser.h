@@ -51,7 +51,6 @@ class Parser {
 
     void varStat();
     void ifStat();
-    void assignStat();
     void exprOrAssignStat();
 
 public:

@@ -46,26 +46,14 @@ T tests[] = {
     T("var tralala=\"tralala\" return #tralala", VAL_INT(7)),
     T("var s6=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_INT(7)),
 
-    
-};
+    // ffi
+    T("var strlen=ffi(\"strlen\", \"int (char *)\"); return strlen(\"bar hello foo\")", VAL_INT(13)),
+    T("return ffi(\"strstr\", \"offset (char*, char *)\")(\"big oneedle hayst\", \"need\")", VAL_INT(5)),
 
-const char *test[] = {
-    /*
-    "var a = 1\n var b=2 var c = a+b",
-    "var foo = 500 var boo = \"roo\"",
-    "var cond = 1 if cond { cond = cond + 1 } var b = 3", 
-    "var b if b[1] { b[2] = 3 }",
-    "\"foo\"[3][\"bar\"] = 1",
-    "[\"foo\"] + [1, 2, 3]",
-    "var a var b = [1, a]",
-    "var a = func(x) { return x + x; }",
-    "func() { return; }",
-    "var a = func(x) { x = 1 } a(a+2, 2, a)",
-    */
-    // 'var strlen = ffi("strlen", "int (const char *)"); return strlen("bar hello foo")'
-    // 'var p = ffi("printf", "void (const char *, ...)"); var a=5; p("hello %d\n", a)'
-    "var a = 5; return a * 2",
-    0,
+    // assign
+    T("a:=3; return a", VAL_INT(3)),
+    T("var a=2.5 b:=2*a return b+1", VAL_DOUBLE(6)),
+    
 };
 
 Value eval(const char *text) {
@@ -113,3 +101,23 @@ int main(int argc, char **argv) {
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);
     }
 }
+
+const char *test[] = {
+    /*
+    "var a = 1\n var b=2 var c = a+b",
+    "var foo = 500 var boo = \"roo\"",
+    "var cond = 1 if cond { cond = cond + 1 } var b = 3", 
+    "var b if b[1] { b[2] = 3 }",
+    "\"foo\"[3][\"bar\"] = 1",
+    "[\"foo\"] + [1, 2, 3]",
+    "var a var b = [1, a]",
+    "var a = func(x) { return x + x; }",
+    "func() { return; }",
+    "var a = func(x) { x = 1 } a(a+2, 2, a)",
+
+    'var strlen = ffi("strlen", "int (const char *)"); return strlen("bar hello foo")'
+    'var p = ffi("printf", "void (const char *, ...)"); var a=5; p("hello %d\n", a)'
+    "var a = 5; return a * 2",
+    */
+    0,
+};

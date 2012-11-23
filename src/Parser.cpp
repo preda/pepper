@@ -18,8 +18,8 @@
 #include <setjmp.h>
 
 #define UNUSED      VAL_REG(0)
-#define EMPTY_ARRAY VAL_OBJ(1)
-#define EMPTY_MAP   VAL_OBJ(2)
+static const Value EMPTY_ARRAY = VAL_OBJ(Array::alloc());
+static const Value EMPTY_MAP   = VAL_OBJ(Map::alloc());
 
 #define TOKEN (lexer->token)
 
@@ -91,12 +91,18 @@ void Parser::statList() {
 
 void Parser::statement() {
     switch (lexer->token) {
-    case TK_VAR: varStat(); break;
+    case TK_VAR: advance(); varStat(); break;
     case TK_IF:  ifStat();   break;
 
     case TK_NAME: 
         if (lexer->lookahead() == '=') {
-            assignStat();
+            // assert(TOKEN == TK_NAME);
+            int slot = lookupSlot(lexer->info.nameHash);
+            advance();
+            consume('=');
+            patchOrEmitMove(slot, expr(proto->localsTop));    
+        } else if (lexer->lookahead() == ':'+TK_EQUAL) { 
+            varStat();
         } else {
             exprOrAssignStat();
         }
@@ -109,15 +115,7 @@ void Parser::statement() {
 
     default: exprOrAssignStat(); break;
     }
-    if (TOKEN == ';') { advance(); }
-}
-
-void Parser::assignStat() {
-    assert(TOKEN == TK_NAME);
-    int slot = lookupSlot(lexer->info.nameHash);
-    consume(TK_NAME);
-    consume('=');
-    patchOrEmitMove(slot, expr(proto->localsTop));
+    while (TOKEN == ';') { advance(); }
 }
 
 static Value makeValue(bool flag, byte ra) {
@@ -148,7 +146,7 @@ void Parser::exprOrAssignStat() {
         int op = unCode(proto->code.pop(), &c, &a, &b);
         // printValue(c); printValue(a); printValue(b);
         
-        ERR(op != GET, E_ASSIGN_RHS);
+        ERR(op != GET || (lhs & FLAG_DONT_PATCH), E_ASSIGN_RHS);
         assert(lhs == c);
         emitCode(makeCode(SET, a, b, expr(topAbove(lhs, proto->localsTop))));
     }    
@@ -175,15 +173,14 @@ void Parser::ifStat() {
 }
 
 void Parser::varStat() {
-    consume(TK_VAR);
     ERR(TOKEN != TK_NAME, E_VAR_NAME);
     u64 name = lexer->info.nameHash;
     advance();
     int top = proto->localsTop;
     Value a = NIL;
     int aSlot = -1;
-    if (TOKEN == '=') {
-        consume('=');
+    if (TOKEN == '=' || TOKEN == ':'+TK_EQUAL) {
+        advance();
         a = expr(top);
         SymbolData s = syms->get(name);
         if (s.kind != KIND_EMPTY && s.level == proto->level && s.slot >= 0) {
@@ -680,7 +677,7 @@ unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
 }
 
 void Parser::close(Proto *proto) {
-    proto->code.push(PACK4(RET, 0, 0, 0));
+    proto->code.push(PACK4(RET | 0x20, 0x80, 0, 0));
     proto->freeze();
 }
 
