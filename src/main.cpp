@@ -3,9 +3,34 @@
 #include "SymbolTable.h"
 #include "Decompile.h"
 #include "VM.h"
+#include "String.h"
 
 #include <stdio.h>
 #include <assert.h>
+
+struct T {
+    T(const char *s, Value v) : source(s), result(v) {}
+
+    const char *source;
+    Value result;
+};
+
+T tests[] = {
+    T("return 13", VAL_INT(13)),
+    T("var a = 10; var b=-2 var c = a+ b; return c", VAL_INT(8)),
+
+    // strings
+    T("var a = \"foo\" var b = \"bar\" return a + b", String::makeVal("foobar")),
+
+    // array
+    T("var a = [3, 4, 5]; return a[2]", VAL_INT(5)),
+    T("var foobar = [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
+    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::makeVal("tralala")),
+
+    // comparison
+    T("return \"foo\" < \"bar\"", FALSE),
+    T("return -3 < -2", TRUE),    
+};
 
 const char *test[] = {
     /*
@@ -47,9 +72,20 @@ int main(int argc, char **argv) {
     if (argc > 1) {
         compileDecompile(argv[1]);
     } else {
-        for (const char **p = test; *p != 0; ++p) {
-            if (!compileDecompile(*p)) { break; }
+        int n = sizeof(tests) / sizeof(tests[0]);
+        int nFail = 0;
+        for (int i = 0; i < n; ++i) {
+            T &t = tests[i];
+            Value ret = eval(t.source);
+            if (!equals(ret, t.result)) {
+                printf("\n%d: '%s'\n", i, t.source);
+                printValue(ret);
+                printValue(t.result);
+                ++nFail;
+            } else {
+                printf(".");
+            }
         }
+        printf("\nPassed %d tests out of %d\n", (n-nFail), n);
     }
-    return 0;
 }

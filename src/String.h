@@ -5,6 +5,7 @@
 
 class String {
  public:
+    static Value makeVal(const char *s);
     static Value makeVal(const char *s, unsigned size);
     static Value makeVal(unsigned size);
 

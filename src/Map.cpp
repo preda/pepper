@@ -10,7 +10,7 @@
 #include <assert.h>
 
 Map::Map(const unsigned iniSize) {
-    printf("Map %p\n", this);
+    // printf("Map %p\n", this);
     size = 0;
     n = 8;
     while ((iniSize << 1) > n) {

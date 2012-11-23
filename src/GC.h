@@ -28,7 +28,7 @@ class GC {
     ~GC();
 
     static Object *alloc(int type, int bytes, bool traversable) {
-        printf("GC::alloc %d %d %d\n", type, bytes, traversable);
+        // printf("GC::alloc %d %d %d\n", type, bytes, traversable);
         return gc->_alloc(type, bytes, traversable);
     }
 

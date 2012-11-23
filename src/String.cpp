@@ -9,6 +9,10 @@ Value String::makeVal(unsigned len) {
     return len <= 6 ? VALUE(T_STR0 - len, 0) : VAL_OBJ(String::alloc(len));
 }
 
+Value String::makeVal(const char *s) {
+    return makeVal(s, strlen(s));
+}
+
 Value String::makeVal(const char *s, unsigned len) {
     Value v = makeVal(len);
     char *p = GET_CSTR(v);
