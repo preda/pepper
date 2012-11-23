@@ -115,6 +115,7 @@ void printBytecode(unsigned *p, int size) {
             break;
 
         case MOVE:
+        case LEN:
             printf("%3s,  %3s\n", sc, sa);
             break;
 

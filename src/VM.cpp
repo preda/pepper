@@ -274,8 +274,8 @@ Value VM::run(Func *f) {
 
  lt:   *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
  le:   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
- len:  *ptrC = len(A); STEP;
 
+ len:  *ptrC = VAL_INT(len(A)); STEP;
     return 0;
 }
 

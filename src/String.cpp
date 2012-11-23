@@ -38,7 +38,7 @@ Value String::get(Value s, Value p) {
     unsigned size = len(s);
     if (pos < 0) { pos += size; }
     if (pos >= size || pos < 0) { return NIL; }
-    return VALUE(T_STR1, (u64)(GET_CSTR(s) + (unsigned)pos));
+    return VALUE(T_STR1, (u64)*(GET_CSTR(s) + (unsigned)pos));
 }
 
 unsigned String::hashCode(char *buf, int size) {

@@ -30,7 +30,23 @@ T tests[] = {
 
     // comparison
     T("return \"foo\" < \"bar\"", FALSE),
-    T("return -3 < -2", TRUE),    
+    T("return -3 < -2", TRUE),
+    T("return \"aaaaaaaa\" < \"b\"", TRUE),
+    T("return [] < [1] && [1] < [2]", TRUE),
+
+    // bool ops
+    T("var a=2 var b=3 var c=nil return a+1 && b+2 || c+3", VAL_INT(5)),
+    T("return 1 && nil && 13", NIL),
+    T("return 13 || 14", VAL_INT(13)),
+
+    T("var a=[]; a[1]=2; var b=[]; return b[1]", NIL),
+    
+    // len
+    T("return #\"foo\"==3", TRUE),
+    T("var tralala=\"tralala\" return #tralala", VAL_INT(7)),
+    T("var s6=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_INT(7)),
+
+    
 };
 
 const char *test[] = {
