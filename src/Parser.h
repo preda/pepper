@@ -27,8 +27,10 @@ class Parser {
     void emitCode(unsigned code);
     int  emitHole();
     void emitPatch(unsigned pos, unsigned code);
-    void emitJumpFalse(unsigned pos, Value cond);
-    void emitJumpTrue(unsigned pos, Value cond);
+
+    void emitJumpFalse(unsigned where, Value cond, unsigned to);
+    void emitJumpTrue( unsigned where, Value cond, unsigned to);
+
     void patchOrEmitMove(int dest, Value a);
 
     Value codeUnary(int top, int op, Value a);
@@ -51,6 +53,8 @@ class Parser {
 
     void varStat();
     void ifStat();
+    void whileStat();
+    void forStat();
     void exprOrAssignStat();
 
 public:

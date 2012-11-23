@@ -280,7 +280,16 @@ Value VM::run(Func *f) {
 }
 
 bool opcodeHasDest(int op) {
-    return (ADD <= op && op <= LEN) || op == MOVE || op == GET;
+    switch (op) {
+    case JMPF:
+    case JMPT:
+    case CALL:
+    case RET:
+    case SET:
+        return false;
+    }
+    return true;
+    // return (ADD <= op && op <= LEN) || op == MOVE || op == GET;
 }
 
 bool lessThan(Value a, Value b) {

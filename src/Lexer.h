@@ -9,6 +9,7 @@ enum TOKENS {
     TK_CONTINUE,
     TK_ELSE,
     TK_FOR,
+    TK_WHILE,
     TK_FUNC,
     TK_GOTO,
     TK_IF,

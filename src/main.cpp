@@ -53,6 +53,9 @@ T tests[] = {
     // assign
     T("a:=3; return a", VAL_INT(3)),
     T("var a=2.5 b:=2*a return b+1", VAL_DOUBLE(6)),
+
+    // while
+    T("i:=0; s:=0 while i < 4 { i = i + 1; s = s + i + 1 } return s", VAL_INT(14)),
     
 };
 

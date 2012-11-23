@@ -14,7 +14,7 @@ static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
 static const char *tokens[] = {
     "<begin-keyword>",
     "break", "continue", 
-    "else", "for", "func", "goto",
+    "else", "for", "while", "func", "goto",
     "if", "nil", "return", "var",
     "and", "or", "xor",
     "<end-keyword>",

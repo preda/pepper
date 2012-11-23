@@ -91,8 +91,9 @@ void Parser::statList() {
 
 void Parser::statement() {
     switch (lexer->token) {
-    case TK_VAR: advance(); varStat(); break;
-    case TK_IF:  ifStat();   break;
+    case TK_VAR:   advance(); varStat(); break;
+    case TK_IF:    ifStat(); break;
+    case TK_WHILE: whileStat(); break;
 
     case TK_NAME: 
         if (lexer->lookahead() == '=') {
@@ -152,6 +153,17 @@ void Parser::exprOrAssignStat() {
     }    
 }
 
+#define HERE (proto->code.size)
+void Parser::whileStat() {
+    consume(TK_WHILE);
+    int pos1 = HERE;
+    Value a = expr(proto->localsTop);
+    int pos2 = emitHole();
+    block();
+    emitJumpFalse(HERE, FALSE, pos1);
+    emitJumpFalse(pos2, a, HERE);
+}
+
 void Parser::ifStat() {
     consume(TK_IF);
     Value a = expr(proto->localsTop);
@@ -159,16 +171,16 @@ void Parser::ifStat() {
     block();
     if (lexer->token == TK_ELSE) {
         int pos2 = emitHole();
-        emitJumpFalse(pos1, a);
+        emitJumpFalse(pos1, a, HERE);
         consume(TK_ELSE);
         if (lexer->token == '{') {
             block();
         } else { 
             ifStat();
         }
-        emitJumpFalse(pos2, ZERO);
+        emitJumpFalse(pos2, FALSE, HERE);
     } else {
-        emitJumpFalse(pos1, a);
+        emitJumpFalse(pos1, a, HERE);
     }
 }
 
@@ -588,9 +600,9 @@ Value Parser::subExpr(int top, int limit) {
                 Value b = subExpr(aSlot, rightPrio);
                 patchOrEmitMove(aSlot, b);
                 if (op == TK_LOG_AND) {
-                    emitJumpFalse(pos1, a);
+                    emitJumpFalse(pos1, a, HERE);
                 } else {
-                    emitJumpTrue(pos1, a);
+                    emitJumpTrue(pos1, a, HERE);
                 }
                 a |= FLAG_DONT_PATCH;
             }
@@ -690,16 +702,16 @@ int Parser::emitHole() {
 }
 
 void Parser::emitPatch(unsigned pos, unsigned code) {
-    assert(pos < proto->code.size);
-    proto->code.buf[pos] = code;
+    assert(pos <= proto->code.size);
+    proto->code.set(pos, code);
 }
 
-void Parser::emitJumpFalse(unsigned pos, Value cond) {
-    int offset = proto->code.size - pos - 1;
-    emitPatch(pos, makeCode(JMPF, UNUSED, VAL_INT(offset), cond));
+void Parser::emitJumpFalse(unsigned where, Value cond, unsigned to) {
+    int offset = to - where - 1;
+    emitPatch(where, makeCode(JMPF, UNUSED, VAL_INT(offset), cond));
 }
 
-void Parser::emitJumpTrue(unsigned pos, Value cond) {
-    int offset = proto->code.size - pos - 1;
-    emitPatch(pos, makeCode(JMPT, UNUSED, VAL_INT(offset), cond));
+void Parser::emitJumpTrue(unsigned where, Value cond, unsigned to) {
+    int offset = to - where - 1;
+    emitPatch(where, makeCode(JMPT, UNUSED, VAL_INT(offset), cond));
 }
