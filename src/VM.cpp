@@ -18,6 +18,7 @@
 #define INT(x) VAL_INT((signed char)x)
 
 #define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : v<0xf0 ? ups[v & 0x7f] : VALUE((v&0xf), 0); }
+#define DECODEC ptrC = ups + OC(code)
 
 static Value arrayAdd(Value a, Value b) {
     assert(IS_ARRAY(a));
@@ -121,7 +122,7 @@ Value *VM::maybeGrowStack(Value *regs) {
     return regs;
 }
 
-#define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
+// #define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
 
 extern __thread jmp_buf jumpBuf;
 Value VM::run(Func *f) {
@@ -130,7 +131,22 @@ Value VM::run(Func *f) {
         return NIL;
     }
 
+#define LABEL(L) L##101: DECODE(A); L##001: DECODEC; goto L##000;    \
+L##011: DECODEC; L##010: DECODE(B); goto L##000;\
+L##111: DECODEC; L##110: DECODE(B); L##100: DECODE(A);\
+L##000
+
+#define OPCODES(F) &&jmpf##F, &&jmpt##F, &&call##F, &&retur##F, &&func##F,\
+&&get##F, &&set##F, &&move##F, &&len##F, \
+&&add##F, &&sub##F, &&mul##F, &&div##F, &&mod##F, &&pow##F,\
+&&andb##F, &&orb##F, &&xorb##F, &&notb##F, &&shl##F, &&shr##F, &&notl##F,\
+&&eq##F, &&neq##F, &&lt##F, &&le##F, 0, 0, 0, 0, 0, 0
+
     static void *dispatch[] = {
+        OPCODES(000), OPCODES(100), OPCODES(010), OPCODES(110),
+        OPCODES(001), OPCODES(101), OPCODES(011), OPCODES(111),
+    };
+    /*
         &&jmpf, &&jmpt,
         &&call, 
         &&return_, &&func,
@@ -148,7 +164,8 @@ Value VM::run(Func *f) {
         &&notl,
         &&eq, &&neq,
         &&lt, &&le,
-        0, 0, 0, 0, 0, 0,
+
+
         _32TIMES(&&decA),
         _32TIMES(&&decB),
         _32TIMES(&&decAB),
@@ -157,6 +174,7 @@ Value VM::run(Func *f) {
         _32TIMES(&&decBC),
         _32TIMES(&&decABC),
     };
+    */
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == 256);
  
     Value *regs  = stack;
@@ -168,7 +186,7 @@ Value VM::run(Func *f) {
     Value *ptrC;
 
     STEP;
-
+    /*
  decAB:  DECODE(A); // fall
  decB:   DECODE(B); goto *dispatch[OP(code) & 0x1f];
 
@@ -178,19 +196,20 @@ Value VM::run(Func *f) {
  decABC: DECODE(A); // fall
  decBC:  DECODE(B); // fall
  decC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
+    */
 
- jmpf: if ( IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;    
- jmpt: if (!IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
+    LABEL(jmpf): if ( IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
+    LABEL(jmpt): if (!IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
 
- func:
+    LABEL(func):
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
     STEP;
 
- get: *ptrC = doGet(A, B); STEP;    
- set: doSet(*ptrC, A, B);  STEP;
+    LABEL(get): *ptrC = doGet(A, B); STEP;    
+    LABEL(set): doSet(*ptrC, A, B);  STEP;
 
- return_: {
+    LABEL(retur): {
         regs[0] = A;
         if (retInfo.size == 0) { return A; }
         RetInfo *ri = retInfo.top();
@@ -201,7 +220,7 @@ Value VM::run(Func *f) {
         STEP;
     }
 
- call: {
+    LABEL(call): {
         assert(IS_INT(A));
         ERR(TAG(B) != T_OBJ || B == NIL, E_CALL_NIL);
 
@@ -252,30 +271,30 @@ Value VM::run(Func *f) {
         STEP;
     }
 
- move: *ptrC = A; STEP;
- add:  *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
- sub:  *ptrC = doSub(A, B); STEP;
- mul:  *ptrC = doMul(A, B); STEP;
- div:  *ptrC = doDiv(A, B); STEP;
- mod:  *ptrC = doMod(A, B); STEP;
- pow:  *ptrC = doPow(A, B); STEP;
+    LABEL(move): *ptrC = A; STEP;
+    LABEL(add):  *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
+    LABEL(sub):  *ptrC = doSub(A, B); STEP;
+    LABEL(mul):  *ptrC = doMul(A, B); STEP;
+    LABEL(div):  *ptrC = doDiv(A, B); STEP;
+    LABEL(mod):  *ptrC = doMod(A, B); STEP;
+    LABEL(pow):  *ptrC = doPow(A, B); STEP;
 
 #define BITOP(op, A, B) IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) op getInteger(B)) : ERROR(E_WRONG_TYPE)
- andb: *ptrC = BITOP(&,  A, B); STEP;
- orb:  *ptrC = BITOP(|,  A, B); STEP;
- xorb: *ptrC = BITOP(^,  A, B); STEP;
- notb: *ptrC = IS_INT(A) ? VAL_INT(~getInteger(A)) : ERROR(E_WRONG_TYPE); STEP;
- shl:  *ptrC = BITOP(<<, A, B); STEP;
- shr:  *ptrC = BITOP(>>, A, B); STEP;
+    LABEL(andb): *ptrC = BITOP(&,  A, B); STEP;
+    LABEL(orb):  *ptrC = BITOP(|,  A, B); STEP;
+    LABEL(xorb): *ptrC = BITOP(^,  A, B); STEP;
+    LABEL(notb): *ptrC = IS_INT(A) ? VAL_INT(~getInteger(A)) : ERROR(E_WRONG_TYPE); STEP;
+    LABEL(shl):  *ptrC = BITOP(<<, A, B); STEP;
+    LABEL(shr):  *ptrC = BITOP(>>, A, B); STEP;
 
- notl: *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
- eq:   *ptrC = A==B || equals(A, B) ? TRUE  : FALSE; STEP;
- neq:  *ptrC = A==B || equals(A, B) ? FALSE : TRUE;  STEP;
+    LABEL(notl): *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
+    LABEL(eq):   *ptrC = A==B || equals(A, B) ? TRUE  : FALSE; STEP;
+    LABEL(neq):  *ptrC = A==B || equals(A, B) ? FALSE : TRUE;  STEP;
 
- lt:   *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
- le:   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
+    LABEL(lt):   *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
+    LABEL(le):   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
 
- len:  *ptrC = VAL_INT(len(A)); STEP;
+    LABEL(len):  *ptrC = VAL_INT(len(A)); STEP;
     return 0;
 }
 
