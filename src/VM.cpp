@@ -203,7 +203,7 @@ Value VM::run(Func *f) {
 
  call: {
         assert(IS_INT(A));
-        assert(TAG(B)==T_OBJ && B != NIL);
+        ERR(TAG(B) != T_OBJ || B == NIL, E_CALL_NIL);
 
         const int nEffArgs = getInteger(A);
         Value *base = ptrC;

@@ -166,10 +166,18 @@ static void makeFfiSignature(ffi_type **sign, int nArg, byte *argType) {
 }
 
 static Value ffiConstructInt(Value *stack, int nCallArg) {
-    ERR(nCallArg != 2, E_FFI_N_ARGS);
-    Value a = stack[0], b = stack[1];
+    ERR(nCallArg != 3, E_FFI_N_ARGS);
+    Value a = stack[0], b = stack[1], c = stack[2];
     ERR(!IS_STRING(a) || !IS_STRING(b), E_FFI_TYPE_MISMATCH);
-    void (*func)() = (void(*)()) dlsym(0, GET_CSTR(a));
+    char buf[256];
+    char *p = buf;
+    if (strchr(GET_CSTR(c), '.')) {
+        p = GET_CSTR(c);
+    } else {
+        snprintf(buf, sizeof(buf), "lib%s.so", GET_CSTR(c));
+    }
+    void *handle = dlopen(p, 0);
+    void (*func)() = (void(*)()) dlsym(handle, GET_CSTR(a));
     if (!func) { return NIL; }
     CFunc *cfunc = CFunc::alloc((tfunc) ffiCall, sizeof(FFIData));
     FFIData *d = (FFIData *) cfunc->data;

@@ -33,6 +33,7 @@ static void init() {
     _(FFI_INVALID_SIGNATURE);
     _(FFI_N_ARGS);
     _(FFI_CIF);
+    _(CALL_NIL);
 #undef _
 }
 

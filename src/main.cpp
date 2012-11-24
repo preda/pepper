@@ -47,8 +47,8 @@ T tests[] = {
     T("var s6=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_INT(7)),
 
     // ffi
-    T("var strlen=ffi(\"strlen\", \"int (char *)\"); return strlen(\"bar hello foo\")", VAL_INT(13)),
-    T("return ffi(\"strstr\", \"offset (char*, char *)\")(\"big oneedle hayst\", \"need\")", VAL_INT(5)),
+    T("var strlen=ffi(\"strlen\", \"int (char *)\", \"c\"); return strlen(\"bar hello foo\")", VAL_INT(13)),
+    T("return ffi(\"strstr\", \"offset (char*, char *)\", \"c\")(\"big oneedle hayst\", \"need\")", VAL_INT(5)),
 
     // assign
     T("a:=3; return a", VAL_INT(3)),
@@ -93,12 +93,12 @@ int main(int argc, char **argv) {
             T &t = tests[i];
             Value ret = eval(t.source);
             if (!equals(ret, t.result)) {
-                printf("\n%d: '%s'\n", i, t.source);
+                fprintf(stderr, "\n%d: '%s'\n", i, t.source);
                 printValue(ret);
                 printValue(t.result);
                 ++nFail;
             } else {
-                printf(".");
+                fprintf(stderr, "%2d OK '%s'\n", i, t.source);
             }
         }
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);

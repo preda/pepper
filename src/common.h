@@ -43,5 +43,7 @@ enum {
     E_FFI_N_ARGS,
     E_FFI_CIF,
 
+    E_CALL_NIL,
+
     E_EXPECTED = 256,
 };
