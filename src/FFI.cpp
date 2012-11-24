@@ -250,17 +250,23 @@ void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
             assert(false);
         }
     }
-    u64 ret;
+    union {
+        Value v;
+        double dbl;
+        float flt;
+        int i;
+        char *ptr;
+    } ret;
     ffi_raw_call(&d->cif, d->func, &ret, args);
 
     Value v = NIL;
     switch (d->retType) {
-    case INT:      v = VAL_INT((int)  ret); break;
-    case LLONG:    v = VAL_INT(ret);        break;
-    case DOUBLE:   v = VAL_DOUBLE(*(double*)&ret); break;
-    case FLOAT:    v = VAL_DOUBLE((double) *(float*)&ret); break;
-    case CHAR_PTR: v = String::makeVal((char *) ret, strlen((char *) ret)); break;
-    case PTRDIFF:  v = VAL_INT((char *)ret - GET_CSTR(stack[0])); break;
+    case INT:      v = VAL_INT(ret.i); break;
+    case LLONG:    v = VAL_INT(ret.v);        break;
+    case DOUBLE:   v = VAL_DOUBLE(ret.dbl); break;
+    case FLOAT:    v = VAL_DOUBLE(ret.flt); break;
+    case CHAR_PTR: v = String::makeVal(ret.ptr, strlen(ret.ptr)); break;
+    case PTRDIFF:  v = VAL_INT(ret.ptr - GET_CSTR(stack[0])); break;
     case VOID: break;
     default: assert(false);
     }    

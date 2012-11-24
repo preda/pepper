@@ -253,7 +253,7 @@ Value VM::run(Func *f) {
     }
 
  move: *ptrC = A; STEP;
- add:  *ptrC = doAdd(A, B); STEP;     
+ add:  *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
  sub:  *ptrC = doSub(A, B); STEP;
  mul:  *ptrC = doMul(A, B); STEP;
  div:  *ptrC = doDiv(A, B); STEP;

@@ -56,7 +56,8 @@ unsigned String::hashCode() {
 }
 
 bool String::equals(String *other) {
-    return size == other->size && *(int*)s==*(int*)other->s && !memcmp(s, other->s, size);
+    return size == other->size && !memcmp(s, other->s, size);
+    // && *(int*)s==*(int*)other->s 
 }
 
 static Value stringConcat(Value a, char *pb, unsigned sb) {
