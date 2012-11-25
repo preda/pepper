@@ -17,7 +17,7 @@ Value doPow(Value a, Value b);
 #define OA(c) ((byte)  (c >> 8))
 #define OB(c) ((byte)  (c >> 16))
 #define OC(c) ((byte)  (c >> 24))
-#define OBC(c) ((short) (c >> 16))
+#define OBC(c) (c >> 16)
 
 enum {
     JMP,  // pc += short(BC); variants :uncoditional, onTrue(A), onFalse(A)

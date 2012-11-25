@@ -107,6 +107,11 @@ void printBytecode(unsigned *p, int size) {
         switch (op) {
         case JMP: {
             int offset = (int) OBC(code);
+            int flags = fullOp >> 5;
+            if (flags == 1 || flags == 5 || flags == 4) {
+                offset = -offset;
+            }
+            
             int to = i + offset + 1;
             if (!(fullOp & 0x40)) {
                 printf("%3d\n", to);

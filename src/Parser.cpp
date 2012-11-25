@@ -714,9 +714,24 @@ void Parser::emitPatch(unsigned pos, unsigned code) {
 
 void Parser::emitJump(unsigned where, unsigned to, Value cond, bool onTrue) {
     int offset = to - where - 1;
-    if ((!onTrue && IS_FALSE(cond)) || (onTrue && !IS_REG(cond) && !IS_FALSE(cond))) {
-        emitPatch(where, makeCode(JMP, UNUSED, offset));
+    assert(offset != 0);
+    assert(!((onTrue && IS_FALSE(cond)) || (!onTrue && !IS_REG(cond) && !IS_FALSE(cond))));
+    if (offset >= 0) {
+        if ((!onTrue && IS_FALSE(cond)) || (onTrue && !IS_REG(cond) && !IS_FALSE(cond))) {
+            emitPatch(where, makeCode(JMP, UNUSED, offset));
+        } else {
+            emitPatch(where, makeCode(JMP | 0x40 | (onTrue ? 0x80 : 0), cond, offset));
+        }
     } else {
-        emitPatch(where, makeCode(JMP | 0x40 | (onTrue ? 0x80 : 0), cond, offset));
+        assert(!onTrue);
+        if ((!onTrue && IS_FALSE(cond)) || (onTrue && !IS_REG(cond) && !IS_FALSE(cond))) {
+            emitPatch(where, makeCode(JMP|0x80, UNUSED, -offset));
+        } else {
+            if (IS_REG(cond)) {
+                emitPatch(where, makeCode(JMP | 0x20 | 0x80 , cond, -offset));
+            } else {
+                emitPatch(where, makeCode(JMP , cond, -offset));
+            }
+        }
     }
 }

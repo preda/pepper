@@ -157,7 +157,6 @@ Value VM::run(Func *f) {
 
     STEP;
 
- jmp001: jmp100: jmp101: //not used, not generated
 
  jmp110: DECODE(A);
  jmp010: if (IS_FALSE(A)) { pc += OBC(code); } STEP; // jump on false(A)
@@ -165,6 +164,11 @@ Value VM::run(Func *f) {
  jmp111: DECODE(A);
  jmp011: if (IS_FALSE(A)) { STEP; } // jump on true(A)
  jmp000: pc += OBC(code); STEP;     // unconditional
+
+ jmp100: DECODE(A);
+ jmp101: if (!IS_FALSE(A)) { STEP; }
+ jmp001: pc -= OBC(code); STEP;
+    // jmp001: jmp100: jmp101:
 
     LABEL(func):
     assert(IS_PROTO(A));
