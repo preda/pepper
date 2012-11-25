@@ -131,12 +131,11 @@ Value VM::run(Func *f) {
         return NIL;
     }
 
-#define LABEL(L) L##101: DECODE(A); L##001: DECODEC; goto L##000;    \
-L##011: DECODEC; L##010: DECODE(B); goto L##000;\
-L##111: DECODEC; L##110: DECODE(B); L##100: DECODE(A);\
-L##000
+#define LABEL(L) L##111: DECODEC; L##110: DECODE(B); L##100: DECODE(A); L##000
 
-#define OPCODES(F) &&jmpf##F, &&jmpt##F, &&call##F, &&retur##F, &&func##F,\
+#define LABEL2(L) L##101: DECODE(A); L##001: DECODEC; goto L##000; L##011: DECODEC; L##010: DECODE(B); goto L##000
+
+#define OPCODES(F) &&jmpf##F, &&jmp##F, &&call##F, &&retur##F, &&func##F,\
 &&get##F, &&set##F, &&move##F, &&len##F, \
 &&add##F, &&sub##F, &&mul##F, &&div##F, &&mod##F, &&pow##F,\
 &&andb##F, &&orb##F, &&xorb##F, &&notb##F, &&shl##F, &&shr##F, &&notl##F,\
@@ -146,35 +145,6 @@ L##000
         OPCODES(000), OPCODES(100), OPCODES(010), OPCODES(110),
         OPCODES(001), OPCODES(101), OPCODES(011), OPCODES(111),
     };
-    /*
-        &&jmpf, &&jmpt,
-        &&call, 
-        &&return_, &&func,
-        &&get, &&set,
-        &&move, &&len,
-
-        &&add, &&sub,
-        &&mul, &&div,
-        &&mod, &&pow,
-
-        &&andb, &&orb, 
-        &&xorb, &&notb,
-        &&shl, &&shr,
-
-        &&notl,
-        &&eq, &&neq,
-        &&lt, &&le,
-
-
-        _32TIMES(&&decA),
-        _32TIMES(&&decB),
-        _32TIMES(&&decAB),
-        _32TIMES(&&decC),
-        _32TIMES(&&decAC),
-        _32TIMES(&&decBC),
-        _32TIMES(&&decABC),
-    };
-    */
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == 256);
  
     Value *regs  = stack;
@@ -186,20 +156,18 @@ L##000
     Value *ptrC;
 
     STEP;
-    /*
- decAB:  DECODE(A); // fall
- decB:   DECODE(B); goto *dispatch[OP(code) & 0x1f];
-
- decAC:  ptrC = ups + OC(code); // fall
- decA:   DECODE(A); goto *dispatch[OP(code) & 0x1f];
-
- decABC: DECODE(A); // fall
- decBC:  DECODE(B); // fall
- decC:   ptrC = ups + OC(code); goto *dispatch[OP(code) & 0x1f];
-    */
 
     LABEL(jmpf): if ( IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
-    LABEL(jmpt): if (!IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
+
+ jmp110: 
+ jmp100: pc += ((signed char)(OA(code)<<1)) >> 1; STEP;
+ jmp010:
+ jmp000: assert(IS_INT(A)); pc += getInteger(A); STEP;
+
+ jmp111: DECODE(A);
+ jmp011: DECODE(B); goto jmp001;
+ jmp101: DECODE(A);
+ jmp001: if (!IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;  
 
     LABEL(func):
     assert(IS_PROTO(A));
@@ -295,13 +263,39 @@ L##000
     LABEL(le):   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
 
     LABEL(len):  *ptrC = VAL_INT(len(A)); STEP;
+
+    LABEL2(jmpf);
+    LABEL2(call);
+    LABEL2(retur);
+    LABEL2(func);
+    LABEL2(get);
+    LABEL2(set);
+    LABEL2(move);
+    LABEL2(len);
+    LABEL2(add);
+    LABEL2(sub);
+    LABEL2(mul);
+    LABEL2(div);
+    LABEL2(mod);
+    LABEL2(pow);
+    LABEL2(andb);
+    LABEL2(orb);
+    LABEL2(xorb);
+    LABEL2(notb);
+    LABEL2(shl);
+    LABEL2(shr);
+    LABEL2(notl);
+    LABEL2(eq);
+    LABEL2(neq);
+    LABEL2(lt);
+    LABEL2(le);
     return 0;
 }
 
 bool opcodeHasDest(int op) {
     switch (op) {
     case JMPF:
-    case JMPT:
+    case JMP:
     case CALL:
     case RET:
     case SET:

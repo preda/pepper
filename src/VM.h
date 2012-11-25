@@ -21,7 +21,7 @@ Value doPow(Value a, Value b);
 
 enum {
     JMPF, // pc += int(A) if isFalse(B)
-    JMPT, // pc += int(A) if isTrue(B)
+    JMP, // pc += int(A) if isTrue(B)
     CALL, // base=C, nArgs = int(A), func(B)
     RET,  // return A;
     FUNC, // C = func(proto(A))

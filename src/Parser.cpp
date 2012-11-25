@@ -160,7 +160,7 @@ void Parser::whileStat() {
     Value a = expr(proto->localsTop);
     int pos2 = emitHole();
     block();
-    emitJumpFalse(HERE, FALSE, pos1);
+    emitJumpTrue(HERE, TRUE, pos1);
     emitJumpFalse(pos2, a, HERE);
 }
 
@@ -178,7 +178,7 @@ void Parser::ifStat() {
         } else { 
             ifStat();
         }
-        emitJumpFalse(pos2, FALSE, HERE);
+        emitJumpTrue(pos2, TRUE, HERE);
     } else {
         emitJumpFalse(pos1, a, HERE);
     }
@@ -713,5 +713,9 @@ void Parser::emitJumpFalse(unsigned where, Value cond, unsigned to) {
 
 void Parser::emitJumpTrue(unsigned where, Value cond, unsigned to) {
     int offset = to - where - 1;
-    emitPatch(where, makeCode(JMPT, UNUSED, VAL_INT(offset), cond));
+    if (cond == TRUE) {
+        emitPatch(where, makeCode(JMP, UNUSED, VAL_INT(offset), UNUSED));
+    } else {
+        emitPatch(where, makeCode(JMP, NIL, VAL_INT(offset), cond));
+    }
 }
