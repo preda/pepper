@@ -70,12 +70,12 @@ union ValueUnion {
     struct {
         unsigned w1;
         unsigned w2;
-    } w;
+    };
 };
 
 static inline Value VAL_DOUBLE(double dbl) {
     ValueUnion u{d: dbl};
-    u.w.w2 = ~u.w.w2;
+    u.w2 = ~u.w2;
     return u.v;
 }
 
@@ -88,7 +88,7 @@ static inline double getDouble(Value val) {
         return getInteger(val);
     } else {
         ValueUnion u{v: val};
-        u.w.w2 = ~u.w.w2;
+        u.w2 = ~u.w2;
         return u.d;
     }
 }
@@ -97,6 +97,10 @@ static inline double getDouble(Value val) {
 
 unsigned hashCode(Value a);
 unsigned len(Value a);
-bool equals(Value a, Value b);
+class Object;
+bool objEquals(Object *a, Object *b);
+static inline bool equals(Value a, Value b) {
+    return a == b || (IS_OBJ(a) && IS_OBJ(b) && objEquals((Object *)a, (Object *)b));
+}
+
 bool lessThan(Value a, Value b);
-// bool lessEqual(Value a, Value b);

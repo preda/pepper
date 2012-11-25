@@ -17,7 +17,7 @@
 
 #define INT(x) VAL_INT((signed char)x)
 
-#define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : v<0xf0 ? ups[v & 0x7f] : VALUE((v&0xf), 0); }
+#define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : ups[v & 0x7f]; }
 #define DECODEC ptrC = ups + OC(code)
 
 static Value arrayAdd(Value a, Value b) {
@@ -122,7 +122,16 @@ Value *VM::maybeGrowStack(Value *regs) {
     return regs;
 }
 
-// #define _32TIMES(a) a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a,a
+bool objEquals(Object *a, Object *b) {
+    if (a->type == b->type) {
+        switch (a->type) {
+        case O_STR: return ((String *) a)->equals((String *) b);
+        case O_ARRAY:  return ((Array *) a)->equals((Array *) b);
+        case O_MAP:    return ((Map *) a)->equals((Map *) b);
+        }
+    }
+    return false;
+}
 
 extern __thread jmp_buf jumpBuf;
 Value VM::run(Func *f) {
@@ -257,8 +266,8 @@ Value VM::run(Func *f) {
     LABEL(shr):  *ptrC = BITOP(>>, A, B); STEP;
 
     LABEL(notl): *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
-    LABEL(eq):   *ptrC = A==B || equals(A, B) ? TRUE  : FALSE; STEP;
-    LABEL(neq):  *ptrC = A==B || equals(A, B) ? FALSE : TRUE;  STEP;
+    LABEL(eq):   *ptrC = equals(A, B) ? TRUE  : FALSE; STEP;
+    LABEL(neq):  *ptrC = equals(A, B) ? FALSE : TRUE;  STEP;
 
     LABEL(lt):   *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
     LABEL(le):   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
@@ -321,18 +330,6 @@ bool lessThan(Value a, Value b) {
     }
     if (IS_ARRAY(a) && IS_ARRAY(b)) {
         return ((Array *) a)->lessThan((Array *) b);
-    }
-    return false;
-}
-
-bool equals(Value a, Value b) {
-    if (a == b) { return true; }
-    if (IS_OBJ(a) && IS_OBJ(b) && O_TYPE(a) == O_TYPE(b)) {
-        switch (O_TYPE(a)) {
-        case O_STR: return ((String *) a)->equals((String *) b);
-        case O_ARRAY:  return ((Array *) a)->equals((Array *) b);
-        case O_MAP:    return ((Map *) a)->equals((Map *) b);
-        }
     }
     return false;
 }
