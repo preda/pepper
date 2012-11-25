@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <setjmp.h>
 
-#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
+#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; goto *dispatch[OP(code)]
 
 #define INT(x) VAL_INT((signed char)x)
 
@@ -140,9 +140,11 @@ Value VM::run(Func *f) {
         return NIL;
     }
 
-#define LABEL(L) L##111: DECODEC; L##110: DECODE(B); L##100: DECODE(A); L##000
+#define LABEL(L) L##101: DECODEC; L##100: DECODE(A); L##000
 
-#define LABEL2(L) L##101: DECODE(A); L##001: DECODEC; goto L##000; L##011: DECODEC; L##010: DECODE(B); goto L##000
+#define LABEL2(L) L##001: DECODEC; goto L##000;\
+ L##111: DECODEC; L##110: DECODE(A); L##010: DECODE(B); goto L;          \
+ L##011: DECODEC; DECODE(B); goto L;
 
 #define OPCODES(F) &&jmp##F, &&call##F, &&retur##F, &&func##F,\
 &&get##F, &&set##F, &&move##F, &&len##F, \
@@ -177,17 +179,17 @@ Value VM::run(Func *f) {
  jmp100: DECODE(A);
  jmp101: if (!IS_FALSE(A)) { STEP; }
  jmp001: pc -= OBC(code); STEP;
-    // jmp001: jmp100: jmp101:
 
     LABEL(func):
+    func:
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
     STEP;
 
-    LABEL(get): *ptrC = doGet(A, B); STEP;    
-    LABEL(set): doSet(*ptrC, A, B);  STEP;
+    LABEL(get): B=regs[OB(code)]; get: *ptrC = doGet(A, B); STEP;
+    LABEL(set): B=regs[OB(code)]; set: doSet(*ptrC, A, B);  STEP;
 
-    LABEL(retur): {
+    LABEL(retur): retur: {
         regs[0] = A;
         if (retInfo.size == 0) { return A; }
         RetInfo *ri = retInfo.top();
@@ -198,7 +200,7 @@ Value VM::run(Func *f) {
         STEP;
     }
 
-    LABEL(call): {
+    LABEL(call): B=regs[OB(code)]; call: { 
         assert(IS_INT(A));
         ERR(TAG(B) != T_OBJ || B == NIL, E_CALL_NIL);
 
@@ -249,30 +251,31 @@ Value VM::run(Func *f) {
         STEP;
     }
 
-    LABEL(move): *ptrC = A; STEP;
-    LABEL(add):  *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
-    LABEL(sub):  *ptrC = doSub(A, B); STEP;
-    LABEL(mul):  *ptrC = doMul(A, B); STEP;
-    LABEL(div):  *ptrC = doDiv(A, B); STEP;
-    LABEL(mod):  *ptrC = doMod(A, B); STEP;
-    LABEL(pow):  *ptrC = doPow(A, B); STEP;
+    LABEL(move): move: *ptrC = A; STEP;
+    LABEL(add):  B=regs[OB(code)]; add: *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
+    LABEL(sub):  B=regs[OB(code)]; sub: *ptrC = doSub(A, B); STEP;
+    LABEL(mul):  B=regs[OB(code)]; mul: *ptrC = doMul(A, B); STEP;
+    LABEL(div):  B=regs[OB(code)]; div: *ptrC = doDiv(A, B); STEP;
+    LABEL(mod):  B=regs[OB(code)]; mod: *ptrC = doMod(A, B); STEP;
+    LABEL(pow):  B=regs[OB(code)]; pow: *ptrC = doPow(A, B); STEP;
 
 #define BITOP(op, A, B) IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) op getInteger(B)) : ERROR(E_WRONG_TYPE)
-    LABEL(andb): *ptrC = BITOP(&,  A, B); STEP;
-    LABEL(orb):  *ptrC = BITOP(|,  A, B); STEP;
-    LABEL(xorb): *ptrC = BITOP(^,  A, B); STEP;
-    LABEL(notb): *ptrC = IS_INT(A) ? VAL_INT(~getInteger(A)) : ERROR(E_WRONG_TYPE); STEP;
-    LABEL(shl):  *ptrC = BITOP(<<, A, B); STEP;
-    LABEL(shr):  *ptrC = BITOP(>>, A, B); STEP;
+    LABEL(andb): B=regs[OB(code)]; andb: *ptrC = BITOP(&,  A, B); STEP;
+    LABEL(orb):  B=regs[OB(code)]; orb:  *ptrC = BITOP(|,  A, B); STEP;
+    LABEL(xorb): B=regs[OB(code)]; xorb: *ptrC = BITOP(^,  A, B); STEP;
 
-    LABEL(notl): *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
-    LABEL(eq):   *ptrC = equals(A, B) ? TRUE  : FALSE; STEP;
-    LABEL(neq):  *ptrC = equals(A, B) ? FALSE : TRUE;  STEP;
+    LABEL(shl):  B=regs[OB(code)]; shl: *ptrC = BITOP(<<, A, B); STEP;
+    LABEL(shr):  B=regs[OB(code)]; shr: *ptrC = BITOP(>>, A, B); STEP;
 
-    LABEL(lt):   *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
-    LABEL(le):   *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
+    LABEL(notb): notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
+    LABEL(notl): notl: *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
+    LABEL(eq):   B=regs[OB(code)]; eq:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
+    LABEL(neq):  B=regs[OB(code)]; neq: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;
 
-    LABEL(len):  *ptrC = VAL_INT(len(A)); STEP;
+    LABEL(lt):   B=regs[OB(code)]; lt: *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
+    LABEL(le):   B=regs[OB(code)]; le: *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
+
+    LABEL(len):  len: *ptrC = VAL_INT(len(A)); STEP;
 
     LABEL2(call);
     LABEL2(retur);
