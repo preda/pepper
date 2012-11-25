@@ -80,7 +80,10 @@ static inline Value VAL_DOUBLE(double dbl) {
 }
 
 static inline s64 getInteger(Value val) {
-    return ((s64) val << 16) >> 16;
+    // return ((s64) val << 16) >> 16;
+    ValueUnion u{v: val};
+    u.w2 = (signed short)u.w2;
+    return u.v;
 }
 
 static inline double getDouble(Value val) {

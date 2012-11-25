@@ -6,7 +6,18 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 
+/*
+s64 testGetInt(Value v) {
+    return getInteger(v);
+}
+*/
+
 int main(int argc, char **argv) {
+    /*
+    if (argc > 13) {
+        testGetInt(VAL_INT(argc));
+    }
+    */
     if (argc < 2) {
         return 1;
     }
