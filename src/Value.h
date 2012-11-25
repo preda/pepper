@@ -35,6 +35,8 @@ enum {
 
 #define LOW(v) ((unsigned)v)
 #define UP(v)  ((unsigned)(v>>32))
+
+//is false: 0, NIL, +/-0.0
 #define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(T_INT<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
 
 #define TRUE  VAL_INT(1)

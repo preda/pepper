@@ -27,7 +27,7 @@ static bool init() {
 #define ENTRY(t, n) t[n]=#n
 #define _(n) ENTRY(opNames, n)
 #define __(a, b, c, d) _(a); _(b); _(c); _(d);
-    _(JMPF); _(JMP);
+    _(JMP);
     __(CALL, RET, FUNC, MOVE);
     _(GET); _(SET),
     __(ADD, SUB, MUL, DIV);
@@ -105,10 +105,20 @@ void printBytecode(unsigned *p, int size) {
         printOperand(sc, sizeof(sc), fullOp & 0x80, c);
         printf("%2d: %02x%02x%02x%02x   %-4s ", i, fullOp, a, b, c, opNames[op]);
         switch (op) {
-        case JMPF:
-        case JMP:
-            printf("%3s   %3s\n", sa, sb);
+        case JMP: {
+            int offset = (int) OBC(code);
+            int to = i + offset + 1;
+            if (!(fullOp & 0x40)) {
+                printf("%3d\n", to);
+            } else {
+                if (fullOp & 0x80) {
+                    printf("%3d,  %3s is true\n", to, sa);
+                } else {
+                    printf("%3d,  %3s is false\n", to, sa);
+                }
+            }
             break;
+        }
 
         case RET:
             printf("%3s\n", sa);

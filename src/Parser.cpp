@@ -160,8 +160,8 @@ void Parser::whileStat() {
     Value a = expr(proto->localsTop);
     int pos2 = emitHole();
     block();
-    emitJumpTrue(HERE, TRUE, pos1);
-    emitJumpFalse(pos2, a, HERE);
+    emitJump(HERE, pos1);
+    emitJump(pos2, HERE, a);
 }
 
 void Parser::ifStat() {
@@ -171,16 +171,16 @@ void Parser::ifStat() {
     block();
     if (lexer->token == TK_ELSE) {
         int pos2 = emitHole();
-        emitJumpFalse(pos1, a, HERE);
+        emitJump(pos1, HERE, a);
         consume(TK_ELSE);
         if (lexer->token == '{') {
             block();
         } else { 
             ifStat();
         }
-        emitJumpTrue(pos2, TRUE, HERE);
+        emitJump(pos2, HERE);
     } else {
-        emitJumpFalse(pos1, a, HERE);
+        emitJump(pos1, HERE, a);
     }
 }
 
@@ -600,9 +600,9 @@ Value Parser::subExpr(int top, int limit) {
                 Value b = subExpr(aSlot, rightPrio);
                 patchOrEmitMove(aSlot, b);
                 if (op == TK_LOG_AND) {
-                    emitJumpFalse(pos1, a, HERE);
+                    emitJump(pos1, HERE, a);
                 } else {
-                    emitJumpTrue(pos1, a, HERE);
+                    emitJump(pos1, HERE, a, true);
                 }
                 a |= FLAG_DONT_PATCH;
             }
@@ -688,6 +688,12 @@ unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
     return PACK4(op | flags(a, b, c), ra, getRegValue(b), getRegValue(c));
 }
 
+unsigned Parser::makeCode(int op, Value a, int offset) {    
+    byte opb = op | (isNormal(a) ? 0 : 0x20);
+    byte ra  = getRegValue(a);
+    return opb | (ra << 8) | (offset << 16);
+}
+
 void Parser::close(Proto *proto) {
     proto->code.push(PACK4(RET | 0x20, 0x80, 0, 0));
     proto->freeze();
@@ -706,16 +712,11 @@ void Parser::emitPatch(unsigned pos, unsigned code) {
     proto->code.set(pos, code);
 }
 
-void Parser::emitJumpFalse(unsigned where, Value cond, unsigned to) {
+void Parser::emitJump(unsigned where, unsigned to, Value cond, bool onTrue) {
     int offset = to - where - 1;
-    emitPatch(where, makeCode(JMPF, UNUSED, VAL_INT(offset), cond));
-}
-
-void Parser::emitJumpTrue(unsigned where, Value cond, unsigned to) {
-    int offset = to - where - 1;
-    if (cond == TRUE) {
-        emitPatch(where, makeCode(JMP, UNUSED, VAL_INT(offset), UNUSED));
+    if ((!onTrue && IS_FALSE(cond)) || (onTrue && !IS_REG(cond) && !IS_FALSE(cond))) {
+        emitPatch(where, makeCode(JMP, UNUSED, offset));
     } else {
-        emitPatch(where, makeCode(JMP, NIL, VAL_INT(offset), cond));
+        emitPatch(where, makeCode(JMP | 0x40 | (onTrue ? 0x80 : 0), cond, offset));
     }
 }

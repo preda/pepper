@@ -24,12 +24,14 @@ class Parser {
     byte getRegValue(Value a);
 
     unsigned makeCode(int op, Value c, Value a, Value b);
+    unsigned makeCode(int op, Value a, int offset);
     void emitCode(unsigned code);
     int  emitHole();
     void emitPatch(unsigned pos, unsigned code);
 
-    void emitJumpFalse(unsigned where, Value cond, unsigned to);
-    void emitJumpTrue( unsigned where, Value cond, unsigned to);
+    void emitJump(unsigned where, unsigned to, Value cond=FALSE, bool onTrue=false);
+    // void emitJumpFalse(unsigned where, Value cond, unsigned to);
+    // void emitJumpTrue( unsigned where, Value cond, unsigned to);
 
     void patchOrEmitMove(int dest, Value a);
 

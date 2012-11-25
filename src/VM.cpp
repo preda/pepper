@@ -135,11 +135,11 @@ Value VM::run(Func *f) {
 
 #define LABEL2(L) L##101: DECODE(A); L##001: DECODEC; goto L##000; L##011: DECODEC; L##010: DECODE(B); goto L##000
 
-#define OPCODES(F) &&jmpf##F, &&jmp##F, &&call##F, &&retur##F, &&func##F,\
+#define OPCODES(F) &&jmp##F, &&call##F, &&retur##F, &&func##F,\
 &&get##F, &&set##F, &&move##F, &&len##F, \
 &&add##F, &&sub##F, &&mul##F, &&div##F, &&mod##F, &&pow##F,\
 &&andb##F, &&orb##F, &&xorb##F, &&notb##F, &&shl##F, &&shr##F, &&notl##F,\
-&&eq##F, &&neq##F, &&lt##F, &&le##F, 0, 0, 0, 0, 0, 0
+&&eq##F, &&neq##F, &&lt##F, &&le##F, 0, 0, 0, 0, 0, 0, 0
 
     static void *dispatch[] = {
         OPCODES(000), OPCODES(100), OPCODES(010), OPCODES(110),
@@ -157,17 +157,14 @@ Value VM::run(Func *f) {
 
     STEP;
 
-    LABEL(jmpf): if ( IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;
+ jmp001: jmp100: jmp101: //not used, not generated
 
- jmp110: 
- jmp100: pc += ((signed char)(OA(code)<<1)) >> 1; STEP;
- jmp010:
- jmp000: assert(IS_INT(A)); pc += getInteger(A); STEP;
+ jmp110: DECODE(A);
+ jmp010: if (IS_FALSE(A)) { pc += OBC(code); } STEP; // jump on false(A)
 
  jmp111: DECODE(A);
- jmp011: DECODE(B); goto jmp001;
- jmp101: DECODE(A);
- jmp001: if (!IS_FALSE(B)) { assert(IS_INT(A)); pc += getInteger(A); } STEP;  
+ jmp011: if (IS_FALSE(A)) { STEP; } // jump on true(A)
+ jmp000: pc += OBC(code); STEP;     // unconditional
 
     LABEL(func):
     assert(IS_PROTO(A));
@@ -264,7 +261,6 @@ Value VM::run(Func *f) {
 
     LABEL(len):  *ptrC = VAL_INT(len(A)); STEP;
 
-    LABEL2(jmpf);
     LABEL2(call);
     LABEL2(retur);
     LABEL2(func);
@@ -294,7 +290,6 @@ Value VM::run(Func *f) {
 
 bool opcodeHasDest(int op) {
     switch (op) {
-    case JMPF:
     case JMP:
     case CALL:
     case RET:
