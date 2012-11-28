@@ -61,7 +61,7 @@ static void printValue(char *buf, int bufSize, Value a) {
     if (IS_INT(a)) {
         snprintf(buf, bufSize, "%lld", getInteger(a));
     } else if (IS_DOUBLE(a)) {
-        snprintf(buf, bufSize, "%g", getDouble(a));
+        snprintf(buf, bufSize, "%f", getDouble(a));
     } else if (a==NIL) {
         snprintf(buf, bufSize, "NIL");
     } else if (IS_STRING(a)) {

@@ -59,6 +59,7 @@ T tests[] = {
     // while
     T("i:=0; s:=0 while i < 4 { i = i + 1; s = s + i + 1 } return s", VAL_INT(14)),
     T("i:=0 s:=0 while i < 1000000 { s=s+i+1 i=i+1 } return s", VAL_INT(500000500000ll)),
+    T("i:=0 s:=0 while i < 100000 { s=s+i+0.5 i=i+0.5 } return s", VAL_DOUBLE(10000050000)),
 };
 
 Value eval(const char *text) {
