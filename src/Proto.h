@@ -9,11 +9,11 @@ class Proto {
 
  public:
     signed char nArgs; // negative if hasEllipsis
-    // bool hasEllipsis;
     byte level;
     byte localsTop;
+    int patchPos;
     Vector<short> ups;
-    Vector<Value> consts;
+    Vector<Object *> consts;
     Vector<unsigned> code;
     Proto *up; // level-1
 

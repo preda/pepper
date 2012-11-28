@@ -74,6 +74,12 @@ void GC::_markVector(Value *p, int size) {
     }
 }
 
+void GC::_markVectorObj(Object **p, int size) {
+    for (Object **end = p + size; p < end; ++p) {
+        _mark(*p);
+    }
+}
+
 Object *GC::_alloc(int type, int bytes, bool traversable) {
     if (nPtr >= (1 << (nBits-1))) {
         growMap();

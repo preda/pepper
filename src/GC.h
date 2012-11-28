@@ -22,6 +22,7 @@ class GC {
     void _mark(Object *p);
     void _markAndSweep(Object *root);
     void _markVector(Value *buf, int size);
+    void _markVectorObj(Object **buf, int size);
 
  public:
     GC();
@@ -42,5 +43,9 @@ class GC {
 
     static void markVector(Value *buf, int size) {
         gc->_markVector(buf, size);
+    }
+
+    static void markVectorObj(Object **buf, int size) {
+        gc->_markVectorObj(buf, size);
     }
 };

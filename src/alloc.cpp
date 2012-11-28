@@ -40,7 +40,7 @@ Proto *Proto::alloc(Proto *up) {
 
 void Proto::traverse() {
     GC::mark((Object*) up);
-    GC::markVector(consts.buf, consts.size);
+    GC::markVectorObj(consts.buf, consts.size);
 }
 
 CFunc *CFunc::alloc(tfunc f, int dataSize) {

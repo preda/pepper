@@ -7,43 +7,55 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 
 static const char *objTypeName[] = {
     0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", "O_STR",
 };
 
-// static const char *emptyVals[] = {0, "[]", "{}", 0, 0, 0, 0, 0, "\"\""};
+#define _(n) #n
+static const char *opNames[] = {
+    _(JMP),
+    _(JMPF),
+    _(JMPT),
+    _(CALL),
+    _(RET),
+    _(FUNC),
+    _(GET),
+    _(SET),
+    _(MOVEUP),
+    _(MOVE_R),
+    _(MOVE_I),
+    _(MOVE_C),
+    _(LEN),
+    _(NOTL),
+    _(ADD),
+    _(SUB),
+    _(MUL),
+    _(DIV),
+    _(MOD),
+    _(POW),
+    _(AND),
+    _(OR),
+    _(XOR),
+    _(SHL_RR),
+    _(SHL_RI),
+    _(SHR_RR),
+    _(SHR_RI),
+    _(EQ),
+    _(NEQ),
+    _(LT),
+    _(LE),
+};
 
-static const char *opNames[32];
-
+/*
 static const char *typeNames[] = {
     "NIL", "[]", "{}", 0,
     0, 0, 0, 0,
     "\"\"",
 };
-
-static bool init() {
-#define ENTRY(t, n) t[n]=#n
-#define _(n) ENTRY(opNames, n)
-#define __(a, b, c, d) _(a); _(b); _(c); _(d);
-    _(JMP);
-    __(CALL, RET, FUNC, MOVE);
-    _(GET); _(SET),
-    __(ADD, SUB, MUL, DIV);
-    __(MOD, POW, AND, OR);
-    __(AND, OR, SHL, SHR);
-    _(XOR);
-    _(NOTL); _(NOTB); _(LEN);
-    _(EQ); _(NEQ);
-    _(LT); _(LE);
-    
-#undef _
-#undef __
-#undef ENTRY
-    // opNames[CLOSURE] = "FUNC";
-    return true;
-}
+*/
 
 static void printValue(char *buf, int bufSize, Value a) {
     if (IS_INT(a)) {
@@ -77,59 +89,43 @@ void printValue(Value a) {
     fprintf(stderr, "%s\n", buf);
 }
 
-static void printOperand(char *buf, int bufSize, int bit, int v) {
-    if (!bit) {
-        snprintf(buf, bufSize, "%d", v);
-    } else {
-        if (v < 0x80) {
-            snprintf(buf, bufSize, "#%-d", (int)(((signed char)(v<<1))>>1));
-        } else if (v < 0xf0) {
-            snprintf(buf, bufSize, "[%d]", (int)(v & 0x7f));
-        } else {
-            snprintf(buf, bufSize, "#%s", typeNames[v & 0xf]);
-        }
-    }
+static void printOperand(char *buf, int bufSize, int v) {
+    snprintf(buf, bufSize, "%d", v);
 }
 
-void printBytecode(unsigned *p, int size) {
-    static bool inited = init();
-    (void) inited;
+void printBytecode(unsigned *start, int size) {
+    // static bool inited = init();
+    // (void) inited;
+    assert(sizeof(opNames) / sizeof(opNames[0]) == N_OPCODES);
     char sa[32], sb[32], sc[32];
-    int i = 0;
-    for (unsigned *end = p + size; p < end; ++p, ++i) {
+    char buf[256];
+    for (unsigned *p = start, *end = start + size; p < end; ++p) {
         unsigned code = *p;
-        int fullOp = OP(code), a = OA(code), b = OB(code), c = OC(code);
-        int op = fullOp & 0x1f;    
-        printOperand(sa, sizeof(sa), fullOp & 0x20, a);
-        printOperand(sb, sizeof(sb), fullOp & 0x40, b);
-        printOperand(sc, sizeof(sc), fullOp & 0x80, c);
-        printf("%2d: %02x%02x%02x%02x   %-4s ", i, fullOp, a, b, c, opNames[op]);
+        int i = p - start;
+        int op = OP(code), a = OA(code), b = OB(code), c = OC(code);
+        printOperand(sa, sizeof(sa), a);
+        printOperand(sb, sizeof(sb), b);
+        printOperand(sc, sizeof(sc), c);
+        printf("%2d: %02x%02x%02x%02x   %-6s ", i, op, c, a, b, opNames[op]);
         switch (op) {
-        case JMP: {
-            int offset = (int) OBC(code);
-            int flags = fullOp >> 5;
-            if (flags == 1 || flags == 5 || flags == 4) {
-                offset = -offset;
-            }
-            
-            int to = i + offset + 1;
-            if (!(fullOp & 0x40)) {
-                printf("%3d\n", to);
-            } else {
-                if (fullOp & 0x80) {
-                    printf("%3d,  %3s is true\n", to, sa);
-                } else {
-                    printf("%3d,  %3s is false\n", to, sa);
-                }
-            }
+        case JMP:    printf("%3d\n", i + (short)OD(code) + 1); break;
+
+        case JMPF: 
+        case JMPT:   printf("%3d,  %3d\n", i + (short)OD(code) + 1, c); break;
+
+        case RET:    printf("%3d\n", a); break;
+
+        case MOVE_I: printf("%3d,  #%d\n", c, (int)OD(code)); break;
+
+        case MOVE_C: {
+            Value v = *(p+1) | ((u64)*(p+2) << 32);
+            printValue(buf, sizeof(buf), v);
+            printf("%3d, #%s\n", c, buf);            
+            p += 2;
             break;
         }
-
-        case RET:
-            printf("%3s\n", sa);
-            break;
-
-        case MOVE:
+            
+        case MOVE_R:
         case LEN:
             printf("%3s,  %3s\n", sc, sa);
             break;
@@ -149,24 +145,15 @@ void printBytecode(unsigned *p, int size) {
 }
 
 void printProto(Proto *proto) {
-    printf("UpVals:\n");
-    int i = 4;
-    int c = 0;
-    char buf[64];
-    for (short *p = proto->ups.buf+4, *end = p-4 + proto->ups.size; p < end; ++p, ++i) {
-        int u = *p;
-        if (u > 0) {
-            printf("%2d: %d\n", i, u-1);
-        } else if (u < 0) {
-            printf("%2d: [%d]\n", i, -u-1);
-        } else {
-            Value a = proto->consts.buf[c++];
-            printValue(buf, sizeof(buf), a);
-            printf("%2d: #%s\n", i, buf);
-            if (IS_PROTO(a)) { printProto((Proto *)a); }
-        }
+    /*
+    printf("UpVals: ");
+    int i = 0;
+    // char buf[64];
+    for (short *p = proto->ups.buf+i, *end = p-i + proto->ups.size; p < end; ++p, ++i) {
+        printf("%3d, ", (int)*p);
     }
-    printf("\nCode:\n");
+    printf("\n\nCode:\n");
+    */
     printBytecode(proto->code.buf, proto->code.size);
 }
 

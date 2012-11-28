@@ -34,6 +34,7 @@ static void init() {
     _(FFI_N_ARGS);
     _(FFI_CIF);
     _(CALL_NIL);
+    _(CALL_NOT_FUNC);
 #undef _
 }
 

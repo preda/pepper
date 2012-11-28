@@ -13,7 +13,7 @@
 #include <assert.h>
 #include <setjmp.h>
 
-#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; goto *dispatch[OP(code)]
+#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
 
 #define INT(x) VAL_INT((signed char)x)
 
@@ -133,6 +133,11 @@ bool objEquals(Object *a, Object *b) {
     return false;
 }
 
+static void copyUpvals(Func *f, Value *regs) {
+    int n = f->proto->ups.size;
+    memcpy(regs + (256-n), f->ups, n * sizeof(Value));
+}
+
 extern __thread jmp_buf jumpBuf;
 Value VM::run(Func *f) {
     if (int err = setjmp(jumpBuf)) {
@@ -140,26 +145,21 @@ Value VM::run(Func *f) {
         return NIL;
     }
 
-#define LABEL(L) L##101: DECODEC; L##100: DECODE(A); L##000
-
-#define LABEL2(L) L##001: DECODEC; goto L##000;\
- L##111: DECODEC; L##110: DECODE(A); L##010: DECODE(B); goto L;          \
- L##011: DECODEC; DECODE(B); goto L;
-
-#define OPCODES(F) &&jmp##F, &&call##F, &&retur##F, &&func##F,\
-&&get##F, &&set##F, &&move##F, &&len##F, \
-&&add##F, &&sub##F, &&mul##F, &&div##F, &&mod##F, &&pow##F,\
-&&andb##F, &&orb##F, &&xorb##F, &&notb##F, &&shl##F, &&shr##F, &&notl##F,\
-&&eq##F, &&neq##F, &&lt##F, &&le##F, 0, 0, 0, 0, 0, 0, 0
-
     static void *dispatch[] = {
-        OPCODES(000), OPCODES(100), OPCODES(010), OPCODES(110),
-        OPCODES(001), OPCODES(101), OPCODES(011), OPCODES(111),
+        &&jmp, &&jmpf, &&jmpt,
+        &&call, &&retur, &&func, &&get, &&set,
+        &&moveup, &&move_r, &&move_i, &&move_c, 
+        &&len, &&notl,
+        &&add, &&sub, &&mul, &&div, &&mod, &&pow,
+        &&andb, &&orb, &&xorb, &&shl_rr, &&shl_ri, &&shr_rr, &&shr_ri,
+        &&eq, &&neq, &&lt, &&le
     };
-    assert(sizeof(dispatch)/sizeof(dispatch[0]) == 256);
+
+    assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
  
     Value *regs  = stack;
-    Value *ups   = f->ups;
+    activeFunc = f;
+    copyUpvals(activeFunc, regs);
     unsigned *pc = f->proto->code.buf;
 
     unsigned code;
@@ -168,48 +168,38 @@ Value VM::run(Func *f) {
 
     STEP;
 
+jmpt: if (IS_FALSE(*ptrC)) { STEP; }
+ jmp: pc += (short) OD(code); STEP;
+ jmpf: if (IS_FALSE(*ptrC)) { pc += (short) OD(code); } STEP;
 
- jmp110: DECODE(A);
- jmp010: if (IS_FALSE(A)) { pc += OBC(code); } STEP; // jump on false(A)
-
- jmp111: DECODE(A);
- jmp011: if (IS_FALSE(A)) { STEP; } // jump on true(A)
- jmp000: pc += OBC(code); STEP;     // unconditional
-
- jmp100: DECODE(A);
- jmp101: if (!IS_FALSE(A)) { STEP; }
- jmp001: pc -= OBC(code); STEP;
-
-    LABEL(func):
-    func:
+func:
     assert(IS_PROTO(A));
-    *ptrC = VAL_OBJ(Func::alloc((Proto *) A, ups, regs));
+    *ptrC = VAL_OBJ(Func::alloc((Proto *) A, regs + 256 - activeFunc->proto->ups.size, regs));
     STEP;
 
-    LABEL(get): B=regs[OB(code)]; get: *ptrC = doGet(A, B); STEP;
-    LABEL(set): B=regs[OB(code)]; set: doSet(*ptrC, A, B);  STEP;
+get: *ptrC = doGet(A, B); STEP;
+set: doSet(*ptrC, A, B);  STEP;
 
-    LABEL(retur): retur: {
+retur: {
         regs[0] = A;
         if (retInfo.size == 0) { return A; }
         RetInfo *ri = retInfo.top();
-        pc   = ri->pc;
-        regs = ri->regs;
-        ups  = ri->ups;
+        pc         = ri->pc;
+        regs       = ri->regs;
+        activeFunc = ri->func;
         retInfo.pop();
+        copyUpvals(activeFunc, regs);
         STEP;
     }
 
-    LABEL(call): B=regs[OB(code)]; call: { 
-        assert(IS_INT(A));
-        ERR(TAG(B) != T_OBJ || B == NIL, E_CALL_NIL);
-
-        const int nEffArgs = getInteger(A);
+call: { 
+        ERR(TAG(A) != T_OBJ || A == NIL, E_CALL_NIL);
+        const int nEffArgs = OB(code);
         Value *base = ptrC;
-        int type = O_TYPE(B);
+        int type = O_TYPE(A);
         assert(type == O_FUNC || type == O_CFUNC);
         if (type == O_FUNC) {
-            const Func *f = (Func *) B;
+            Func *f = (Func *) A;
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
             bool hasEllipsis = false;
@@ -237,70 +227,51 @@ Value VM::run(Func *f) {
                 base = regs;
             } else {
                 RetInfo *ret = retInfo.push();
-                ret->pc   = pc;
-                ret->regs = regs;
-                ret->ups  = ups;
+                ret->pc    = pc;
+                ret->regs  = regs;
+                ret->func  = activeFunc;
             }
             pc   = proto->code.buf;
             regs = maybeGrowStack(base);
-            ups  = f->ups;
+            activeFunc = f;
+            copyUpvals(f, regs);
         } else { // O_CFUNC
-            CFunc *cf = (CFunc *) B;
+            CFunc *cf = (CFunc *) A;
             cf->call(base, nEffArgs);
         }
         STEP;
     }
 
-    LABEL(move): move: *ptrC = A; STEP;
-    LABEL(add):  B=regs[OB(code)]; add: *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
-    LABEL(sub):  B=regs[OB(code)]; sub: *ptrC = doSub(A, B); STEP;
-    LABEL(mul):  B=regs[OB(code)]; mul: *ptrC = doMul(A, B); STEP;
-    LABEL(div):  B=regs[OB(code)]; div: *ptrC = doDiv(A, B); STEP;
-    LABEL(mod):  B=regs[OB(code)]; mod: *ptrC = doMod(A, B); STEP;
-    LABEL(pow):  B=regs[OB(code)]; pow: *ptrC = doPow(A, B); STEP;
+ moveup: activeFunc->ups[activeFunc->proto->ups.size + (ptrC-regs) - 256] = A;
+ move_r: *ptrC = A; STEP;
+ move_i: *ptrC = VAL_INT((short) OD(code)); STEP;
+ move_c: *ptrC = *pc | (((u64) *(pc+1)) << 32); pc += 2; STEP;
+ len:    *ptrC = VAL_INT(len(A)); STEP;
+ notl:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
+    // notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
+
+ add: *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
+ sub: *ptrC = doSub(A, B); STEP;
+ mul: *ptrC = doMul(A, B); STEP;
+ div: *ptrC = doDiv(A, B); STEP;
+ mod: *ptrC = doMod(A, B); STEP;
+ pow: *ptrC = doPow(A, B); STEP;
 
 #define BITOP(op, A, B) IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) op getInteger(B)) : ERROR(E_WRONG_TYPE)
-    LABEL(andb): B=regs[OB(code)]; andb: *ptrC = BITOP(&,  A, B); STEP;
-    LABEL(orb):  B=regs[OB(code)]; orb:  *ptrC = BITOP(|,  A, B); STEP;
-    LABEL(xorb): B=regs[OB(code)]; xorb: *ptrC = BITOP(^,  A, B); STEP;
+ andb: *ptrC = BITOP(&,  A, B); STEP;
+ orb:  *ptrC = BITOP(|,  A, B); STEP;
+ xorb: *ptrC = BITOP(^,  A, B); STEP;
 
-    LABEL(shl):  B=regs[OB(code)]; shl: *ptrC = BITOP(<<, A, B); STEP;
-    LABEL(shr):  B=regs[OB(code)]; shr: *ptrC = BITOP(>>, A, B); STEP;
+ shl_rr: *ptrC = BITOP(<<, A, B); STEP;
+ shl_ri: *ptrC = IS_INT(A) ? VAL_INT(getInteger(A) << OB(code)) : ERROR(E_WRONG_TYPE); STEP;
+ shr_rr: *ptrC = BITOP(>>, A, B); STEP;
+ shr_ri: *ptrC = IS_INT(A) ? VAL_INT(getInteger(A) >> OB(code)) : ERROR(E_WRONG_TYPE); STEP;
 
-    LABEL(notb): notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
-    LABEL(notl): notl: *ptrC = IS_FALSE(A) ?  TRUE  : FALSE; STEP;
-    LABEL(eq):   B=regs[OB(code)]; eq:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
-    LABEL(neq):  B=regs[OB(code)]; neq: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;
+ eq:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
+ neq: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;
+ lt: *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
+ le: *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
 
-    LABEL(lt):   B=regs[OB(code)]; lt: *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
-    LABEL(le):   B=regs[OB(code)]; le: *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
-
-    LABEL(len):  len: *ptrC = VAL_INT(len(A)); STEP;
-
-    LABEL2(call);
-    LABEL2(retur);
-    LABEL2(func);
-    LABEL2(get);
-    LABEL2(set);
-    LABEL2(move);
-    LABEL2(len);
-    LABEL2(add);
-    LABEL2(sub);
-    LABEL2(mul);
-    LABEL2(div);
-    LABEL2(mod);
-    LABEL2(pow);
-    LABEL2(andb);
-    LABEL2(orb);
-    LABEL2(xorb);
-    LABEL2(notb);
-    LABEL2(shl);
-    LABEL2(shr);
-    LABEL2(notl);
-    LABEL2(eq);
-    LABEL2(neq);
-    LABEL2(lt);
-    LABEL2(le);
     return 0;
 }
 

@@ -18,6 +18,7 @@
 #include <setjmp.h>
 
 #define UNUSED      VAL_REG(0)
+
 static const Value EMPTY_ARRAY = VAL_OBJ(Array::alloc());
 static const Value EMPTY_MAP   = VAL_OBJ(Map::alloc());
 
@@ -59,6 +60,8 @@ Func *Parser::parseFunc(const char *text) {
 Func *Parser::parseStatList(const char *text) {
     SymbolTable syms;
     Proto *proto = Proto::alloc(0);
+    syms.set(hash64("ffi"), -8);
+    proto->ups.push(-8);
     if (Parser::parseStatList(proto, &syms, text)) { return 0; }
     close(proto);
     return Func::alloc(proto, 0, 0);
@@ -72,7 +75,6 @@ int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     }
     Lexer lexer(text);
     Parser parser(proto, syms, &lexer);
-    parser.defineName("ffi", VAL_OBJ(CFunc::alloc(ffiConstruct, 0)));
     parser.statList();
     return 0;
 }
@@ -101,7 +103,8 @@ void Parser::statement() {
             int slot = lookupSlot(lexer->info.nameHash);
             advance();
             consume('=');
-            patchOrEmitMove(slot, expr(proto->localsTop));    
+            patchOrEmitMove(proto->localsTop+1, slot, expr(proto->localsTop));
+            proto->patchPos = -1;
         } else if (lexer->lookahead() == ':'+TK_EQUAL) { 
             varStat();
         } else {
@@ -111,27 +114,12 @@ void Parser::statement() {
 
     case TK_RETURN:
         advance();
-        emitCode(makeCode(RET, UNUSED, TOKEN==';'?NIL:expr(proto->localsTop), UNUSED));
+        emit(proto->localsTop, RET, 0, TOKEN == ';' ? NIL : expr(proto->localsTop), UNUSED);
         break;        
 
     default: exprOrAssignStat(); break;
     }
     while (TOKEN == ';') { advance(); }
-}
-
-static Value makeValue(bool flag, byte ra) {
-    return !flag ? VAL_REG(ra) :
-        !(ra & 0x80) ? VAL_INT(((signed char)(ra<<1))>>1) :
-        ra >= 0xf0 ? VALUE(ra & 0xf, 0) :
-        VAL_REG(-((ra&0x7f) + 1));
-}
-
-static byte unCode(unsigned code, Value *c, Value *a, Value *b) {
-    byte bigop = OP(code);
-    *a = makeValue(bigop & 0x20, OA(code));
-    *b = makeValue(bigop & 0x40, OB(code));
-    *c = makeValue(bigop & 0x80, OC(code));
-    return bigop & 0x1f;
 }
 
 static int topAbove(Value a, int top) {
@@ -143,13 +131,11 @@ void Parser::exprOrAssignStat() {
     if (TOKEN == '=') {
         consume('=');
         ERR(!IS_REG(lhs), E_ASSIGN_TO_CONST);
-        Value a, b, c;
-        int op = unCode(proto->code.pop(), &c, &a, &b);
-        // printValue(c); printValue(a); printValue(b);
-        
-        ERR(op != GET || (lhs & FLAG_DONT_PATCH), E_ASSIGN_RHS);
-        assert(lhs == c);
-        emitCode(makeCode(SET, a, b, expr(topAbove(lhs, proto->localsTop))));
+        ERR(proto->patchPos < 0, E_ASSIGN_RHS);        
+        unsigned code = proto->code.pop();        
+        ERR(OP(code) != GET, E_ASSIGN_RHS); // (lhs & FLAG_DONT_PATCH)
+        assert((int)lhs == OC(code));
+        emit(proto->localsTop+1, SET, OA(code), VAL_REG(OB(code)), expr(topAbove(lhs, proto->localsTop)));
     }    
 }
 
@@ -160,8 +146,8 @@ void Parser::whileStat() {
     Value a = expr(proto->localsTop);
     int pos2 = emitHole();
     block();
-    emitJump(HERE, pos1);
-    emitJump(pos2, HERE, a);
+    emitJump(HERE, JMP, UNUSED, pos1);
+    emitJump(pos2, JMPF, a, HERE);
 }
 
 void Parser::ifStat() {
@@ -171,16 +157,16 @@ void Parser::ifStat() {
     block();
     if (lexer->token == TK_ELSE) {
         int pos2 = emitHole();
-        emitJump(pos1, HERE, a);
+        emitJump(pos1, JMPF, a, HERE);
         consume(TK_ELSE);
         if (lexer->token == '{') {
             block();
         } else { 
             ifStat();
         }
-        emitJump(pos2, HERE);
+        emitJump(pos2, JMP, UNUSED, HERE);
     } else {
-        emitJump(pos1, HERE, a);
+        emitJump(pos1, JMPF, a, HERE);
     }
 }
 
@@ -212,18 +198,12 @@ void Parser::varStat() {
         aSlot = proto->localsTop++;
         syms->set(name, aSlot);
     }
-    patchOrEmitMove(aSlot, a);
+    patchOrEmitMove(proto->localsTop+1, aSlot, a);
+    proto->patchPos = -1;
 }
 
 static bool isUnaryOp(int token) {
     return token=='!' || token=='-' || token=='#' || token=='~';
-}
-
-void Parser::defineName(const char *sname, Value a) {
-    u64 name = hash64(sname);
-    proto->ups.push(0);
-    proto->consts.push(a);
-    syms->set(name, -proto->ups.size);
 }
 
 SymbolData Parser::createUpval(Proto *proto, u64 name, SymbolData sym) {
@@ -259,11 +239,9 @@ Value Parser::mapExpr(int top) {
         return EMPTY_MAP;
     }
     int slot = top++;
-    int codePosInit = emitHole();
-
-    Vector<Value> keys;
-    Vector<Value> vals;
-    int nConsts = 0;
+    
+    Map *map = Map::alloc();
+    emit(slot, ADD, slot, EMPTY_MAP, VAL_OBJ(map));
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == '}') { break; }
@@ -271,32 +249,14 @@ Value Parser::mapExpr(int top) {
         consume(':');
         Value v = expr(top);
         
-        if (IS_REG(k) || IS_REG(v) || (k==NIL && v == NIL)) {
-            keys.push(NIL);
-            vals.push(NIL);
-            emitCode(makeCode(SET, VAL_REG(slot), k, v));
+        if (IS_REG(k) || IS_REG(v)) {
+            emit(slot, SET, slot, k, v);
         } else {
-            keys.push(k);
-            vals.push(v);
-            ++nConsts;
+            map->set(k, v);
         }
         if (TOKEN == '}') { break; }
         consume(',');
-    }
-    if (nConsts <= 2) {
-        int pos = 0;
-        for (Value *pk = keys.buf, *endk = pk+keys.size, *pv = vals.buf; 
-             pk < endk; ++pk, ++pv, ++pos) {
-            Value k = *pk;
-            Value v = *pv;
-            if (k != NIL || v != NIL) {
-                emitCode(makeCode(SET, VAL_REG(slot), k, v));
-            }
-        }
-        emitPatch(codePosInit, makeCode(MOVE, VAL_REG(slot), EMPTY_MAP, UNUSED));
-    } else {
-        emitPatch(codePosInit, makeCode(ADD,  VAL_REG(slot), EMPTY_MAP, VAL_OBJ(Map::alloc(&keys, &vals))));
-    }
+    }    
     consume('}');
     return VAL_REG(slot);
 }
@@ -308,34 +268,19 @@ Value Parser::arrayExpr(int top) {
         return EMPTY_ARRAY;
     }
     int slot = top++;
-    int codePosInit = emitHole();
+    Array *array = Array::alloc();
+    emit(slot, ADD, slot, EMPTY_ARRAY, VAL_OBJ(array));
 
-    Vector<Value> vect;
-    int nConsts = 0;
     for (int pos = 0; ; ++pos) {
         if (TOKEN == ']') { break; }
         Value elem = expr(top);
-        if (IS_REG(elem) || elem==NIL) {
-            vect.push(NIL);
-            emitCode(makeCode(SET, VAL_REG(slot), VAL_INT(pos), elem));
+        if (IS_REG(elem)) {
+            emit(slot, SET, slot, VAL_INT(pos), elem);
         } else {
-            vect.push(elem);
-            ++nConsts;
+            array->push(elem);
         }
         if (TOKEN == ']') { break; }
         consume(',');
-    }
-    if (nConsts <= 2) {
-        int pos = 0;
-        for (Value *p = vect.buf, *end = p+vect.size; p < end; ++p, ++pos) {
-            Value v = *p;
-            if (v != NIL) {
-                emitCode(makeCode(SET, VAL_REG(slot), VAL_INT(pos), v));
-            }
-        }
-        emitPatch(codePosInit, makeCode(MOVE, VAL_REG(slot), EMPTY_ARRAY, UNUSED));
-    } else {
-        emitPatch(codePosInit, makeCode(ADD, VAL_REG(slot), EMPTY_ARRAY, VAL_OBJ(Array::alloc(&vect))));
     }
     consume(']');
     return VAL_REG(slot);
@@ -397,7 +342,7 @@ Value Parser::suffixedExpr(int top) {
         switch(t) {
         case '[':
             advance();
-            emitCode(makeCode(GET, VAL_REG(top), a, expr(top+1)));
+            emit(top+2, GET, top, a, expr(top+1));
             a = VAL_REG(top);
             consume(']');
             break;
@@ -405,15 +350,16 @@ Value Parser::suffixedExpr(int top) {
         case '(': {
             advance();
             int base = top;
+            ERR(!IS_REG(a), E_CALL_NOT_FUNC);
             if (IS_REG(a) && (int)a == base) { ++base; }
             int nArg = 0;
             ARG_LIST(int argPos = base + nArg;
-                     patchOrEmitMove(argPos, expr(argPos));
+                     patchOrEmitMove(argPos, argPos, expr(argPos));
                      ++nArg;);
             consume(')');
-            emitCode(makeCode(CALL, VAL_REG(base), VAL_INT(nArg), a));
+            emit(0, CALL, base, a, VAL_INT(nArg));
             if (base != top) {
-                emitCode(makeCode(MOVE, VAL_REG(top), VAL_REG(base), UNUSED));
+                emit(base+1, MOVE, top, VAL_REG(base), UNUSED);
             }
             a = VAL_REG(top);
             break;
@@ -430,12 +376,12 @@ Value Parser::funcExpr(int top) {
     consume(TK_FUNC);
     parList();
     block();
-    emitCode(makeCode(RET, UNUSED, NIL, UNUSED));
+    emit(proto->localsTop, RET, 0, NIL, UNUSED);
     proto->freeze();
     syms->popContext();
     Proto *funcProto = proto;
     proto = proto->up;
-    emitCode(makeCode(FUNC, VAL_REG(top), VAL_OBJ(funcProto), UNUSED));
+    emit(top+1, FUNC, top, VAL_OBJ(funcProto), UNUSED);
     return VAL_REG(top);
 }
 
@@ -479,9 +425,8 @@ Value Parser::codeUnary(int top, int op, Value a) {
     case '#': opcode = LEN; break;
     default: assert(false);
     }
-    Value c = VAL_REG(top);
-    emitCode(makeCode(opcode, c, a, b));
-    return c;
+    emit(top+1, opcode, top, a, b);
+    return VAL_REG(top);
 }
 
 Value Parser::codeBinary(int top, int op, Value a, Value b) {
@@ -525,9 +470,8 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
 
     default: assert(false);
     }
-    c = VAL_REG(top);
-    emitCode(makeCode(opcode, c, a, b));
-    return c;
+    emit(topAbove(a, topAbove(b, top+1)), opcode, top, a, b);
+    return VAL_REG(top);
 }
 
 static int binaryPriorityLeft(int token) {
@@ -592,19 +536,20 @@ Value Parser::subExpr(int top, int limit) {
             } else {
                 int aSlot = (int) a;
                 if (aSlot < top) {
-                    emitCode(makeCode(MOVE, VAL_REG(top), a, UNUSED));
+                    emit(0, MOVE, top, a, UNUSED);
                     a = VAL_REG(top);
                     aSlot = top;
                 }
                 int pos1 = emitHole();
                 Value b = subExpr(aSlot, rightPrio);
-                patchOrEmitMove(aSlot, b);
+                patchOrEmitMove(aSlot, aSlot, b);
                 if (op == TK_LOG_AND) {
-                    emitJump(pos1, HERE, a);
+                    emitJump(pos1, JMPF, a, HERE);
                 } else {
-                    emitJump(pos1, HERE, a, true);
+                    emitJump(pos1, JMPT, a, HERE);
                 }
-                a |= FLAG_DONT_PATCH;
+                proto->patchPos = -1;
+                // a |= FLAG_DONT_PATCH;
             }
         } else {
             a = codeBinary(top, op, a, subExpr(topAbove(a, top), rightPrio));
@@ -620,118 +565,166 @@ Value Parser::expr(int top) {
 
 // code generation below
 
-void Parser::patchOrEmitMove(int dest, Value src) {
-    if (IS_REG(src) && !(src & FLAG_DONT_PATCH)) {
-        int srcSlot = (int) src;        
-        if (srcSlot == dest) { return; } // everything is in the right place, do nothing
-
-        unsigned code = *proto->code.top();
-        Value a, b, c;
-        int op = unCode(code, &c, &a, &b);
+void Parser::patchOrEmitMove(int top, int dest, Value src) {
+    int patchPos = proto->patchPos;
+    assert(patchPos == -1 || patchPos == (int)proto->code.size-1 || patchPos == (int)proto->code.size-3);
+    if (dest >= 0 && IS_REG(src) && (int)src >= 0 && patchPos >= 0) {
+        int srcSlot = (int) src;
+        unsigned code = proto->code.buf[patchPos];
+        int op = OP(code);
         if (opcodeHasDest(op)) {
-            assert(IS_REG(c));
-            if (srcSlot == (int) c) {
-                proto->code.pop();
-                emitCode(makeCode(op, VAL_REG(dest), a, b));
-                return; // patched
-            }
+            int oldDest = OC(code);
+            assert(srcSlot == oldDest);        
+            if (oldDest == dest) { return; } // everything is in the right place
+            proto->code.buf[patchPos] = CODE_CAB(OP(code), dest, OA(code), OB(code));
+            return; // patched
         }
     }
-    emitCode(makeCode(MOVE, VAL_REG(dest), src, UNUSED));
+    emit(top, MOVE, dest, src, UNUSED);
 }
 
-Value Parser::maybeAllocConst(Value a) {
-    int ta = TAG(a);
-    if (a==NIL || a==EMPTY_ARRAY || a==EMPTY_MAP || a==EMPTY_STRING ||
-        ta==T_REG || (ta==T_INT && getInteger(a)>=-64 && getInteger(a)<64)) {
-        return a;
-    }
-    proto->ups.push(0);
-    proto->consts.push(a);
-    return VAL_REG(- proto->ups.size);
-}
-
-byte Parser::getRegValue(Value a) {
-    a = maybeAllocConst(a);
-    const int ta = TAG(a);
-    return
-        ta==T_REG && (int)a >= 0 ? (int) a :
-        ta==T_REG ? 0x80 | (-(int)a-1) :
-        a==NIL          ? 0x80 :
-        a==EMPTY_STRING ? 0x81 :
-        a==EMPTY_ARRAY  ? 0x82 :
-        a==EMPTY_MAP    ? 0x83 :
-        ((unsigned)a & 0x7f);
-}
-
-static inline unsigned PACK4(unsigned b0, unsigned b1, unsigned b2, unsigned b3) {
-    return b0 | (b1<<8) | (b2<<16) | (b3<<24);
-}
-
-static bool isNormal(Value a) {
+/*
+static bool isNormalReg(Value a) {
     return IS_REG(a) && (int)a >= 0;
 }
+*/
 
-static byte flags(Value a, Value b, Value c) {
-    return (isNormal(a)?0:0x20) | (isNormal(b)?0:0x40) | (isNormal(c)?0:0x80);
-}
-
-unsigned Parser::makeCode(int op, Value c, Value a, Value b) {
-    if (op == MOVE && (a == EMPTY_ARRAY || a == EMPTY_MAP)) {
-        assert(b == UNUSED);
-        op = ADD;
-        b = a;
-    } else if (op == SET && (c == EMPTY_ARRAY || c == EMPTY_MAP)) {
-        op = MOVE; c = a = b = UNUSED;
-    }
-    byte ra = getRegValue(a);
-    return PACK4(op | flags(a, b, c), ra, getRegValue(b), getRegValue(c));
-}
-
-unsigned Parser::makeCode(int op, Value a, int offset) {    
-    byte opb = op | (isNormal(a) ? 0 : 0x20);
-    byte ra  = getRegValue(a);
-    return opb | (ra << 8) | (offset << 16);
-}
+enum {
+    UP_NIL  = -1,
+    UP_ZERO = -2,
+    UP_ONE  = -3,
+    UP_NEG_ONE = -4,
+    UP_EMPTY_STRING = -5,
+    UP_EMPTY_ARRAY  = -6,
+    UP_EMPTY_MAP    = -7,
+};
 
 void Parser::close(Proto *proto) {
-    proto->code.push(PACK4(RET | 0x20, 0x80, 0, 0));
+    proto->code.push(CODE_CAB(RET, 0, UP_NIL, 0));
     proto->freeze();
 }
 
-void Parser::emitCode(unsigned code) {
-    proto->code.push(code);
+static bool isSmallInt(Value a) {
+    s64 v;
+    return IS_INT(a) && -128 <= (v=getInteger(a)) && v < 128;
+}
+
+static Value mapSpecialConsts(Value a) {
+    if (a == NIL) {
+        return VAL_REG(UP_NIL);
+    } else if (a == VAL_INT(0)) {
+        return VAL_REG(UP_ZERO);
+    } else if (a == VAL_INT(1)) {
+        return VAL_REG(UP_ONE);
+    } else if (a == VAL_INT(-1)) {
+        return VAL_REG(UP_NEG_ONE);
+    } else if (a == EMPTY_STRING) {
+        return VAL_REG(UP_EMPTY_STRING);
+    } else if (a == EMPTY_ARRAY) {
+        return VAL_REG(UP_EMPTY_ARRAY);
+    } else if (a == EMPTY_MAP) {
+        return VAL_REG(UP_EMPTY_MAP);
+    }
+    return a;
+}
+
+void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
+    assert(to <= proto->code.size);
+    assert(pos  <= proto->code.size);
+    assert(op == JMP || op == JMPF || op == JMPT);
+    const int offset = to - pos - 1;
+    assert(offset != 0);
+    proto->patchPos = -1;
+    if ((op == JMPF && IS_FALSE(a)) || (op == JMPT && IS_TRUE(a))) {
+        op = JMP;
+        a  = UNUSED;
+    } else if (!IS_REG(a)) {
+        return; // never jump == no-op
+    }
+    if (op == JMP) { assert(a == UNUSED); }
+    proto->code.set(pos, CODE_CD(op, a, offset));
+}
+
+void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
+    if (a == EMPTY_ARRAY || a == EMPTY_MAP) {
+        if (op == MOVE) {
+            assert(b == UNUSED);
+            op = ADD;
+            b = a;
+        } else if (op == RET) {
+            assert(b == UNUSED);
+            emit(top, ADD, top, a, a);
+            a = VAL_REG(top);
+        }
+    }
+    if (op == SET && (dest == UP_EMPTY_ARRAY || dest == UP_EMPTY_MAP)) {
+        proto->patchPos = -1;
+        return;
+    }
+    a = mapSpecialConsts(a);
+    if (op != CALL && op != SHL && op != SHR) {
+        b = mapSpecialConsts(b);
+    }
+    emitCode(top, op, dest, a, b);
+}
+
+void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
+    // assert(dest >= 0);
+    proto->patchPos = proto->code.size;
+
+    if (dest < 0) {
+        if (op == MOVE && IS_REG(a)) {
+            proto->code.push(CODE_CAB(MOVEUP, dest, a, 0));
+            return;
+        } else if (opcodeHasDest(op)) {
+            emitCode(top+1, op, top, a, b);
+            emitCode(top+1, MOVE, dest, VAL_REG(top), UNUSED);
+            return;
+        } else {
+            dest = (byte) dest;
+        }
+    }
+
+    if (op == MOVE) {
+        assert(b == UNUSED);
+        if (IS_REG(a)) {
+            proto->code.push(CODE_CAB(MOVE_R, dest, a, 0));
+        } else if (IS_INT(a) && getInteger(a) >= -(1<<15) && getInteger(a) < (1<<15)) {
+            proto->code.push(CODE_CD(MOVE_I, dest, a));
+        } else {
+            proto->code.push(CODE_CD(MOVE_C, dest, 0));
+            proto->code.push((unsigned)a);
+            proto->code.push((unsigned)(a>>32));
+        }
+        return;
+    }
+
+    if (op == CALL) {
+        assert(IS_REG(a));
+        assert(isSmallInt(b));
+        proto->code.push(CODE_CAB(CALL, dest, a, b));
+        return;
+    }
+
+    if (!IS_REG(a)) {
+        emitCode(top+1, MOVE, top, a, UNUSED);
+        a = VAL_REG(top);
+        ++top;
+    }
+    if ((op == SHL || op == SHR) && isSmallInt(b)) {
+        proto->patchPos = proto->code.size;
+        proto->code.push(CODE_CAB(op+1, dest, a, b));
+        return;
+    }
+    if (!IS_REG(b)) {
+        emitCode(top+1, MOVE, top, b, UNUSED);
+        b = VAL_REG(top);
+    }
+    proto->patchPos = proto->code.size;
+    proto->code.push(CODE_CAB(op, dest, a, b));
 }
 
 int Parser::emitHole() {
+    proto->patchPos = -1;
     return (int) proto->code.push(0);
-}
-
-void Parser::emitPatch(unsigned pos, unsigned code) {
-    assert(pos <= proto->code.size);
-    proto->code.set(pos, code);
-}
-
-void Parser::emitJump(unsigned where, unsigned to, Value cond, bool onTrue) {
-    int offset = to - where - 1;
-    assert(offset != 0);
-    assert(!((onTrue && IS_FALSE(cond)) || (!onTrue && !IS_REG(cond) && !IS_FALSE(cond))));
-    if (offset >= 0) {
-        if ((!onTrue && IS_FALSE(cond)) || (onTrue && !IS_REG(cond) && !IS_FALSE(cond))) {
-            emitPatch(where, makeCode(JMP, UNUSED, offset));
-        } else {
-            emitPatch(where, makeCode(JMP | 0x40 | (onTrue ? 0x80 : 0), cond, offset));
-        }
-    } else {
-        assert(!onTrue);
-        if ((!onTrue && IS_FALSE(cond)) || (onTrue && !IS_REG(cond) && !IS_FALSE(cond))) {
-            emitPatch(where, makeCode(JMP|0x80, UNUSED, -offset));
-        } else {
-            if (IS_REG(cond)) {
-                emitPatch(where, makeCode(JMP | 0x20 | 0x80 , cond, -offset));
-            } else {
-                emitPatch(where, makeCode(JMP , cond, -offset));
-            }
-        }
-    }
 }

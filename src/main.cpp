@@ -19,6 +19,8 @@ struct T {
 T tests[] = {
     T("return 13", VAL_INT(13)),
     T("var a = 10; var b=-2 var c = a+ b; return c", VAL_INT(8)),
+    T("a:=3; b:=a; return a", VAL_INT(3)),
+    T("a:=2; a=3; b:=a; return a", VAL_INT(3)),
 
     // strings
     T("var a = \"foo\" var b = \"bar\" return a + b", String::makeVal("foobar")),
@@ -86,6 +88,7 @@ int main(int argc, char **argv) {
             s = argv[1];
         }
         compileDecompile(s);
+        return 0;
     } else {
         int n = sizeof(tests) / sizeof(tests[0]);
         int nFail = 0;
@@ -93,15 +96,17 @@ int main(int argc, char **argv) {
             T &t = tests[i];
             Value ret = eval(t.source);
             if (!equals(ret, t.result)) {
-                fprintf(stderr, "\n%d: '%s'\n", i, t.source);
+                fprintf(stderr, "\n%2d FAIL '%s'\n", i, t.source);
                 printValue(ret);
                 printValue(t.result);
+                fprintf(stderr, "\n");
                 ++nFail;
             } else {
                 fprintf(stderr, "%2d OK '%s'\n", i, t.source);
             }
         }
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);
+        return nFail;
     }
 }
 

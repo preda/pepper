@@ -3,22 +3,28 @@
 #include "Value.h"
 #include "Array.h"
 #include "Map.h"
+#include "CFunc.h"
+#include "FFI.h"
 
 #include <stdlib.h>
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs) {
-    static Value defaultUps[] = {NIL, EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc())};
+    static Value defaultUps[] = {
+        NIL, ZERO, VAL_INT(1), VAL_INT(-1),
+        EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc()),
+        VAL_OBJ(CFunc::alloc(ffiConstruct, 0)),
+    };
+
     if (!contextUps) {
         contextUps = defaultUps;
     }
     this->proto = proto;
     int nup = proto->ups.size;
     ups = nup ? (Value *) calloc(nup, sizeof(Value)) : 0;
-    Value *up = ups;
-    Value *consts = proto->consts.buf;
-    for (short *p = proto->ups.buf, *end = p+nup; p < end; ++p, ++up) {
+    Value *up = ups + nup - 1;
+    for (short *p = proto->ups.buf, *end = p+nup; p < end; ++p, --up) {
         int where = *p;
-        *up = where > 0 ? regs[where-1] : where < 0 ? contextUps[-where-1] : *consts++;
+        *up = where >= 0 ? regs[where] : contextUps[-where-1];
     }
 }
 
