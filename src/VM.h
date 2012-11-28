@@ -13,53 +13,39 @@ Value doDiv(Value a, Value b);
 Value doMod(Value a, Value b);
 Value doPow(Value a, Value b);
 
-#define OP(c) ((byte)  (c))
-#define OC(c) ((byte)  (c >> 8))
-#define OA(c) ((byte)  (c >> 16))
-#define OB(c) ((byte)  (c >> 24))
-#define OD(c) (c >> 16)
+union CodeBytes {
+    unsigned code;
+    struct {
+        byte op;
+        byte c;
+        byte a;
+        byte b;
+    };
+    struct {
+        short dummy;
+        short d;
+    };
+};
+
+inline int OP(unsigned code) { return CodeBytes{code:code}.op; }
+inline int OC(unsigned code) { return CodeBytes{code:code}.c; }
+inline int OA(unsigned code) { return CodeBytes{code:code}.a; }
+inline int OB(unsigned code) { return CodeBytes{code:code}.b; }
+inline int OD(unsigned code) { return CodeBytes{code:code}.d; }
 
 #define CODE_CAB(op, c, a, b) ((op) | ((byte)(c) << 8) | ((byte)(a) << 16) | ((byte)(b) << 24))
 
 #define CODE_CD(op, c, d) ((op) | ((byte)(c) << 8) | ((d) << 16))
 
+#define _(n) n
 enum {
-    JMP,    // D is offest
-    JMPF,   // C is cond, D offset
-    JMPT,   // C is cond, D offset
-    CALL,   // C is base, A is func, B is nArgs
-    RET,    // return A
-    FUNC,   // C = made func, A is proto
-    GET,    // C=A[B]
-    SET,    // C[A]=B
-    MOVE,   // hi-level for any move
-    MOVEUP = MOVE, // C dest, A is src
-    MOVE_R,        // C dest, A is src
-    MOVE_I,        // D is int src
-    MOVE_C,
-    LEN,
-    NOTL,
-    ADD,
-    SUB,
-    MUL,
-    DIV,
-    MOD,
-    POW,    
-    AND,
-    OR,
-    XOR,
-    SHL,
-    SHL_RR = SHL,
-    SHL_RI,
-    SHR,
-    SHR_RR = SHR,
-    SHR_RI,
-    EQ,
-    NEQ,
-    LT,
-    LE,
-    N_OPCODES // number of opcodes
+#include "opcodes.inc"
+    N_OPCODES, // number of opcodes
+    MOVE = MOVEUP, // hi-level for any move
+    SHL  = SHL_RR,
+    SHR  = SHR_RR,
 };
+#undef _
 
 bool opcodeHasDest(int opcode);
 

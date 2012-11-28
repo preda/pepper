@@ -13,12 +13,9 @@
 #include <assert.h>
 #include <setjmp.h>
 
-#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)]
+#define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)];
 
 #define INT(x) VAL_INT((signed char)x)
-
-#define DECODE(A) { byte v=O##A(code); A=v<0x80 ? VAL_INT((((signed char)(v<<1))>>1)) : ups[v & 0x7f]; }
-#define DECODEC ptrC = ups + OC(code)
 
 static Value arrayAdd(Value a, Value b) {
     assert(IS_ARRAY(a));
@@ -169,8 +166,8 @@ Value VM::run(Func *f) {
     STEP;
 
 jmpt: if (IS_FALSE(*ptrC)) { STEP; }
- jmp: pc += (short) OD(code); STEP;
- jmpf: if (IS_FALSE(*ptrC)) { pc += (short) OD(code); } STEP;
+ jmp: pc += OD(code); STEP;
+ jmpf: if (IS_FALSE(*ptrC)) { pc += OD(code); } STEP;
 
 func:
     assert(IS_PROTO(A));
@@ -244,7 +241,7 @@ call: {
 
  moveup: activeFunc->ups[activeFunc->proto->ups.size + (ptrC-regs) - 256] = A;
  move_r: *ptrC = A; STEP;
- move_i: *ptrC = VAL_INT((short) OD(code)); STEP;
+ move_i: *ptrC = VAL_INT(OD(code)); STEP;
  move_c: *ptrC = *pc | (((u64) *(pc+1)) << 32); pc += 2; STEP;
  len:    *ptrC = VAL_INT(len(A)); STEP;
  notl:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;

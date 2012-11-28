@@ -6,18 +6,9 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 
-/*
-s64 testGetInt(Value v) {
-    return getInteger(v);
-}
-*/
+void printFunc(Func *);
 
 int main(int argc, char **argv) {
-    /*
-    if (argc > 13) {
-        testGetInt(VAL_INT(argc));
-    }
-    */
     if (argc < 2) {
         return 1;
     }
@@ -37,6 +28,10 @@ int main(int argc, char **argv) {
     gettimeofday(&tv, &tz);
     long long t1 = tv.tv_sec * 1000000 + tv.tv_usec;
     Func *f = Parser::parseStatList(text);
+    if (argc == 3) {
+        printFunc(f);
+    }
+
     gettimeofday(&tv, &tz);
     long long t2 = tv.tv_sec * 1000000 + tv.tv_usec;
     if (!f) {

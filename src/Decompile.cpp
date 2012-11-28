@@ -9,45 +9,15 @@
 #include <string.h>
 #include <assert.h>
 
-
 static const char *objTypeName[] = {
     0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", "O_STR",
 };
 
 #define _(n) #n
 static const char *opNames[] = {
-    _(JMP),
-    _(JMPF),
-    _(JMPT),
-    _(CALL),
-    _(RET),
-    _(FUNC),
-    _(GET),
-    _(SET),
-    _(MOVEUP),
-    _(MOVE_R),
-    _(MOVE_I),
-    _(MOVE_C),
-    _(LEN),
-    _(NOTL),
-    _(ADD),
-    _(SUB),
-    _(MUL),
-    _(DIV),
-    _(MOD),
-    _(POW),
-    _(AND),
-    _(OR),
-    _(XOR),
-    _(SHL_RR),
-    _(SHL_RI),
-    _(SHR_RR),
-    _(SHR_RI),
-    _(EQ),
-    _(NEQ),
-    _(LT),
-    _(LE),
+    #include "opcodes.inc"
 };
+#undef _
 
 /*
 static const char *typeNames[] = {

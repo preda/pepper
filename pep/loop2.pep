@@ -1,6 +1,7 @@
 i := 0
 s := 0
-while i != 10000000 {
+end := 10000000
+while i != end {
       s = s + i + 1
       i = i + 1
 }

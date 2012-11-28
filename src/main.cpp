@@ -68,7 +68,7 @@ Value eval(const char *text) {
 }
 
 bool compileDecompile(const char *text) {
-    printf("\n\"%s\"\n\n", text);
+    printf("\n'%s'\n\n", text);
     Func *f = Parser::parseStatList(text);
     if (f) { 
         printFunc(f); 
