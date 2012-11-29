@@ -20,14 +20,6 @@ class Parser {
     SymbolData lookupName(u64 name);
     int lookupSlot(u64 name);
 
-    // Value maybeAllocConst(Value a);
-    // byte getRegValue(Value a);
-    // unsigned makeCode(int op, Value c, Value a, Value b);
-    // unsigned makeCode(int op, Value a, int offset);
-    // void emitCode(unsigned code);
-    // void emitPatch(unsigned pos, unsigned code);
-    // void emitJump(unsigned where, unsigned to, Value cond=FALSE, bool onTrue=false);
-
     int  emitHole();
     void emit(unsigned top, int op, int dest, Value a, Value b);
     void emitJump(unsigned pos, int op, Value a, unsigned to);
@@ -64,6 +56,4 @@ public:
 
     static int parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
     static void close(Proto *proto);
-
-    // void defineName(const char *name, Value a);
 };

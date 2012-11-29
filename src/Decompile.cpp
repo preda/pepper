@@ -78,10 +78,13 @@ void printBytecode(unsigned *start, int size) {
         printOperand(sc, sizeof(sc), c);
         printf("%2d: %02x%02x%02x%02x   %-6s ", i, op, c, a, b, opNames[op]);
         switch (op) {
-        case JMP:    printf("%3d\n", i + (short)OD(code) + 1); break;
+        case JMP:    printf("%3d\n", i + OD(code) + 1); break;
 
-        case JMPF: 
-        case JMPT:   printf("%3d,  %3d\n", i + (short)OD(code) + 1, c); break;
+        case JF: 
+        case JT:   printf("%3d,  %3d\n", i + OD(code) + 1, c); break;
+
+        case JLT:
+        case JNIS: printf("%3d,  %3d %3d\n", i + OSC(code) + 1, a, b); break;
 
         case RET:    printf("%3d\n", a); break;
 

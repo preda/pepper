@@ -99,7 +99,6 @@ void Parser::statement() {
 
     case TK_NAME: 
         if (lexer->lookahead() == '=') {
-            // assert(TOKEN == TK_NAME);
             int slot = lookupSlot(lexer->info.nameHash);
             advance();
             consume('=');
@@ -142,12 +141,20 @@ void Parser::exprOrAssignStat() {
 #define HERE (proto->code.size)
 void Parser::whileStat() {
     consume(TK_WHILE);
-    int pos1 = HERE;
+    unsigned pos1 = emitHole();
+    unsigned pos2 = proto->code.size;
     Value a = expr(proto->localsTop);
-    int pos2 = emitHole();
+    Vector<unsigned> copyExp;
+    Vector<unsigned> &code = proto->code;
+    while (code.size > pos2) {
+        copyExp.push(code.pop());
+    }
     block();
-    emitJump(HERE, JMP, UNUSED, pos1);
-    emitJump(pos2, JMPF, a, HERE);
+    emitJump(pos1, JMP, UNUSED, HERE);
+    while (copyExp.size) {
+        code.push(copyExp.pop());
+    }
+    emitJump(HERE, JT, a, pos2);
 }
 
 void Parser::ifStat() {
@@ -157,7 +164,7 @@ void Parser::ifStat() {
     block();
     if (lexer->token == TK_ELSE) {
         int pos2 = emitHole();
-        emitJump(pos1, JMPF, a, HERE);
+        emitJump(pos1, JF, a, HERE);
         consume(TK_ELSE);
         if (lexer->token == '{') {
             block();
@@ -166,7 +173,7 @@ void Parser::ifStat() {
         }
         emitJump(pos2, JMP, UNUSED, HERE);
     } else {
-        emitJump(pos1, JMPF, a, HERE);
+        emitJump(pos1, JF, a, HERE);
     }
 }
 
@@ -501,13 +508,6 @@ static int binaryPriorityLeft(int token) {
     }
 }
 
-/*
-static int binaryPriorityRight(int token) {
-    int left = binaryPriorityLeft(token);
-    return token == '^' ? left-1 : left;
-}
-*/
-
 Value Parser::subExpr(int top, int limit) {
     Value a;
     if (isUnaryOp(lexer->token)) {
@@ -544,9 +544,9 @@ Value Parser::subExpr(int top, int limit) {
                 Value b = subExpr(aSlot, rightPrio);
                 patchOrEmitMove(aSlot, aSlot, b);
                 if (op == TK_LOG_AND) {
-                    emitJump(pos1, JMPF, a, HERE);
+                    emitJump(pos1, JF, a, HERE);
                 } else {
-                    emitJump(pos1, JMPT, a, HERE);
+                    emitJump(pos1, JT, a, HERE);
                 }
                 proto->patchPos = -1;
                 // a |= FLAG_DONT_PATCH;
@@ -582,12 +582,6 @@ void Parser::patchOrEmitMove(int top, int dest, Value src) {
     }
     emit(top, MOVE, dest, src, UNUSED);
 }
-
-/*
-static bool isNormalReg(Value a) {
-    return IS_REG(a) && (int)a >= 0;
-}
-*/
 
 enum {
     UP_NIL  = -1,
@@ -631,11 +625,11 @@ static Value mapSpecialConsts(Value a) {
 void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
     assert(to <= proto->code.size);
     assert(pos  <= proto->code.size);
-    assert(op == JMP || op == JMPF || op == JMPT);
+    assert(op == JMP || op == JF || op == JT);
     const int offset = to - pos - 1;
     assert(offset != 0);
     proto->patchPos = -1;
-    if ((op == JMPF && IS_FALSE(a)) || (op == JMPT && IS_TRUE(a))) {
+    if ((op == JF && IS_FALSE(a)) || (op == JT && IS_TRUE(a))) {
         op = JMP;
         a  = UNUSED;
     } else if (!IS_REG(a)) {

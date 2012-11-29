@@ -142,7 +142,13 @@ Value VM::run(Func *f) {
         return NIL;
     }
 
+
     static void *dispatch[] = {
+#define _(name) &&name
+#include "opcodes.inc"
+#undef _
+    };
+    /*
         &&jmp, &&jmpf, &&jmpt,
         &&call, &&retur, &&func, &&get, &&set,
         &&moveup, &&move_r, &&move_i, &&move_c, 
@@ -150,7 +156,7 @@ Value VM::run(Func *f) {
         &&add, &&sub, &&mul, &&div, &&mod, &&pow,
         &&andb, &&orb, &&xorb, &&shl_rr, &&shl_ri, &&shr_rr, &&shr_ri,
         &&eq, &&neq, &&lt, &&le
-    };
+    */
 
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
  
@@ -165,19 +171,21 @@ Value VM::run(Func *f) {
 
     STEP;
 
-jmpt: if (IS_FALSE(*ptrC)) { STEP; }
- jmp: pc += OD(code); STEP;
- jmpf: if (IS_FALSE(*ptrC)) { pc += OD(code); } STEP;
+ JMP:                          pc += OD(code);    STEP;
+ JT:   if (!IS_FALSE(*ptrC)) { pc += OD(code);  } STEP;
+ JF:   if ( IS_FALSE(*ptrC)) { pc += OD(code);  } STEP;
+ JLT:  if (lessThan(A, B))   { pc += OSC(code); } STEP;
+ JNIS: if (A != B)           { pc += OSC(code); } STEP;
 
-func:
+FUNC:
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, regs + 256 - activeFunc->proto->ups.size, regs));
     STEP;
 
-get: *ptrC = doGet(A, B); STEP;
-set: doSet(*ptrC, A, B);  STEP;
+GET: *ptrC = doGet(A, B); STEP;
+SET: doSet(*ptrC, A, B);  STEP;
 
-retur: {
+RET: {
         regs[0] = A;
         if (retInfo.size == 0) { return A; }
         RetInfo *ri = retInfo.top();
@@ -189,7 +197,7 @@ retur: {
         STEP;
     }
 
-call: { 
+CALL: { 
         ERR(TAG(A) != T_OBJ || A == NIL, E_CALL_NIL);
         const int nEffArgs = OB(code);
         Value *base = ptrC;
@@ -239,35 +247,35 @@ call: {
         STEP;
     }
 
- moveup: activeFunc->ups[activeFunc->proto->ups.size + (ptrC-regs) - 256] = A;
- move_r: *ptrC = A; STEP;
- move_i: *ptrC = VAL_INT(OD(code)); STEP;
- move_c: *ptrC = *pc | (((u64) *(pc+1)) << 32); pc += 2; STEP;
- len:    *ptrC = VAL_INT(len(A)); STEP;
- notl:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
+ MOVEUP: activeFunc->ups[activeFunc->proto->ups.size + (ptrC-regs) - 256] = A;
+ MOVE_R: *ptrC = A; STEP;
+ MOVE_I: *ptrC = VAL_INT(OD(code)); STEP;
+ MOVE_C: *ptrC = *pc | (((u64) *(pc+1)) << 32); pc += 2; STEP;
+ LEN:    *ptrC = VAL_INT(len(A)); STEP;
+ NOTL:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
     // notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
 
- add: *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
- sub: *ptrC = doSub(A, B); STEP;
- mul: *ptrC = doMul(A, B); STEP;
- div: *ptrC = doDiv(A, B); STEP;
- mod: *ptrC = doMod(A, B); STEP;
- pow: *ptrC = doPow(A, B); STEP;
+ ADD: *ptrC = IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) + getInteger(B)) : doAdd(A, B); STEP;     
+ SUB: *ptrC = doSub(A, B); STEP;
+ MUL: *ptrC = doMul(A, B); STEP;
+ DIV: *ptrC = doDiv(A, B); STEP;
+ MOD: *ptrC = doMod(A, B); STEP;
+ POW: *ptrC = doPow(A, B); STEP;
 
 #define BITOP(op, A, B) IS_INT(A) && IS_INT(B) ? VAL_INT(getInteger(A) op getInteger(B)) : ERROR(E_WRONG_TYPE)
- andb: *ptrC = BITOP(&,  A, B); STEP;
- orb:  *ptrC = BITOP(|,  A, B); STEP;
- xorb: *ptrC = BITOP(^,  A, B); STEP;
+ AND: *ptrC = BITOP(&,  A, B); STEP;
+ OR:  *ptrC = BITOP(|,  A, B); STEP;
+ XOR: *ptrC = BITOP(^,  A, B); STEP;
 
- shl_rr: *ptrC = BITOP(<<, A, B); STEP;
- shl_ri: *ptrC = IS_INT(A) ? VAL_INT(getInteger(A) << OB(code)) : ERROR(E_WRONG_TYPE); STEP;
- shr_rr: *ptrC = BITOP(>>, A, B); STEP;
- shr_ri: *ptrC = IS_INT(A) ? VAL_INT(getInteger(A) >> OB(code)) : ERROR(E_WRONG_TYPE); STEP;
+ SHL_RR: *ptrC = BITOP(<<, A, B); STEP;
+ SHL_RI: *ptrC = IS_INT(A) ? VAL_INT(getInteger(A) << OB(code)) : ERROR(E_WRONG_TYPE); STEP;
+ SHR_RR: *ptrC = BITOP(>>, A, B); STEP;
+ SHR_RI: *ptrC = IS_INT(A) ? VAL_INT(getInteger(A) >> OB(code)) : ERROR(E_WRONG_TYPE); STEP;
 
- eq:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
- neq: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;
- lt: *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
- le: *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
+ EQ:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
+ NEQ: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;
+ LT:  *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
+ LE:  *ptrC = A==B || equals(A, B) || lessThan(A, B) ? TRUE : FALSE; STEP;
 
     return 0;
 }

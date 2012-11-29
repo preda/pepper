@@ -22,7 +22,8 @@ union CodeBytes {
         byte b;
     };
     struct {
-        short dummy;
+        signed char dummy;
+        signed char sc;
         short d;
     };
 };
@@ -32,6 +33,7 @@ inline int OC(unsigned code) { return CodeBytes{code:code}.c; }
 inline int OA(unsigned code) { return CodeBytes{code:code}.a; }
 inline int OB(unsigned code) { return CodeBytes{code:code}.b; }
 inline int OD(unsigned code) { return CodeBytes{code:code}.d; }
+inline int OSC(unsigned code) { return CodeBytes{code:code}.sc; }
 
 #define CODE_CAB(op, c, a, b) ((op) | ((byte)(c) << 8) | ((byte)(a) << 16) | ((byte)(b) << 24))
 
