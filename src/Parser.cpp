@@ -96,6 +96,7 @@ void Parser::statement() {
     case TK_VAR:   advance(); varStat(); break;
     case TK_IF:    ifStat(); break;
     case TK_WHILE: whileStat(); break;
+    case TK_FOR:   forStat(); break;
 
     case TK_NAME: 
         if (lexer->lookahead() == '=') {
@@ -139,6 +140,37 @@ void Parser::exprOrAssignStat() {
 }
 
 #define HERE (proto->code.size)
+
+void Parser::forStat() {
+    consume(TK_FOR);
+    ERR(TOKEN != TK_NAME, E_FOR_NAME);
+    u64 name = lexer->info.nameHash;
+    int slot = proto->localsTop++;
+    advance();
+    consume(':'+TK_EQUAL);
+    Value a = expr(slot+2);
+    patchOrEmitMove(slot+2, slot+2, a);
+    /*
+    if (!IS_REG(a)) {
+        ERR(!IS_INT(a), E_FOR_NOT_INT);
+        s64 va = getInteger(a);
+        if (va < -1 || va > 1) {
+            emit(slot+2, MOVE, slot+2, a, UNUSED);
+            a = VAL_REG(slot+2);
+        }
+    }
+    */
+    consume(':');
+    Value b = expr(slot+3);
+    patchOrEmitMove(slot+3, slot+1, b);
+    int pos1 = emitHole();
+    int pos2 = HERE;
+    syms->set(name, slot);
+    block();
+    emitJump(HERE, LOOP, VAL_REG(slot), pos2);
+    emitJump(pos1, FOR,  VAL_REG(slot), HERE);
+}
+
 void Parser::whileStat() {
     consume(TK_WHILE);
     unsigned pos1 = emitHole();
@@ -629,14 +661,16 @@ static Value mapSpecialConsts(Value a) {
 void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
     assert(to <= proto->code.size);
     assert(pos  <= proto->code.size);
-    assert(op == JMP || op == JF || op == JT);
+    assert(op == JMP || op == JF || op == JT || op == FOR || op == LOOP);
     const int offset = to - pos - 1;
     assert(offset != 0);
     proto->patchPos = -1;
+
     if ((op == JF && IS_FALSE(a)) || (op == JT && IS_TRUE(a))) {
         op = JMP;
         a  = UNUSED;
     } else if (!IS_REG(a)) {
+        assert(op != FOR && op != LOOP);
         return; // never jump == no-op
     }
     if (op == JMP) { assert(a == UNUSED); }

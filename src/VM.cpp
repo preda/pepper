@@ -177,6 +177,19 @@ Value VM::run(Func *f) {
  JLT:  if (lessThan(A, B))   { pc += OSC(code); } STEP;
  JNIS: if (A != B)           { pc += OSC(code); } STEP;
 
+ FOR: 
+    A = *(ptrC + 1);
+    B = *(ptrC + 2);
+    ERR(!IS_INT(A) || !IS_INT(B), E_FOR_NOT_INT);
+    *ptrC = B;
+    if (getInteger(A) <= getInteger(B)) { pc += OD(code); }
+    STEP;
+
+ LOOP: 
+    *ptrC = VAL_INT(getInteger(*ptrC) + 1);
+    if (*ptrC != *(ptrC+1)) { pc += OD(code); }
+    STEP;
+
 FUNC:
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc((Proto *) A, regs + 256 - activeFunc->proto->ups.size, regs));

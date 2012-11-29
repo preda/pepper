@@ -81,7 +81,10 @@ void printBytecode(unsigned *start, int size) {
         case JMP:    printf("%3d\n", i + OD(code) + 1); break;
 
         case JF: 
-        case JT:   printf("%3d,  %3d\n", i + OD(code) + 1, c); break;
+        case JT:
+        case FOR:
+        case LOOP:
+            printf("%3d,  %3d\n", i + OD(code) + 1, c); break;
 
         case JLT:
         case JNIS: printf("%3d,  %3d %3d\n", i + OSC(code) + 1, a, b); break;

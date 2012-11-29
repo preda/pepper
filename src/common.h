@@ -46,5 +46,8 @@ enum {
     E_CALL_NIL,
     E_CALL_NOT_FUNC,
 
+    E_FOR_NAME,
+    E_FOR_NOT_INT,
+
     E_EXPECTED = 256,
 };
