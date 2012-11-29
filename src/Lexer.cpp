@@ -17,6 +17,7 @@ static const char *tokens[] = {
     "else", "for", "while", "func", "goto",
     "if", "nil", "return", "var",
     "and", "or", "xor",
+    "is",
     "<end-keyword>",
 
     "<integer>", "<double>", "<name>", "<string>", "<end>",
@@ -113,7 +114,11 @@ int Lexer::advanceInt(TokenInfo *info) {
         case '&': return *p == '&' ? ++p, TK_LOG_AND : c;
         case '|': return *p == '|' ? ++p, TK_LOG_OR  : c;
 
-        case '=': case '!': case ':': case '-': case '+':
+        case '=': 
+        case '!':
+            return *p=='=' ? *++p=='=' ? (++p, c=='=' ? TK_IS : TK_NOT_IS) : c+TK_EQUAL : c;
+
+        case ':': case '-': case '+':
             return *p == '=' ? ++p, c + TK_EQUAL : c;
                 
         case '"':

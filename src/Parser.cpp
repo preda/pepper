@@ -469,6 +469,9 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
     case '='+TK_EQUAL: opcode = EQ; break;
     case '!'+TK_EQUAL: opcode = NEQ; break;
 
+    case TK_IS: opcode = IS; break;
+    case TK_NOT_IS: opcode = NIS; break;
+
     case TK_LOG_AND:
         break;
 
@@ -498,7 +501,8 @@ static int binaryPriorityLeft(int token) {
 
     case '='+TK_EQUAL: case '!'+TK_EQUAL:
     case '<': case '<'+TK_EQUAL: 
-    case '>': case '>'+TK_EQUAL: 
+    case '>': case '>'+TK_EQUAL:
+    case TK_IS: case TK_NOT_IS:
         return 3;
 
     case TK_LOG_AND: return 2;

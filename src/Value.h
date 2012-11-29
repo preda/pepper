@@ -36,8 +36,27 @@ enum {
 #define LOW(v) ((unsigned)v)
 #define UP(v)  ((unsigned)(v>>32))
 
-//is false: 0, NIL, +/-0.0
-#define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(T_INT<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
+//is false: 0, NIL
+// #define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(T_INT<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
+
+#define IS_FALSE(v) (LOW(v)==0  && (UP(v)==(T_INT<<16) || UP(v)==0))
+
+union ValueUnion {
+    double d;
+    Value v;
+    struct {
+        unsigned w1;
+        unsigned w2;
+    };
+};
+
+/*
+inline bool IS_FALSE(Value v) {
+    ValueUnion u{v:v};
+    return !u.w1 && (u.w2==(T_INT<<16) || !u.w2);
+}
+*/
+
 #define IS_TRUE(a) (!IS_REG(a) && !IS_FALSE(a))
 
 #define TRUE  VAL_INT(1)
@@ -64,15 +83,6 @@ static inline bool IS_NUMBER(Value v) { unsigned t = TAG(v); return IS_NUMBER_TA
 #define IS_ARRAY(v) IS_O_TYPE(v, O_ARRAY)
 #define IS_MAP(v)   IS_O_TYPE(v, O_MAP)
 #define IS_STRING(v) (IS_SHORT_STR(v) || IS_O_TYPE(v, O_STR))
-
-union ValueUnion {
-    double d;
-    Value v;
-    struct {
-        unsigned w1;
-        unsigned w2;
-    };
-};
 
 static inline Value VAL_DOUBLE(double dbl) {
     ValueUnion u{d: dbl};
