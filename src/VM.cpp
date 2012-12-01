@@ -53,12 +53,24 @@ Value doMod(Value a, Value b) {
     ERR(!IS_NUM(a) || !IS_NUM(b), E_WRONG_TYPE);
     double da = GET_NUM(a);
     double db = GET_NUM(b);
-    return da - floor(da / db) * db;
+    return VAL_NUM(da - floor(da / db) * db);
 }
 
 Value doPow(Value a, Value b) {
     ERR(!IS_NUM(a) || !IS_NUM(b), E_WRONG_TYPE);
-    return pow(GET_NUM(a), GET_NUM(b));
+    return VAL_NUM(pow(GET_NUM(a), GET_NUM(b)));
+}
+
+static Value doSHL(Value v, int shift) {
+    ERR(!IS_NUM(v), E_WRONG_TYPE);
+    if (shift < 0) { shift = 0; }
+    return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) << shift));
+}
+
+static Value doSHR(Value v, int shift) {
+    ERR(!IS_NUM(v), E_WRONG_TYPE);
+    if (shift < 0) { shift = 0; }
+    return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) >> shift));
 }
 
 Value doGet(Value a, Value b) {
@@ -282,10 +294,10 @@ CALL: {
  OR:  *ptrC = BITOP(|,  A, B); STEP;
  XOR: *ptrC = BITOP(^,  A, B); STEP;
 
- SHL_RR: *ptrC = BITOP(<<, A, B); STEP;
- SHL_RI: *ptrC = IS_NUM(A) ? VAL_NUM((unsigned)GET_NUM(A) << OB(code)) : ERROR(E_WRONG_TYPE); STEP;
- SHR_RR: *ptrC = BITOP(>>, A, B); STEP;
- SHR_RI: *ptrC = IS_NUM(A) ? VAL_NUM((int)GET_NUM(A) >> OB(code)) : ERROR(E_WRONG_TYPE); STEP;
+ SHL_RR: ERR(!IS_NUM(B), E_WRONG_TYPE); *ptrC = doSHL(A, (int)GET_NUM(B)); STEP;
+ SHR_RR: ERR(!IS_NUM(B), E_WRONG_TYPE); *ptrC = doSHR(A, (int)GET_NUM(B)); STEP;
+ SHL_RI: *ptrC = doSHL(A, OSB(code));       STEP;
+ SHR_RI: *ptrC = doSHR(A, OSB(code));       STEP;
 
  EQ:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
  NEQ: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;

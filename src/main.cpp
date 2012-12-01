@@ -63,6 +63,23 @@ T tests[] = {
 
     T("s:=0 for i:=0:5 {s = s + i}; return s", VAL_NUM(10)),
     T("s:=100 for i := -3:10 {s = s + 1}; return s", VAL_NUM(113)),
+
+    // math
+    T("return 3+4", VAL_NUM(7)),
+    T("return 3-4", VAL_NUM(-1)),
+    T("a:=-13; return -a", VAL_NUM(13)),
+    T("return 3 * 4", VAL_NUM(12)),
+    T("return 6 * 0.5", VAL_NUM(3)),
+    T("return 3 / 0.5", VAL_NUM(6)),
+    T("return 8 % 3.5", VAL_NUM(1)),
+    T("return 2 ^ 10", VAL_NUM(1024)),
+
+    T("return  1 << 10", VAL_NUM(1024)),
+    T("return -1 <<  1", VAL_NUM((unsigned)-2)),
+    T("return  1 << 32", VAL_NUM(0)),
+    T("return ~0", VAL_NUM((unsigned)-1)),
+    T("a:=~0 b:=2^32-1 return a==b", TRUE),
+    T("a:=~0 b:=2^32-1 return a==b && ~(b-1)==1", TRUE),
 };
 
 Value eval(const char *text) {

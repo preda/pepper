@@ -9,6 +9,8 @@
 void printFunc(Func *);
 
 int main(int argc, char **argv) {
+    printf("%u\n", (unsigned)GET_NUM(VAL_NUM(-1)));
+
     if (argc < 2) {
         return 1;
     }

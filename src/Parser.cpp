@@ -442,7 +442,7 @@ static Value foldUnary(int op, Value a) {
         switch (op) {
         case '!': return IS_FALSE(a) ? TRUE : FALSE;
         case '-': return doSub(ZERO, a);
-        case '~': return IS_NUM(a) ? BITOP(^, a, VAL_NUM(-1)) : ERROR(E_WRONG_TYPE);
+        case '~': return IS_NUM(a) ? VAL_NUM(~(unsigned)GET_NUM(a)) : ERROR(E_WRONG_TYPE);
         case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_NUM(len(a)) : ERROR(E_WRONG_TYPE);
         }
     }
