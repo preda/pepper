@@ -8,28 +8,9 @@
 
 void printFunc(Func *);
 
-/*
-unsigned foofoo1(double d) {
-    return (unsigned) d;
-}
-
-double foofoo2(unsigned a) {
-    return (double) a;
-}
-
-double foofoo3(long long a) {
-    return (double) a;
-}
-*/
-
 int main(int argc, char **argv) {
     if (argc < 2) {
         return 1;
-        /*
-        foofoo1(1);
-        foofoo2(2);
-        foofoo3(3);
-        */
     }
     FILE *fi = fopen(argv[1], "rb");
     if (!fi) {

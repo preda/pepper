@@ -105,8 +105,8 @@ void Map::add(Value v) {
         appendChars(GET_CSTR(v), len(v));
     } else {
         switch (O_TYPE(v)) {
-        case O_ARRAY: appendArray((Array *) v);
-        case O_MAP:   appendMap((Map *) v);
+        case O_ARRAY: appendArray(ARRAY(v));
+        case O_MAP:   appendMap(MAP(v));
         }
     }
 }
@@ -120,7 +120,6 @@ void Map::appendMap(Map *m) {
 }
 
 void Map::appendArray(Array *a) {
-    Value ONE = VAL_INT(1);
     for (Value *p = a->vect.buf, *end = a->vect.buf+a->vect.size; p < end; ++p) {
         set(*p, ONE, false);
     }
@@ -131,7 +130,7 @@ void Map::appendChars(char *s, int size) {
     char *pc = GET_CSTR(c);
     for (char *end = s + size; s < end; ++s) {
         *pc = *s;
-        set(c, VAL_INT(1), false);
+        set(c, ONE, false);
     }
 }
 

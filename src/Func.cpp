@@ -10,7 +10,7 @@
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs) {
     static Value defaultUps[] = {
-        NIL, ZERO, VAL_INT(1), VAL_INT(-1),
+        NIL, ZERO, ONE, VAL_NUM(-1),
         EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc()),
         VAL_OBJ(CFunc::alloc(ffiConstruct, 0)),
     };

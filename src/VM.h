@@ -6,12 +6,12 @@
 #include "Func.h"
 
 Value doAdd(Value a, Value b);
-Value doSub(Value a, Value b);
-Value doMul(Value a, Value b);
-Value doDiv(Value a, Value b);
-
 Value doMod(Value a, Value b);
 Value doPow(Value a, Value b);
+
+#define BITOP(op, A, B) (IS_NUM(A) && IS_NUM(B) ? VAL_NUM((unsigned)GET_NUM(A) op (unsigned)GET_NUM(B)) : ERROR(E_WRONG_TYPE))
+
+#define BINOP(op, a, b) (IS_NUM(a) && IS_NUM(b) ? VAL_NUM(GET_NUM(a) op GET_NUM(b)) : ERROR(E_WRONG_TYPE))
 
 union CodeBytes {
     unsigned code;

@@ -6,7 +6,7 @@
 #include <assert.h>
 
 Value String::makeVal(unsigned len) {
-    return len <= 6 ? VALUE(T_STR0 - len, 0) : VAL_OBJ(String::alloc(len));
+    return len <= 5 ? VAL_TAG(T_STR0 + len) : VAL_OBJ(String::alloc(len));
 }
 
 Value String::makeVal(const char *s) {
@@ -33,12 +33,12 @@ String *String::alloc(const char *p, unsigned size) {
 
 Value String::get(Value s, Value p) {
     assert(IS_STRING(s));
-    ERR(!IS_INT(p), E_INDEX_NOT_INT);
-    s64 pos = getInteger(p);
+    ERR(!IS_NUM(p), E_INDEX_NOT_NUMBER);
+    s64 pos = (s64) GET_NUM(p);
     unsigned size = len(s);
     if (pos < 0) { pos += size; }
     if (pos >= size || pos < 0) { return NIL; }
-    return VALUE(T_STR1, (u64)*(GET_CSTR(s) + (unsigned)pos));
+    return VALUE_(T_STR1, (unsigned char) *(GET_CSTR(s) + (unsigned)pos));
 }
 
 unsigned String::hashCode(char *buf, int size) {
@@ -73,18 +73,14 @@ static Value stringConcat(Value a, char *pb, unsigned sb) {
 }
 
 static void numberToString(Value a, char *out, int outSize) {
-    if (IS_INT(a)) {
-        snprintf(out, outSize, "%d", (int)(unsigned)a);
-    } else {
-        snprintf(out, outSize, "%.17g", getDouble(a));
-    }    
+    snprintf(out, outSize, "%.17g", GET_NUM(a));
 }
 
 Value String::concat(Value a, Value b) {
     char buf[32];
     int sb;
     char *pb;    
-    if (IS_NUMBER(b)) {
+    if (IS_NUM(b)) {
         numberToString(b, buf, sizeof(buf));
         pb = buf;
         sb = strlen(buf);

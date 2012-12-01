@@ -314,7 +314,7 @@ Value Parser::arrayExpr(int top) {
         if (TOKEN == ']') { break; }
         Value elem = expr(top);
         if (IS_REG(elem)) {
-            emit(slot, SET, slot, VAL_INT(pos), elem);
+            emit(slot, SET, slot, VAL_NUM(pos), elem);
         } else {
             array->push(elem);
         }
@@ -341,8 +341,8 @@ Value Parser::suffixedExpr(int top) {
     Value a = NIL;
     const char *restrict = 0;
     switch (lexer->token) {
-    case TK_INTEGER: a = VAL_INT(lexer->info.intVal); advance(); return a;
-    case TK_DOUBLE:  a = VAL_DOUBLE(lexer->info.doubleVal); advance(); return a;
+    case TK_INTEGER: a = VAL_NUM(lexer->info.intVal); advance(); return a;
+    case TK_DOUBLE:  a = VAL_NUM(lexer->info.doubleVal); advance(); return a;
     case TK_NIL:     a = NIL; advance(); return a;
 
     case TK_NAME: {
@@ -396,7 +396,7 @@ Value Parser::suffixedExpr(int top) {
                      patchOrEmitMove(argPos, argPos, expr(argPos));
                      ++nArg;);
             consume(')');
-            emit(0, CALL, base, a, VAL_INT(nArg));
+            emit(0, CALL, base, a, VAL_NUM(nArg));
             if (base != top) {
                 emit(base+1, MOVE, top, VAL_REG(base), UNUSED);
             }
@@ -424,13 +424,26 @@ Value Parser::funcExpr(int top) {
     return VAL_REG(top);
 }
 
+
+static Value doSub(Value a, Value b) {
+    return BINOP(-, a, b);
+}
+
+static Value doMul(Value a, Value b) {
+    return BINOP(*, a, b);
+}
+
+static Value doDiv(Value a, Value b) {
+    return BINOP(/, a, b);
+}
+
 static Value foldUnary(int op, Value a) {
     if (!IS_REG(a)) {
         switch (op) {
         case '!': return IS_FALSE(a) ? TRUE : FALSE;
         case '-': return doSub(ZERO, a);
-        case '~': return IS_INT(a) ? VAL_INT(~getInteger(a)) : ERROR(E_WRONG_TYPE);
-        case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_INT(len(a)) : ERROR(E_WRONG_TYPE);
+        case '~': return IS_NUM(a) ? BITOP(^, a, VAL_NUM(-1)) : ERROR(E_WRONG_TYPE);
+        case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_NUM(len(a)) : ERROR(E_WRONG_TYPE);
         }
     }
     return NIL;
@@ -460,7 +473,7 @@ Value Parser::codeUnary(int top, int op, Value a) {
     switch (op) {
     case '!': opcode = NOTL; break;
     case '-': opcode = SUB; b = a; a = ZERO; break;
-    case '~': opcode = XOR; b = VAL_INT(-1); break;
+    case '~': opcode = XOR; b = VAL_NUM(-1); break;
     case '#': opcode = LEN; break;
     default: assert(false);
     }
@@ -634,19 +647,29 @@ void Parser::close(Proto *proto) {
     proto->freeze();
 }
 
-static bool isSmallInt(Value a) {
-    s64 v;
-    return IS_INT(a) && -128 <= (v=getInteger(a)) && v < 128;
+static bool isRangeInt(Value a, int min, int max) {
+    if (!IS_NUM(a)) { return false; }
+    double d = GET_NUM(a);
+    int i = (int) d;
+    return d==i && min <= i && i <= max;    
+}
+
+static bool isByteInt(Value a) {
+    return isRangeInt(a, -128, 127);
+}
+
+static bool isShortInt(Value a) {
+    return isRangeInt(a, -(1<<15), (1<<15)-1);
 }
 
 static Value mapSpecialConsts(Value a) {
     if (a == NIL) {
         return VAL_REG(UP_NIL);
-    } else if (a == VAL_INT(0)) {
+    } else if (a == ZERO) {
         return VAL_REG(UP_ZERO);
-    } else if (a == VAL_INT(1)) {
+    } else if (a == ONE) {
         return VAL_REG(UP_ONE);
-    } else if (a == VAL_INT(-1)) {
+    } else if (a == VAL_NUM(-1)) {
         return VAL_REG(UP_NEG_ONE);
     } else if (a == EMPTY_STRING) {
         return VAL_REG(UP_EMPTY_STRING);
@@ -721,8 +744,8 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
         assert(b == UNUSED);
         if (IS_REG(a)) {
             proto->code.push(CODE_CAB(MOVE_R, dest, a, 0));
-        } else if (IS_INT(a) && getInteger(a) >= -(1<<15) && getInteger(a) < (1<<15)) {
-            proto->code.push(CODE_CD(MOVE_I, dest, a));
+        } else if (isShortInt(a)) {
+            proto->code.push(CODE_CD(MOVE_I, dest, (short) GET_NUM(a)));
         } else {
             proto->code.push(CODE_CD(MOVE_C, dest, 0));
             proto->code.push((unsigned)a);
@@ -733,8 +756,8 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
 
     if (op == CALL) {
         assert(IS_REG(a));
-        assert(isSmallInt(b));
-        proto->code.push(CODE_CAB(CALL, dest, a, b));
+        assert(isByteInt(b));
+        proto->code.push(CODE_CAB(CALL, dest, a, (int) GET_NUM(b)));
         return;
     }
 
@@ -743,9 +766,9 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
         a = VAL_REG(top);
         ++top;
     }
-    if ((op == SHL || op == SHR) && isSmallInt(b)) {
+    if ((op == SHL || op == SHR) && isByteInt(b)) {
         proto->patchPos = proto->code.size;
-        proto->code.push(CODE_CAB(op+1, dest, a, b));
+        proto->code.push(CODE_CAB(op+1, dest, a, (int) GET_NUM(b)));
         return;
     }
     if (!IS_REG(b)) {

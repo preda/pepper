@@ -3,14 +3,20 @@
 #include "common.h"
 
 typedef u64 Value;
+class Object;
 
 // Value tags
 enum {
-    T_OBJ  = 0,
-    T_INT,
-    T_REG,   // used during compilation only, to indicate register position
-    T_STR6 = 0x8000,
-    T_STR5, T_STR4, T_STR3, T_STR2, T_STR1, T_STR0,
+    T_NIL = -1,
+    T_OBJ = -2,
+    T_REG = -3, // used during compilation only, to indicate register position
+
+    T_STR0 = -14,
+    T_STR1,
+    T_STR2,
+    T_STR3,
+    T_STR4,
+    T_STR5,
 };
 
 // Object types
@@ -23,98 +29,118 @@ enum {
     O_STR,
 };
 
-#define VALUE(tag,x) ((((u64)(tag)) << 48) | (x))
-#define VAL_OBJ(obj) ((Value)(obj))
-#define VAL_INT(i)   VALUE(T_INT,  (i) & 0xffffffffffffLL)
-#define VAL_REG(i)   VALUE(T_REG, (i) & 0xffffffffffffLL)
-
-#define NIL VAL_OBJ(0)
-#define EMPTY_STRING VALUE(T_STR0, 0)
-
-#define TAG(v) ((unsigned) ((v) >> 48))
-
-#define LOW(v) ((unsigned)v)
-#define UP(v)  ((unsigned)(v>>32))
-
-//is false: 0, NIL
-// #define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(T_INT<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))
-
-#define IS_FALSE(v) (LOW(v)==0  && (UP(v)==(T_INT<<16) || UP(v)==0))
-
 union ValueUnion {
-    double d;
+    double dbl;
     Value v;
+    void *ptr;
     struct {
-        unsigned w1;
+        int w1;
         unsigned w2;
+    };
+    struct {
+        unsigned dummy;
+        short s1;
+        short tag;
     };
 };
 
-/*
-inline bool IS_FALSE(Value v) {
-    ValueUnion u{v:v};
-    return !u.w1 && (u.w2==(T_INT<<16) || !u.w2);
+// #define VALUE(tag,x) ((((u64)(tag)) << 48) | (x))
+// #define VAL_OBJ(obj) ((Value)(obj))
+// #define VAL_REG(i)   VALUE(T_REG, (i) & 0xffffffffffffLL)
+inline Value VALUE_(short tag, int w) {
+    ValueUnion u{tag:tag};
+    u.w1 = w;
+    return u.v;
 }
-*/
 
+inline Value VAL_REG(int i) {
+    return VALUE_(T_REG, i);
+}
+
+inline Value VAL_NUM(double dbl) { return ValueUnion{dbl: dbl}.v; }
+
+inline Value VAL_OBJ(void *obj) {
+    ValueUnion u{ptr:obj};
+    u.tag = T_OBJ;
+    return u.v;
+}
+
+inline Object *GET_OBJ(Value v) {
+    if (sizeof(Object *) == 4) {
+        return (Object *) v;
+    } else {
+        ValueUnion u{v:v};
+        u.tag = 0;
+        return (Object *) u.ptr;
+    }
+}
+
+#define STRING(v) ((String *) GET_OBJ(v))
+#define ARRAY(v) ((Array *) GET_OBJ(v))
+#define MAP(v) ((Map *) GET_OBJ(v))
+#define PROTO(v) ((Proto *) GET_OBJ(v))
+
+inline int TAG(Value v) { return ValueUnion{v:v}.tag; }
+// #define TAG(v) ((unsigned) ((v) >> 48))
+inline Value VAL_TAG(short tag) { return ValueUnion{tag:tag}.v; }
+#define NIL VAL_TAG(-1)
+// #define NIL ((u64)(-1))
+#define IS_NIL(v) (TAG(v) == T_NIL)
+#define IS_REG(v) (TAG(v) == T_REG)
+#define IS_OBJ(v) (TAG(v) == T_OBJ)
+inline bool IS_NUM_TAG(int t) { return (unsigned)t <= (unsigned)-16 || t == -8; }
+#define IS_NUM(v) IS_NUM_TAG(TAG(v))
+
+//#define EMPTY_STRING ((u64)T_STR0 << 48)
+#define EMPTY_STRING VAL_TAG(T_STR0)
+#define IS_EMPTY_STRING  (TAG(v) == T_STR0)
+#define IS_SHORT_STR(v)  (T_STR0 <= TAG(v) && TAG(v) <= T_STR5)
+inline bool IS_SHORT_STR_TAG(int t) { return t >= T_STR0 && t <= T_STR5; }
+#define SHORT_STR_LEN(v) (TAG(v) - T_STR0)
+
+#define IS_FALSE(v) (v == ZERO || TAG(v) == T_NIL)
 #define IS_TRUE(a) (!IS_REG(a) && !IS_FALSE(a))
 
-#define TRUE  VAL_INT(1)
-#define FALSE VAL_INT(0)
-#define ZERO  VAL_INT(0)
+#define ZERO  VAL_NUM(0)
+#define ONE   VAL_NUM(1)
+#define FALSE ZERO
+#define TRUE  ONE
 
-#define IS_INT(v) (TAG(v) == T_INT)
-#define IS_DOUBLE_TAG(t) (t&0x7ff0 || t==7 || t==0xf)
-#define IS_NUMBER_TAG(t) (t==T_INT || IS_DOUBLE_TAG(t)) 
-#define IS_DOUBLE(v) IS_DOUBLE_TAG(TAG(v))
-static inline bool IS_NUMBER(Value v) { unsigned t = TAG(v); return IS_NUMBER_TAG(t); }
-
-// REG values used during compilation only
-#define IS_REG(v) (TAG(v) == T_REG)
-// #define FLAG_DONT_PATCH (1ull << 32)
-
-#define IS_SHORT_STR(v) (TAG(v) >= T_STR6 && TAG(v) <= T_STR0)
-#define SHORT_STR_LEN(v) (T_STR0 - TAG(v))
-
-#define O_TYPE(v) (((Object *)v)->type)
-#define IS_OBJ(v) (v && TAG(v) == T_OBJ)
+#define O_TYPE(v) (GET_OBJ(v)->type)
 #define IS_O_TYPE(v,what) (IS_OBJ(v) && O_TYPE(v)==what)
 #define IS_PROTO(v) IS_O_TYPE(v, O_PROTO)
 #define IS_ARRAY(v) IS_O_TYPE(v, O_ARRAY)
 #define IS_MAP(v)   IS_O_TYPE(v, O_MAP)
 #define IS_STRING(v) (IS_SHORT_STR(v) || IS_O_TYPE(v, O_STR))
-
-static inline Value VAL_DOUBLE(double dbl) {
-    ValueUnion u{d: dbl};
-    u.w2 = ~u.w2;
-    return u.v;
+/*
+inline bool IS_STRING(Value v) { return IS_SHORT_STR(v) || IS_O_TYPE(v, O_STR); }
+inline bool IS_STRING(Value v, int t) { 
+    return IS_SHORT_STR_TAG(t) || (t==T_OBJ && O_TYPE(v)==O_STR);
 }
+*/
 
-static inline s64 getInteger(Value val) {
-    // return ((s64) val << 16) >> 16;
-    ValueUnion u{v: val};
-    u.w2 = (signed short)u.w2;
-    return u.v;
-}
+inline double GET_NUM(Value val) { return ValueUnion{v: val}.dbl; }
 
-static inline double getDouble(Value val) {
-    if (IS_INT(val)) {
-        return getInteger(val);
-    } else {
-        ValueUnion u{v: val};
-        u.w2 = ~u.w2;
-        return u.d;
-    }
-}
-
-#define GET_CSTR(v) (TAG(v)==T_OBJ ? ((String*) v)->s : (char*)&v)
+#define GET_CSTR(v) (IS_OBJ(v) ? ((String*)GET_OBJ(v))->s : (char*)&v)
 
 unsigned hashCode(Value a);
 unsigned len(Value a);
-class Object;
+
 bool objEquals(Object *a, Object *b);
-static inline bool equals(Value a, Value b) {
-    return a == b || (IS_OBJ(a) && IS_OBJ(b) && objEquals((Object *)a, (Object *)b));
+inline bool equals(Value a, Value b) {
+    return a == b || (IS_OBJ(a) && IS_OBJ(b) && objEquals(GET_OBJ(a), GET_OBJ(b)));
 }
 
 bool lessThan(Value a, Value b);
+
+
+/*
+inline bool IS_NIL(Value v) {
+    return ValueUnion{v:v}.tag == T_NIL;
+}
+#define LOW(v) ((unsigned)v)
+#define UP(v)  ((unsigned)(v>>32))
+*/
+
+//is false: 0, NIL
+// #define IS_FALSE(v) (LOW(v)==0 && (UP(v)==(T_INT<<16) || UP(v)==0 || (UP(v)&0x7fffffff)==0x7fffffff))

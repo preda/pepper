@@ -28,7 +28,7 @@ enum {
     E_SYNTAX,
     E_OBJECT_TYPE,
     E_SET_NEGATIVE_INDEX,
-    E_INDEX_NOT_INT,
+    E_INDEX_NOT_NUMBER,
     E_NOT_INDEXABLE,
     E_STRING_WRITE,
     E_LEN_NOT_COLLECTION,
@@ -47,7 +47,7 @@ enum {
     E_CALL_NOT_FUNC,
 
     E_FOR_NAME,
-    E_FOR_NOT_INT,
+    E_FOR_NOT_NUMBER,
 
     E_EXPECTED = 256,
 };

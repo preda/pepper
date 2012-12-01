@@ -55,13 +55,13 @@ void Array::_set(s64 pos, Value v) {
 }
 
 Value Array::get(Value pos) {
-    ERR(!IS_INT(pos), E_INDEX_NOT_INT);
-    return _get(getInteger(pos));
+    ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
+    return _get((s64) GET_NUM(pos));
 }
 
 void Array::set(Value pos, Value v) {
-    ERR(!IS_INT(pos), E_INDEX_NOT_INT);
-    _set(getInteger(pos), v); 
+    ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
+    _set((s64) GET_NUM(pos), v); 
 }
 
 void Array::appendChars(char *s, int size) {
@@ -80,6 +80,6 @@ void Array::add(Value v) {
     if (IS_STRING(v)) {
         appendChars(GET_CSTR(v), len(v));
     } else {
-        appendArray((Array *) v); // handles both MAP & ARRAY
+        appendArray((Array *) GET_OBJ(v)); // handles both MAP & ARRAY
     }
 }

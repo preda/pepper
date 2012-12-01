@@ -28,17 +28,15 @@ static const char *typeNames[] = {
 */
 
 static void printValue(char *buf, int bufSize, Value a) {
-    if (IS_INT(a)) {
-        snprintf(buf, bufSize, "%lld", getInteger(a));
-    } else if (IS_DOUBLE(a)) {
-        snprintf(buf, bufSize, "%f", getDouble(a));
-    } else if (a==NIL) {
+    if (IS_NUM(a)) {
+        snprintf(buf, bufSize, "%f", GET_NUM(a));
+    } else if (IS_NIL(a)) {
         snprintf(buf, bufSize, "NIL");
     } else if (IS_STRING(a)) {
         snprintf(buf, bufSize, "\"%s\"", GET_CSTR(a));
-    } else if (TAG(a) == T_OBJ) {
+    } else if (IS_OBJ(a)) {
         int type = O_TYPE(a);
-        snprintf(buf, bufSize, "%5s %p", objTypeName[type], (Object *)a);
+        snprintf(buf, bufSize, "%5s %p", objTypeName[type], GET_OBJ(a));
     } else if (IS_REG(a)) {
         snprintf(buf, bufSize, "register %d", (int)a);
     } else {

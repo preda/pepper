@@ -8,9 +8,9 @@ unsigned hashCode(Value a) {
         return String::hashCode(GET_CSTR(a), len(a));
     } else {
         switch (TAG(a)) {
-        case T_OBJ:  return a ? ((Object *)a)->hashCode() : 0;
-        case T_INT:  return (unsigned) a * FNV;
-        default: return (((unsigned) a) ^ ((unsigned) (a >> 32))) * FNV;
+        case T_OBJ: return a ? GET_OBJ(a)->hashCode() : 0;
+        case T_NIL: return 0;
+        default:    return (((unsigned) a) ^ ((unsigned) (a >> 32))) * FNV;
         }        
     }
     assert(false);
@@ -19,5 +19,5 @@ unsigned hashCode(Value a) {
 unsigned len(Value a) {
     if (IS_SHORT_STR(a)) { return SHORT_STR_LEN(a); }
     ERR(!(IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a)), E_LEN_NOT_COLLECTION);
-    return ((Object *) a)->size;
+    return GET_OBJ(a)->size;
 }

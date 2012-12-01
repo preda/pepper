@@ -19,7 +19,7 @@ static void init() {
     _(SYNTAX);
     _(OBJECT_TYPE);
     _(SET_NEGATIVE_INDEX);
-    _(INDEX_NOT_INT);
+    _(INDEX_NOT_NUMBER);
     _(NOT_INDEXABLE);
     _(STRING_WRITE);
     _(LEN_NOT_COLLECTION);

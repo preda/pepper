@@ -70,7 +70,7 @@ void GC::_mark(Object *o) {
 void GC::_markVector(Value *p, int size) {
     for (Value *end = p + size; p < end; ++p) {
         Value v = *p;
-        if (TAG(v) == T_OBJ && v) { _mark((Object *) v); }
+        if (IS_OBJ(v)) { _mark(GET_OBJ(v)); }
     }
 }
 

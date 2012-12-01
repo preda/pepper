@@ -233,24 +233,24 @@ void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
             break;
 
         case FLOAT:
-            ERR(!IS_NUMBER(v), E_FFI_TYPE_MISMATCH);
-            p->flt = getDouble(v);
+            ERR(!IS_NUM(v), E_FFI_TYPE_MISMATCH);
+            p->flt = GET_NUM(v);
             break;
 
         case INT:
-            ERR(!IS_INT(v), E_FFI_TYPE_MISMATCH);
-            p->sint = getInteger(v);
+            ERR(!IS_NUM(v), E_FFI_TYPE_MISMATCH);
+            p->sint = (int) GET_NUM(v);
             break;
 
         case DOUBLE:
-            ERR(!IS_NUMBER(v), E_FFI_TYPE_MISMATCH);
-            *(double *)p = getDouble(v);
+            ERR(!IS_NUM(v), E_FFI_TYPE_MISMATCH);
+            *(double *)p = GET_NUM(v);
             p += sizeof(double) / sizeof(ffi_raw) - 1;
             break;
 
         case LLONG:
-            ERR(!IS_INT(v), E_FFI_TYPE_MISMATCH);
-            *(long long *)p = getInteger(v);
+            ERR(!IS_NUM(v), E_FFI_TYPE_MISMATCH);
+            *(long long *)p = (s64) GET_NUM(v);
             p += sizeof(long long) / sizeof(ffi_raw) - 1;
             break;
 
@@ -269,12 +269,12 @@ void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
 
     Value v = NIL;
     switch (d->retType) {
-    case INT:      v = VAL_INT(ret.i); break;
-    case LLONG:    v = VAL_INT(ret.v);        break;
-    case DOUBLE:   v = VAL_DOUBLE(ret.dbl); break;
-    case FLOAT:    v = VAL_DOUBLE(ret.flt); break;
+    case INT:      v = VAL_NUM(ret.i); break;
+    case LLONG:    v = VAL_NUM(ret.v); break;
+    case DOUBLE:   v = VAL_NUM(ret.dbl); break;
+    case FLOAT:    v = VAL_NUM(ret.flt); break;
     case CHAR_PTR: v = String::makeVal(ret.ptr, strlen(ret.ptr)); break;
-    case PTRDIFF:  v = VAL_INT(ret.ptr - GET_CSTR(stack[0])); break;
+    case PTRDIFF:  v = VAL_NUM(ret.ptr - GET_CSTR(stack[0])); break;
     case VOID: break;
     default: assert(false);
     }    
