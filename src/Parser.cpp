@@ -60,20 +60,25 @@ Func *Parser::parseFunc(const char *text) {
 Func *Parser::parseStatList(const char *text) {
     SymbolTable syms;
     Proto *proto = Proto::alloc(0);
-    syms.set(hash64("ffi"), -8);
-    proto->ups.push(-8);
+    syms.set(hash64("ffi"), -(N_CONST_UPS + 1));
+    syms.pushContext();
+    // proto->ups.push(-8);
     if (Parser::parseStatList(proto, &syms, text)) { return 0; }
     close(proto);
-    return Func::alloc(proto, 0, 0);
+    
+    Value builtins[] = { VAL_OBJ(CFunc::alloc(ffiConstruct, 0)) };
+
+    return Func::alloc(proto, builtins + N_CONST_UPS + 1, 0);
 }
 
 extern __thread jmp_buf jumpBuf;
 
 int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
+    Lexer lexer(text);
     if (int err = setjmp(jumpBuf)) {
+        printf("at line %d, '%s'\n", lexer.lineNumber, lexer.p);
         return err;
     }
-    Lexer lexer(text);
     Parser parser(proto, syms, &lexer);
     parser.statList();
     return 0;
@@ -250,8 +255,8 @@ SymbolData Parser::createUpval(Proto *proto, u64 name, SymbolData sym) {
         sym = createUpval(proto->up, name, sym);
     }
     assert(sym.level == proto->level - 1);
-    proto->ups.push(sym.slot);
-    return syms->set(proto->level, name, -proto->ups.size);
+    proto->addUp(sym.slot);
+    return syms->set(proto->level, name, -proto->nUp());
 }
 
 SymbolData Parser::lookupName(u64 name) {

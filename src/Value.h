@@ -82,7 +82,7 @@ inline int TAG(Value v) { return ValueUnion{v:v}.tag; }
 // #define TAG(v) ((unsigned) ((v) >> 48))
 
 inline Value VAL_TAG(short tag) { return ValueUnion{tag:tag}.v; }
-#define NIL VAL_TAG(-1)
+#define NIL VAL_TAG(T_NIL)
 #define IS_NIL(v) (TAG(v) == T_NIL)
 #define IS_REG(v) (TAG(v) == T_REG)
 #define IS_OBJ(v) (TAG(v) == T_OBJ)

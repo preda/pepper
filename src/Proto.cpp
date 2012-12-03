@@ -18,17 +18,7 @@ Proto::Proto(Proto *up) :
     localsTop(0),
     patchPos(-1),
     up(up) {
-    if (up) {
-        level = up->level + 1;
-    }
-    ups.push(-1); // NIL
-    ups.push(-2); // 0
-    ups.push(-3); // 1
-    ups.push(-4); // -1
-    ups.push(-5); // ""
-    ups.push(-6); // []
-    ups.push(-7); // {}
-    // ups.push(-8); // ffi
+    level = (up ? up->level : 0) + 1;
 }
 
 Proto::~Proto() {

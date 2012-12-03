@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <setjmp.h>
 #include <math.h>
+#include <stdio.h>
 
 #define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)];
 
@@ -143,15 +144,33 @@ bool lessThan(Value a, Value b) {
     return (IS_NUM(a) && IS_NUM(b)) ? GET_NUM(a) < GET_NUM(b) : lessThanNonNum(a, b);
 }
 
+static Value constUps[N_CONST_UPS] = {
+    VAL_OBJ(Map::alloc()),
+    VAL_OBJ(Array::alloc()), 
+    EMPTY_STRING,
+    VAL_NUM(-1),
+    ONE,
+    ZERO,
+    NIL,
+};
+
 static void copyUpvals(Func *f, Value *regs) {
-    int n = f->proto->ups.size;
-    memcpy(regs + (256-n), f->ups, n * sizeof(Value));
+    unsigned nUp = f->proto->nUp();
+    unsigned nOwnUp = nUp - N_CONST_UPS;
+    memcpy(regs + (256-nUp), f->ups, nOwnUp * sizeof(Value));
+    memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
 }
 
 extern __thread jmp_buf jumpBuf;
-Value VM::run(Func *f) {
+Value VM::run(Func *func) {
+    unsigned code = 0;
+    Value A, B;
+    Value *ptrC;
+    unsigned *pc = func->proto->code.buf;
+
     if (int err = setjmp(jumpBuf)) {
         (void) err;
+        printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf - 1), code); 
         return NIL;
     }
 
@@ -161,26 +180,12 @@ Value VM::run(Func *f) {
 #include "opcodes.inc"
 #undef _
     };
-    /*
-        &&jmp, &&jmpf, &&jmpt,
-        &&call, &&retur, &&func, &&get, &&set,
-        &&moveup, &&move_r, &&move_i, &&move_c, 
-        &&len, &&notl,
-        &&add, &&sub, &&mul, &&div, &&mod, &&pow,
-        &&andb, &&orb, &&xorb, &&shl_rr, &&shl_ri, &&shr_rr, &&shr_ri,
-        &&eq, &&neq, &&lt, &&le
-    */
 
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
  
     Value *regs  = stack;
-    activeFunc = f;
+    activeFunc = func;
     copyUpvals(activeFunc, regs);
-    unsigned *pc = f->proto->code.buf;
-
-    unsigned code;
-    Value A, B;
-    Value *ptrC;
 
     STEP;
 
@@ -207,7 +212,7 @@ Value VM::run(Func *f) {
 
 FUNC:
     assert(IS_PROTO(A));
-    *ptrC = VAL_OBJ(Func::alloc(PROTO(A), regs + 256 - activeFunc->proto->ups.size, regs));
+    *ptrC = VAL_OBJ(Func::alloc(PROTO(A), regs + 256, regs));
     STEP;
 
 GET: *ptrC = doGet(A, B); STEP;
@@ -226,11 +231,13 @@ RET: {
     }
 
 CALL: { 
-        ERR(TAG(A) != T_OBJ || A == NIL, E_CALL_NIL);
+        ERR(!IS_OBJ(A), E_CALL_NOT_FUNC);
+        int type = O_TYPE(A);
+        ERR(!(type == O_FUNC || type == O_CFUNC), E_CALL_NOT_FUNC);
+
         const int nEffArgs = OB(code);
         Value *base = ptrC;
-        int type = O_TYPE(A);
-        assert(type == O_FUNC || type == O_CFUNC);
+
         if (type == O_FUNC) {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
@@ -275,7 +282,13 @@ CALL: {
         STEP;
     }
 
- MOVEUP: activeFunc->ups[activeFunc->proto->ups.size + (ptrC-regs) - 256] = A;
+ MOVEUP: {
+        const int slot = regs + 256 - ptrC;
+        assert(slot > N_CONST_UPS); // E_UP_CONST);
+        const int nUp = activeFunc->nUp();
+        assert(slot <= nUp);
+        activeFunc->ups[nUp - slot] = A;
+    }
  MOVE_R: *ptrC = A; STEP;
  MOVE_I: *ptrC = VAL_NUM(OD(code)); STEP;
  MOVE_C: *ptrC = *pc | (((u64) *(pc+1)) << 32); pc += 2; STEP;

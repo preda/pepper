@@ -38,14 +38,17 @@ union TokenInfo {
 };
 
 class Lexer {
-    const char *string, *p, *end;
-    int lineNumber;
+    const char *string, *end;
+
 
     SymbolMap keywords;
     Value readString();
     int advanceInt(TokenInfo *info);
 
  public:
+    const char *p;
+    int lineNumber;
+
     Lexer(const char *string);
 
     int advance();

@@ -4,6 +4,8 @@
 #include "Decompile.h"
 #include "VM.h"
 #include "String.h"
+#include "Array.h"
+#include "Map.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -17,6 +19,18 @@ struct T {
 };
 
 T tests[] = {
+    T("return nil", NIL),
+    T("return -1", VAL_NUM(-1)),
+    T("return 0", VAL_NUM(0)),
+    T("return \"\"", EMPTY_STRING),
+    T("return []", VAL_OBJ(Array::alloc())),
+    T("return {}", VAL_OBJ(Map::alloc())),
+
+    T("f:=func() { return 1 } return f()", ONE),
+    T("f:=func(x) { return -1 } return f(5)", VAL_NUM(-1)),
+    T("f:=func(x,y) { if x { return y } else { return 0 } }; return 1+f(0, 2)", ONE),
+    T("f:=func(x,y) { if x { return y } else { return 0 } }; return 1+f(1, -1)", ZERO),
+
     T("return 13", VAL_NUM(13)),
     T("var a = 10; var b=-2 var c = a+ b; return c", VAL_NUM(8)),
     T("a:=3; b:=a; return a", VAL_NUM(3)),

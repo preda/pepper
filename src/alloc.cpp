@@ -30,7 +30,7 @@ Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs) {
 }
 
 void Func::traverse() { 
-    GC::markVector(ups, proto->ups.size);
+    GC::markVector(ups, nOwnUp());
     GC::mark((Object *) proto);
 }
 

@@ -37,6 +37,8 @@ static void printValue(char *buf, int bufSize, Value a) {
     } else if (IS_OBJ(a)) {
         int type = O_TYPE(a);
         snprintf(buf, bufSize, "%5s %p", objTypeName[type], GET_OBJ(a));
+        if (type == O_PROTO) {
+        }
     } else if (IS_REG(a)) {
         snprintf(buf, bufSize, "register %d", (int)a);
     } else {
@@ -96,11 +98,20 @@ void printBytecode(unsigned *start, int size) {
             printValue(buf, sizeof(buf), v);
             printf("%3d, #%s\n", c, buf);            
             p += 2;
+            
+            if (IS_PROTO(v)) {
+                printf("\n");
+                printProto((Proto *) GET_OBJ(v));
+                printf("\n");
+            }
+
             break;
         }
             
         case MOVE_R:
         case LEN:
+        case FUNC:
+        case NOTL:
             printf("%3s,  %3s\n", sc, sa);
             break;
 

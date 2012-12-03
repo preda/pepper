@@ -9,22 +9,13 @@
 #include <stdlib.h>
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs) {
-    static Value defaultUps[] = {
-        NIL, ZERO, ONE, VAL_NUM(-1),
-        EMPTY_STRING, VAL_OBJ(Array::alloc()), VAL_OBJ(Map::alloc()),
-        VAL_OBJ(CFunc::alloc(ffiConstruct, 0)),
-    };
-
-    if (!contextUps) {
-        contextUps = defaultUps;
-    }
     this->proto = proto;
-    int nup = proto->ups.size;
-    ups = nup ? (Value *) calloc(nup, sizeof(Value)) : 0;
-    Value *up = ups + nup - 1;
-    for (short *p = proto->ups.buf, *end = p+nup; p < end; ++p, --up) {
-        int where = *p;
-        *up = where >= 0 ? regs[where] : contextUps[-where-1];
+    int n = nOwnUp();
+    ups = n ? (Value *) calloc(n, sizeof(Value)) : 0;
+    Value *up = ups + n - 1;
+    for (short *p = proto->getUpBuf(), *end = p+n; p < end; ++p, --up) {
+        int slot = *p;
+        *up = slot >= 0 ? regs[slot] : contextUps[slot];
     }
 }
 
