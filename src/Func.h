@@ -5,7 +5,7 @@
 
 class Func {
  private:
-    Func(Proto *proto, Value *contextUps, Value *regs);
+    Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot);
 
  public:
     byte type;
@@ -15,7 +15,7 @@ class Func {
     unsigned nUp() { return proto->nUp(); }
     unsigned nOwnUp() { return proto->nUp() - N_CONST_UPS; }
 
-    static Func *alloc(Proto *proto, Value *contextUps, Value *regs);
+    static Func *alloc(Proto *proto, Value *contextUps, Value *regs, byte recSlot);
     ~Func();
 
     void traverse();

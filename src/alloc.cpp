@@ -25,8 +25,8 @@ void Map::traverse() {
     GC::markVector(buf+(n>>1), size);
 }
 
-Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs) {
-    return new (GC::alloc(O_FUNC, sizeof(Func), true)) Func(proto, contextUps, regs);
+Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs, byte recSlot) {
+    return new (GC::alloc(O_FUNC, sizeof(Func), true)) Func(proto, contextUps, regs, recSlot);
 }
 
 void Func::traverse() { 

@@ -8,8 +8,11 @@
 
 #include <stdlib.h>
 
-Func::Func(Proto *proto, Value *contextUps, Value *regs) {
+Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) {
     this->proto = proto;
+    if (recSlot != 0xff) {
+        regs[recSlot] = VAL_OBJ(this);
+    }
     int n = nOwnUp();
     ups = n ? (Value *) calloc(n, sizeof(Value)) : 0;
     Value *up = ups + n - 1;

@@ -68,7 +68,7 @@ Func *Parser::parseStatList(const char *text) {
     
     Value builtins[] = { VAL_OBJ(CFunc::alloc(ffiConstruct, 0)) };
 
-    return Func::alloc(proto, builtins + N_CONST_UPS + 1, 0);
+    return Func::alloc(proto, builtins + N_CONST_UPS + 1, 0, -1);
 }
 
 extern __thread jmp_buf jumpBuf;
@@ -415,18 +415,39 @@ Value Parser::suffixedExpr(int top) {
 }
 
 Value Parser::funcExpr(int top) {
+    consume(TK_FUNC);
+    int slot = -1;
+    if (TOKEN == TK_NAME) {
+        u64 name = lexer->info.nameHash;
+        advance();
+        
+        SymbolData s = syms->get(name);
+        if (s.kind != KIND_EMPTY && s.level == proto->level && s.slot >= 0) {
+            slot = s.slot;
+        } else {
+            slot = proto->localsTop++;
+            syms->set(name, slot);
+        }
+    }
+
     proto = Proto::alloc(proto);
     syms->pushContext();
-    consume(TK_FUNC);
     parList();
     block();
     emit(proto->localsTop, RET, 0, NIL, UNUSED);
     proto->freeze();
-    syms->popContext();
     Proto *funcProto = proto;
+    syms->popContext();
     proto = proto->up;
-    emit(top+1, FUNC, top, VAL_OBJ(funcProto), UNUSED);
-    return VAL_REG(top);
+
+    emit(top+1, FUNC, top, VAL_OBJ(funcProto), VAL_REG(slot));
+    Value a = VAL_REG(top);
+    /*
+    if (slot >= 0) {
+        patchOrEmitMove(top+1, slot, a);
+    }
+    */
+    return a;
 }
 
 

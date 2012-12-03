@@ -212,7 +212,7 @@ Value VM::run(Func *func) {
 
 FUNC:
     assert(IS_PROTO(A));
-    *ptrC = VAL_OBJ(Func::alloc(PROTO(A), regs + 256, regs));
+    *ptrC = VAL_OBJ(Func::alloc(PROTO(A), regs + 256, regs, OB(code)));
     STEP;
 
 GET: *ptrC = doGet(A, B); STEP;
@@ -232,7 +232,7 @@ RET: {
 
 CALL: { 
         ERR(!IS_OBJ(A), E_CALL_NOT_FUNC);
-        int type = O_TYPE(A);
+        const int type = O_TYPE(A);
         ERR(!(type == O_FUNC || type == O_CFUNC), E_CALL_NOT_FUNC);
 
         const int nEffArgs = OB(code);

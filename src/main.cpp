@@ -94,6 +94,9 @@ T tests[] = {
     T("return ~0", VAL_NUM((unsigned)-1)),
     T("a:=~0 b:=2^32-1 return a==b", TRUE),
     T("a:=~0 b:=2^32-1 return a==b && ~(b-1)==1", TRUE),
+
+    // recursion
+    T("func f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
 };
 
 Value eval(const char *text) {
