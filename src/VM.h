@@ -69,5 +69,5 @@ class VM {
  public:
     VM();
     ~VM();
-    Value run(Func *f);
+    Value run(Func *f, int nArg = 0, Value *args = 0);
 };

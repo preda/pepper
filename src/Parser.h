@@ -49,6 +49,8 @@ class Parser {
     void whileStat();
     void forStat();
     void exprOrAssignStat();
+    Proto *parseProto(int *outSlot);
+    static Func  *makeFunc(Proto *proto, int recSlot);
 
 public:
     static Func *parseFunc(const char *text);

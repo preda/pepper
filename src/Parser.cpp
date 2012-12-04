@@ -46,15 +46,24 @@ void Parser::consume(int t) {
     }
 }
 
+extern __thread jmp_buf jumpBuf;
+
 Func *Parser::parseFunc(const char *text) {
-    /*
-    Proto proto;
     SymbolTable syms;
+    syms.set(hash64("ffi"), -(N_CONST_UPS + 1));
+    syms.pushContext();
     Lexer lexer(text);
-    */
-    // Parser(&proto, &syms, &lexer).func();
-    // TODO
-    return 0;
+
+    if (int err = setjmp(jumpBuf)) {
+        printf("err %d at line %d, before '%s'\n", err, lexer.lineNumber, lexer.p);
+        return 0;
+    }
+
+    Proto *proto = Proto::alloc(0);
+    Parser parser(proto, &syms, &lexer);
+    int slot;
+    Proto *funcProto = parser.parseProto(&slot);
+    return makeFunc(funcProto, slot);
 }
 
 Func *Parser::parseStatList(const char *text) {
@@ -62,16 +71,17 @@ Func *Parser::parseStatList(const char *text) {
     Proto *proto = Proto::alloc(0);
     syms.set(hash64("ffi"), -(N_CONST_UPS + 1));
     syms.pushContext();
-    // proto->ups.push(-8);
+
     if (Parser::parseStatList(proto, &syms, text)) { return 0; }
     close(proto);
-    
-    Value builtins[] = { VAL_OBJ(CFunc::alloc(ffiConstruct, 0)) };
-
-    return Func::alloc(proto, builtins + N_CONST_UPS + 1, 0, -1);
+    return makeFunc(proto, -1);
 }
 
-extern __thread jmp_buf jumpBuf;
+Func *Parser::makeFunc(Proto *proto, int slot) {
+    Value builtins[] = { VAL_OBJ(CFunc::alloc(ffiConstruct, 0)) };
+    Value dummyRegs;
+    return Func::alloc(proto, builtins + N_CONST_UPS + 1, &dummyRegs, slot);
+}
 
 int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(text);
@@ -414,7 +424,7 @@ Value Parser::suffixedExpr(int top) {
     }
 }
 
-Value Parser::funcExpr(int top) {
+Proto *Parser::parseProto(int *outSlot) {
     consume(TK_FUNC);
     int slot = -1;
     if (TOKEN == TK_NAME) {
@@ -434,22 +444,21 @@ Value Parser::funcExpr(int top) {
     syms->pushContext();
     parList();
     block();
-    emit(proto->localsTop, RET, 0, NIL, UNUSED);
+    emit(0, RET, 0, NIL, UNUSED);
     proto->freeze();
     Proto *funcProto = proto;
     syms->popContext();
     proto = proto->up;
-
-    emit(top+1, FUNC, top, VAL_OBJ(funcProto), VAL_REG(slot));
-    Value a = VAL_REG(top);
-    /*
-    if (slot >= 0) {
-        patchOrEmitMove(top+1, slot, a);
-    }
-    */
-    return a;
+    *outSlot = slot;
+    return funcProto;
 }
 
+Value Parser::funcExpr(int top) {
+    int slot;
+    Proto *funcProto = parseProto(&slot);
+    emit(top+1, FUNC, top, VAL_OBJ(funcProto), VAL_REG(slot));
+    return VAL_REG(top);
+}
 
 static Value doSub(Value a, Value b) {
     return BINOP(-, a, b);

@@ -162,7 +162,7 @@ static void copyUpvals(Func *f, Value *regs) {
 }
 
 extern __thread jmp_buf jumpBuf;
-Value VM::run(Func *func) {
+Value VM::run(Func *func, int nArg, Value *args) {
     unsigned code = 0;
     Value A, B;
     Value *ptrC;
@@ -184,6 +184,10 @@ Value VM::run(Func *func) {
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
  
     Value *regs  = stack;
+    if (nArg > 0) {
+        memcpy(regs, args, nArg * sizeof(Value));
+    }
+
     activeFunc = func;
     copyUpvals(activeFunc, regs);
 
@@ -223,7 +227,7 @@ RET: {
         if (retInfo.size == 0) { return A; }
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
-        regs       = ri->regs;
+        regs       = stack + ri->base;
         activeFunc = ri->func;
         retInfo.pop();
         copyUpvals(activeFunc, regs);
@@ -268,7 +272,7 @@ CALL: {
             } else {
                 RetInfo *ret = retInfo.push();
                 ret->pc    = pc;
-                ret->regs  = regs;
+                ret->base  = regs - stack;
                 ret->func  = activeFunc;
             }
             pc   = proto->code.buf;

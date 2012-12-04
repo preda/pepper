@@ -97,6 +97,7 @@ T tests[] = {
 
     // recursion
     T("func f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
+    T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(1000000)", VAL_NUM(500000500001)),
 };
 
 Value eval(const char *text) {

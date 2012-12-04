@@ -6,6 +6,6 @@ class Func;
 
 struct RetInfo {
     unsigned *pc;
-    Value *regs;
     Func  *func;
+    unsigned base;
 };

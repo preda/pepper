@@ -3,6 +3,8 @@
 #include "Decompile.h"
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/time.h>
 
@@ -11,13 +13,18 @@ void printFunc(Func *);
 int main(int argc, char **argv) {
     // printf("%u\n", (unsigned)GET_NUM(VAL_NUM(-1)));
 
-    if (argc < 2) {
-        return 1;
+    if (argc < 2) { return 1; }
+    bool verbose = false;
+    if (!strcmp(argv[1], "-v")) {
+        verbose = true;
+        --argc;
+        ++argv;
     }
+    if (argc < 2) { return 1; }
+
     FILE *fi = fopen(argv[1], "rb");
-    if (!fi) {
-        return 2;
-    }
+    if (!fi) { return 2; }
+
     fseek(fi, 0, SEEK_END);
     size_t size = ftell(fi);
     fseek(fi, 0, SEEK_SET);
@@ -29,8 +36,8 @@ int main(int argc, char **argv) {
     timezone tz;
     gettimeofday(&tv, &tz);
     long long t1 = tv.tv_sec * 1000000 + tv.tv_usec;
-    Func *f = Parser::parseStatList(text);
-    if (argc == 3) {
+    Func *f = Parser::parseFunc(text);
+    if (verbose) {
         printFunc(f);
     }
 
@@ -39,7 +46,9 @@ int main(int argc, char **argv) {
     if (!f) {
         return 3;
     }
-    Value ret = VM().run(f);
+    int a = argc >= 3 ? atoi(argv[2]) : 0;
+    Value v = VAL_NUM(a); 
+    Value ret = VM().run(f, 1, &v);
     gettimeofday(&tv, &tz);
     long long t3 = tv.tv_sec * 1000000 + tv.tv_usec;
     printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
