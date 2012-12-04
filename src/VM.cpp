@@ -234,6 +234,15 @@ RET: {
         STEP;
     }
 
+            /*
+                memmove(regs, base, nArgs * sizeof(Value));
+                base = regs;
+                if (activeFunc != f) {
+                    copyUpvals(f, regs);
+                }
+            */
+
+
 CALL: { 
         ERR(!IS_OBJ(A), E_CALL_NOT_FUNC);
         const int type = O_TYPE(A);
@@ -266,19 +275,14 @@ CALL: {
                     base[nArgs-1] = VAL_OBJ(a);
                 }
             }
-            if (*pc == RET) {
-                memmove(regs, base, nArgs * sizeof(Value));
-                base = regs;
-            } else {
-                RetInfo *ret = retInfo.push();
-                ret->pc    = pc;
-                ret->base  = regs - stack;
-                ret->func  = activeFunc;
-            }
-            pc   = proto->code.buf;
+            RetInfo *ret = retInfo.push();
+            ret->pc    = pc;
+            ret->base  = regs - stack;
+            ret->func  = activeFunc;
             regs = maybeGrowStack(base);
-            activeFunc = f;
             copyUpvals(f, regs);
+            pc   = proto->code.buf;
+            activeFunc = f;
         } else { // O_CFUNC
             CFunc *cf = (CFunc *) GET_OBJ(A);
             cf->call(base, nEffArgs);

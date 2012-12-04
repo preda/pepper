@@ -3,17 +3,13 @@ _(JT),     // if C,  pc += D
 _(JF),     // if !C, pc += D
 _(FOR),    // set up for loop: C=[C+2]; if C>=[C+1],  pc += D
 _(LOOP),   // loop for loop:   inc(C);  if C!==[C+1], pc += D
-
 _(JLT),    // if A < B, pc += C
 _(JNIS),   // if !(A is B) pc += C
-
 _(CALL),   // C is base, A is func, B is nArgs
 _(RET),    // return A
 _(FUNC),   // C = made func, A is proto
-
 _(GET),    // C=A[B]
 _(SET),    // C[A]=B
-
 _(MOVEUP), // C dest, A is src
 _(MOVE_R), // C dest, A is src
 _(MOVE_I), // D is int src

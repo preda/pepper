@@ -364,6 +364,7 @@ Value Parser::suffixedExpr(int top) {
         u64 name = lexer->info.nameHash;
         advance();
         a = VAL_REG(lookupSlot(name));
+        proto->patchPos = -1;
         break;
     }
 

@@ -46,9 +46,13 @@ int main(int argc, char **argv) {
     if (!f) {
         return 3;
     }
-    int a = argc >= 3 ? atoi(argv[2]) : 0;
-    Value v = VAL_NUM(a); 
-    Value ret = VM().run(f, 1, &v);
+    Value fargs[5];
+    int n = argc - 2;
+    if (n > 5) { n = 5; }
+    for (int i = 0; i < n; ++i) {
+        fargs[i] = VAL_NUM(atoi(argv[2 + i]));                     
+    }
+    Value ret = VM().run(f, n, fargs);
     gettimeofday(&tv, &tz);
     long long t3 = tv.tv_sec * 1000000 + tv.tv_usec;
     printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
