@@ -354,7 +354,8 @@ void Parser::parList() {
 
 Value Parser::suffixedExpr(int top) {
     Value a = NIL;
-    const char *restrict = 0;
+    bool indexOnly = false;
+    bool callOnly  = false;
     switch (lexer->token) {
     case TK_INTEGER: a = VAL_NUM(lexer->info.intVal); advance(); return a;
     case TK_DOUBLE:  a = VAL_NUM(lexer->info.doubleVal); advance(); return a;
@@ -378,22 +379,31 @@ Value Parser::suffixedExpr(int top) {
     case TK_STRING:
         a = lexer->info.stringVal;
         advance();
-        restrict = "[";
+        indexOnly = true;
+        // restrict = "[";
         break;
 
-    case '[': a = arrayExpr(top); restrict = "["; break;
-    case '{': a = mapExpr(top);   restrict = "["; break;
+    case '[': a = arrayExpr(top); indexOnly = true; break;
+    case '{': a = mapExpr(top);   indexOnly = true; break;
 
-    case TK_FUNC: a = funcExpr(top); restrict = "("; break;
+    case TK_FUNC: a = funcExpr(top); callOnly = true; break;
 
+    // case '?':
+        
     default: ERR(true, E_SYNTAX);
     }
 
     while (true) {
         int t = TOKEN;
+        if ((indexOnly && t != '[') || (callOnly && t != '(')) {
+            return a;
+        }
+        indexOnly = callOnly = false;
+        /*
         if (restrict && !strchr(restrict, t)) {
             return a;
         }
+        */
         switch(t) {
         case '[':
             advance();
