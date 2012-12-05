@@ -104,6 +104,14 @@ T tests[] = {
     // recursion
     T("func f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
     T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(1000000)", VAL_NUM(500000500001)),
+
+    // ternary op
+    T("return 1 ? 2 : 3", VAL_NUM(2)),
+    T("a:=0 b:=10 c:=20 return a ? b+1 : c+2", VAL_NUM(22)),
+    T("func f(x) { return x + 10; } func g(x, y) { return x * y } return g(3, 0) ? f(5) : g(f(0), f(1))", VAL_NUM(110)),
+    T("return 0 ? 1 : 2 ? 3 : 4", VAL_NUM(3)),
+    T("a:=2 return 0 ? 1 : a ? 3 : 4", VAL_NUM(3)),
+    
 };
 
 Value eval(const char *text) {

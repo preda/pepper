@@ -372,7 +372,6 @@ Value Parser::suffixedExpr(int top) {
     case '(':
         advance();
         a = expr(top);
-        // if (IS_REG(a) && (int)a == top) { ++top; }
         consume(')');
         break;
 
@@ -380,7 +379,6 @@ Value Parser::suffixedExpr(int top) {
         a = lexer->info.stringVal;
         advance();
         indexOnly = true;
-        // restrict = "[";
         break;
 
     case '[': a = arrayExpr(top); indexOnly = true; break;
@@ -399,11 +397,6 @@ Value Parser::suffixedExpr(int top) {
             return a;
         }
         indexOnly = callOnly = false;
-        /*
-        if (restrict && !strchr(restrict, t)) {
-            return a;
-        }
-        */
         switch(t) {
         case '[':
             advance();
@@ -653,8 +646,26 @@ Value Parser::subExpr(int top, int limit) {
     return a;
 }
 
+Value Parser::ternaryExpr(int top) {
+    Value a = subExpr(top, 0);
+    if (TOKEN != '?') { 
+        return a; 
+    }
+    advance();
+    int pos1 = emitHole();
+    Value b = ternaryExpr(top);
+    patchOrEmitMove(top, top, b);
+    int pos2 = emitHole();
+    emitJump(pos1, JF, a, HERE);
+    consume(':');
+    Value c = ternaryExpr(top);
+    patchOrEmitMove(top, top, c);
+    emitJump(pos2, JMP, UNUSED, HERE);
+    return VAL_REG(top);
+}
+
 Value Parser::expr(int top) {
-    return subExpr(top, 0);
+    return ternaryExpr(top);
 }
 
 

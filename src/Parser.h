@@ -38,6 +38,7 @@ class Parser {
     Value arrayExpr(int top);
     Value mapExpr(int top);
     Value funcExpr(int top);
+    Value ternaryExpr(int top);
 
     void parList();
     void block();
