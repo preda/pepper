@@ -779,7 +779,9 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
     if (op == MOVE) {
         assert(b == UNUSED);
         if (IS_REG(a)) {
-            proto->code.push(CODE_CAB(MOVE_R, dest, a, 0));
+            if (dest != (int)a) {
+                proto->code.push(CODE_CAB(MOVE_R, dest, a, 0));
+            }
         } else if (isShortInt(a)) {
             proto->code.push(CODE_CD(MOVE_I, dest, (short) GET_NUM(a)));
         } else {
