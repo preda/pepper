@@ -567,27 +567,27 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
 
 static int binaryPriorityLeft(int token) {
     switch (token) {
-    case '^': return 10;
-    case '*': case '/': case '%': return 8;
+    case '^': return 12;
+    case '*': case '/': case '%': return 10;
 
     case TK_SHIFT_L:
-    case TK_SHIFT_R: return 7;
+    case TK_SHIFT_R: return 9;
 
-    case '+': case '-': return 6;
+    case '+': case '-': return 8;
 
 
-    case '&': return 5;
+    case '&': return 7;
     case TK_BIT_XOR:
-    case '|': return 4;
+    case '|': return 6;
 
     case '='+TK_EQUAL: case '!'+TK_EQUAL:
     case '<': case '<'+TK_EQUAL: 
     case '>': case '>'+TK_EQUAL:
     case TK_IS: case TK_NOT_IS:
-        return 3;
+        return 5;
 
-    case TK_LOG_AND: return 2;
-    case TK_LOG_OR: return 1;
+    case TK_LOG_AND: return 4;
+    case TK_LOG_OR: return 2;
 
     default : return -1;
     }
@@ -598,7 +598,7 @@ Value Parser::subExpr(int top, int limit) {
     if (isUnaryOp(lexer->token)) {
         int op = lexer->token;
         advance();
-        a = codeUnary(top, op, subExpr(top, 8));
+        a = codeUnary(top, op, subExpr(top, 10));
     } else {
         a = suffixedExpr(top);
     }
@@ -606,7 +606,7 @@ Value Parser::subExpr(int top, int limit) {
     int prio;
     while ((prio = binaryPriorityLeft(op = TOKEN)) > limit) {
         advance();
-        const int rightPrio = op=='^' ? prio-1 : prio;
+        const int rightPrio = op == '^' || op == TK_LOG_AND || op == TK_LOG_OR ? prio-1 : prio;
         if (op == TK_LOG_AND || op == TK_LOG_OR) {
             if (!IS_REG(a)) {
                 int saveCodeSize = proto->code.size;

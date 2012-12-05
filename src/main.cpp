@@ -54,7 +54,13 @@ T tests[] = {
     T("var a=2 var b=3 var c=nil return a+1 && b+2 || c+3", VAL_NUM(5)),
     T("return 1 && nil && 13", NIL),
     T("return 13 || 14", VAL_NUM(13)),
-
+    T("a:=0 b:=3 c:=4 return a || b || c", VAL_NUM(3)),
+    T("a:=0 b:=3 c:=4 return a || (b && a) || c", VAL_NUM(4)),
+    T("a:=0 b:=3 c:=4 return a && b && c", ZERO),
+    T("a:=0 b:=3 c:=4 return b && c && a", ZERO),
+    T("a:=0 b:=3 c:=4 return a || c && b", VAL_NUM(3)),
+    T("a:=0 b:=3 c:=4 return (b || a) && (a || c)", VAL_NUM(4)),
+    
     T("var a=[]; a[1]=2; var b=[]; return b[1]", NIL),
     
     // len
