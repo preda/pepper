@@ -5,3 +5,7 @@ a.out
 *~
 pepper
 core
+bin
+libs
+obj
+tmp

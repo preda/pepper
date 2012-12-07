@@ -10,6 +10,12 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/time.h>
+
+void printFunc(Func *);
 
 struct T {
     T(const char *s, Value v) : source(s), result(v) {}
@@ -131,18 +137,21 @@ bool compileDecompile(const char *text) {
     return false;
 }
 
+static long long getTimeUsec() {
+    timeval tv;
+    timezone tz;
+    gettimeofday(&tv, &tz);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
 int main(int argc, char **argv) {
-    if (argc > 1) {
-        const char *s;
-        if (argv[1][0] == '-') {
-            int n = atoi(argv[2]);
-            s = tests[n].source;
-        } else {
-            s = argv[1];
-        }
-        compileDecompile(s);
-        return 0;
-    } else {
+    bool verbose = false;
+    if (argc > 1 && !strcmp(argv[1], "-v")) {
+        verbose = true;
+        --argc;
+        ++argv;
+    }
+    if (argc < 2) {
         int n = sizeof(tests) / sizeof(tests[0]);
         int nFail = 0;
         for (int i = 0; i < n; ++i) {
@@ -160,25 +169,48 @@ int main(int argc, char **argv) {
         }
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);
         return nFail;
+    } else {
+        const char *text;        
+        if (!strcmp(argv[1], "-t")) {
+            assert(argc > 2);
+            int n = atoi(argv[2]);
+            text = tests[n].source;
+            // compileDecompile(s);
+            ++argv;
+            --argc;
+        } else if (!strcmp(argv[1], "-f")) {
+            assert(argc > 2);
+            FILE *fi = fopen(argv[2], "rb");
+            if (!fi) { return 2; }
+            fseek(fi, 0, SEEK_END);
+            size_t size = ftell(fi);
+            fseek(fi, 0, SEEK_SET);    
+            text = (const char *) mmap(0, size, PROT_READ, MAP_SHARED, fileno(fi), 0);
+            fclose(fi);
+            ++argv;
+            --argc;
+        } else {
+            text = argv[1];
+        }
+
+        long long t1 = getTimeUsec();
+        Func *f = Parser::parseFunc(text);
+        if (verbose) {
+            printFunc(f);
+        }
+        long long t2 = getTimeUsec();
+        if (!f) {
+            return 3;
+        }
+        Value fargs[5];
+        int n = argc - 2;
+        if (n > 5) { n = 5; }
+        for (int i = 0; i < n; ++i) {
+            fargs[i] = VAL_NUM(atoi(argv[2 + i]));                     
+        }
+        Value ret = VM().run(f, n, fargs);
+        long long t3 = getTimeUsec();
+        printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
+        printValue(ret);
     }
 }
-
-const char *test[] = {
-    /*
-    "var a = 1\n var b=2 var c = a+b",
-    "var foo = 500 var boo = \"roo\"",
-    "var cond = 1 if cond { cond = cond + 1 } var b = 3", 
-    "var b if b[1] { b[2] = 3 }",
-    "\"foo\"[3][\"bar\"] = 1",
-    "[\"foo\"] + [1, 2, 3]",
-    "var a var b = [1, a]",
-    "var a = func(x) { return x + x; }",
-    "func() { return; }",
-    "var a = func(x) { x = 1 } a(a+2, 2, a)",
-
-    'var strlen = ffi("strlen", "int (const char *)"); return strlen("bar hello foo")'
-    'var p = ffi("printf", "void (const char *, ...)"); var a=5; p("hello %d\n", a)'
-    "var a = 5; return a * 2",
-    */
-    0,
-};
