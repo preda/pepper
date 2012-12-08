@@ -7,17 +7,17 @@ KEYALIAS=and
 
 SDK=/home/preda/sdk
 NDK=/home/preda/ndk
-PLATFORM=$SDK/platforms/android-10
 TOOLS=$SDK/platform-tools
 AAPT=$TOOLS/aapt
 DX=$TOOLS/dx
-AJAR=$PLATFORM/android.jar
+AJAR=$SDK/platforms/android-10/android.jar
 PKRES=bin/resource.ap_
 PROGUARD=/home/preda/proguard/lib/proguard.jar
 OUT=bin/$NAME-unalign.apk
 ALIGNOUT=bin/$NAME.apk
 set -e
 
+rm -rf libs
 $NDK/ndk-build
 #NDK_LOG=1 V=1
 

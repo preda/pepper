@@ -7,7 +7,7 @@
    android:versionCode="1" android:versionName="0.1"
    >
 
-  <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="10" />
+  <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="17" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <application android:label="Pepper" android:icon="@drawable/icon" >
     <!-- android:debuggable="true" android:largeHeap="true" -->
