@@ -1,11 +1,11 @@
 *.o
 *.so
-*.a
 a.out
 *~
-pepper
-core
-bin
-libs
-obj
+src/pepper
+src/core
+android/bin
+android/libs
+android/obj
+android/gen
 tmp
