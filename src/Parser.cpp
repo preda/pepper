@@ -400,7 +400,7 @@ Value Parser::suffixedExpr(int top) {
 
     while (true) {
         int t = TOKEN;
-        if ((indexOnly && t != '[') || (callOnly && t != '(')) {
+        if ((indexOnly && t != '[' && t !='.') || (callOnly && t != '(')) {
             return a;
         }
         indexOnly = callOnly = false;
@@ -410,6 +410,14 @@ Value Parser::suffixedExpr(int top) {
             emit(top+2, GET, top, a, expr(top+1));
             a = VAL_REG(top);
             consume(']');
+            break;
+
+        case '.':
+            advance();
+            ERR(TOKEN != TK_NAME, E_SYNTAX);
+            emit(top+1, GET, top, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
+            a = VAL_REG(top);
+            advance();
             break;
 
         case '(': {

@@ -136,7 +136,8 @@ T tests[] = {
     T("a := {}; a[2]=4; a[3]=9; return a === {2:4, 3:9}", FALSE),
     T("a := {}; b := func(x){ a[x-1]=x+1 }; b(0); b(5); return a[4]-a[-1]", VAL_NUM(5)),
     T("return {a = 7}[\"a\"]", VAL_NUM(7)),
-    T("a:={foo=5, bar=7} return a == {\"foo\":5, \"bar\":7}", TRUE),
+    T("a:={foo=5, bar=7, 9:13} return a == {\"foo\":5, \"bar\":7, 9:13}", TRUE),
+    T("a:={foo=7}; return a.foo", VAL_NUM(7)),
 
 };
 
