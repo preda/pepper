@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SymbolMap.h"
+#include "Vector.h"
 #include "common.h"
 
 enum TOKENS {
@@ -30,11 +31,14 @@ enum TOKENS {
     TK_EQUAL = 257,
 };
 
-union TokenInfo {
-    s64 intVal;
-    double doubleVal;
-    Value stringVal;
-    u64 nameHash;
+struct TokenInfo {
+    union {
+        s64 intVal;
+        double doubleVal;
+        Value stringVal;
+        u64 nameHash;
+    };
+    Vector<char> name;
 };
 
 class Lexer {

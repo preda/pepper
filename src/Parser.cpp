@@ -299,8 +299,15 @@ Value Parser::mapExpr(int top) {
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == '}') { break; }
-        Value k = expr(top+1);
-        consume(':');
+        Value k;
+        if (TOKEN == TK_NAME && lexer->lookahead() == '=') {
+            k = String::makeVal(lexer->info.name.buf, lexer->info.name.size-1);
+            consume(TK_NAME);
+            consume('=');
+        } else {
+            k = expr(top+1);
+            consume(':');
+        }
         Value v = expr(topAbove(k, top+1));
         
         if (IS_REG(k) || IS_REG(v)) {

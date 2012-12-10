@@ -18,6 +18,7 @@ class Vector {
     }
 
     void setSize(unsigned newSize);
+    void clear() { setSize(0); }
 
     void append(Vector<T> *v);
 

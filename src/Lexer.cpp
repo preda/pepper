@@ -55,17 +55,18 @@ int Lexer::advanceInt(TokenInfo *info) {
         char c = *p++;
         switch (c) {
         default:
-            if (isAlpha(c)) {                
-                u64 hash = 0;
-                --p;
+            if (isAlpha(c)) {  
+                --p;                
+                info->name.clear();
                 while (isAlphaNum(c)) {
-                    hash = hash64Step(c, hash);
+                    info->name.push(c);
                     c = *++p;
-                }                
-                if (HashEntry *e = keywords.get(hash)) {
+                }
+                info->name.push(0);
+                if (HashEntry *e = keywords.get(info->name.buf)) {
                     return e->d.slot;
-                }                
-                info->nameHash = hash;
+                }
+                info->nameHash = hash64(info->name.buf);
                 return TK_NAME;
             } else if (isDigit(c)) {
                 char *p1, *p2;

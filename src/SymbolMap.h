@@ -53,6 +53,7 @@ class SymbolMap {
         return true;
     }
 
+    HashEntry *get(const char *name);
     HashEntry *get(u64 key);
     HashEntry *add(u64 key);
 };

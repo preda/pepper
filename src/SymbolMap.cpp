@@ -14,6 +14,10 @@ SymbolMap::~SymbolMap() {
     tab = 0;
 }
 
+HashEntry *SymbolMap::get(const char *name) {
+    return get(hash64(name));
+}
+
 HashEntry *SymbolMap::get(u64 key) {
     const unsigned mask = allocSize - 1;
     const unsigned hig = key >> 32;
