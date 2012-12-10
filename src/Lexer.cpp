@@ -17,11 +17,11 @@ static const char *tokens[] = {
     "else", "for", "while", "func", "goto",
     "if", "nil", "return", "var",
     "and", "or", "xor",
-    "is",
     "<end-keyword>",
 
     "<integer>", "<double>", "<name>", "<string>", "<end>",
 };
+//    "is",
 
 Lexer::Lexer(const char *string) {
     this->string = (char *) string;

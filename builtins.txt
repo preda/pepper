@@ -1,0 +1,18 @@
+Built-in symbols:
+
+TODO import(file) - import lua module; contains a single top-level func()
+TODO print(*args)
+str(x)
+int(x)
+number(x, [base])
+object(map)
+map(x)   == {} + x
+array(x) == [] + x
+
+
+modules:
+builtin - contains builtin symbols
+io      - file io
+module  - configure module loading
+math    - sin, pi, floor, etc.
+android - android APIs

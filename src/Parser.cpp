@@ -150,7 +150,7 @@ void Parser::exprOrAssignStat() {
         unsigned code = proto->code.pop();        
         ERR(OP(code) != GET, E_ASSIGN_RHS); // (lhs & FLAG_DONT_PATCH)
         assert((int)lhs == OC(code));
-        emit(proto->localsTop+1, SET, OA(code), VAL_REG(OB(code)), expr(topAbove(lhs, proto->localsTop)));
+        emit(proto->localsTop+3, SET, OA(code), VAL_REG(OB(code)), expr(proto->localsTop+2));
     }    
 }
 
@@ -292,19 +292,19 @@ Value Parser::mapExpr(int top) {
         consume('}');
         return EMPTY_MAP;
     }
-    int slot = top++;
+    int slot = top;
     
     Map *map = Map::alloc();
     emit(slot, ADD, slot, EMPTY_MAP, VAL_OBJ(map));
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == '}') { break; }
-        Value k = expr(top);
+        Value k = expr(top+1);
         consume(':');
-        Value v = expr(top);
+        Value v = expr(topAbove(k, top+1));
         
         if (IS_REG(k) || IS_REG(v)) {
-            emit(slot, SET, slot, k, v);
+            emit(top+2, SET, slot, k, v);
         } else {
             map->set(k, v);
         }

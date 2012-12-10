@@ -51,7 +51,7 @@ Map *Map::copy() {
     Map *m = alloc(0);
     m->size = size;
     m->n = n;
-    m->buf = (Value *) realloc(buf, n * 12);
+    m->buf = (Value *) malloc(n * 12);
     memcpy(m->buf, buf, n * 12);
     return m;
 }
@@ -64,7 +64,7 @@ Value Map::get(Value key) {
     while (true) {
         const int pos = map[h];
         if (pos == EMPTY) { return NIL; }
-        if (keys[pos] == key) { return keys[pos + (n>>1)]; }
+        if (::equals(keys[pos], key)) { return keys[pos + (n>>1)]; }
         INC(h);
     }
 }

@@ -118,6 +118,24 @@ T tests[] = {
     T("return 0 ? 1 : 2 ? 3 : 4", VAL_NUM(3)),
     T("a:=2 return 0 ? 1 : a ? 3 : 4", VAL_NUM(3)),
     
+    // is, not is
+    T("return {} === {}", TRUE),
+    T("a:={} b:={} return a===b", FALSE),
+    T("return \"a\" === \"a\"", TRUE),
+    T("return \"foofoobar\" === \"foofoobar\"", FALSE),
+    T("return [1] === [1]", FALSE),
+    T("return 13 !== 13", FALSE),
+
+
+    // map
+    T("a:={} b:={} a[1]=13 return b[1]", NIL),
+    T("return {\"foo\" : 13}[\"foo\"]", VAL_NUM(13)),
+    T("a := {\"foofoobar\" : 13}; return a[\"foofoobar\"]", VAL_NUM(13)),
+    T("a := {}; a[2]=4; a[3]=9; return a[2]", VAL_NUM(4)),
+    T("a := {}; a[2]=4; a[3]=9; return a ==  {2:4, 3:9}", TRUE),
+    T("a := {}; a[2]=4; a[3]=9; return a === {2:4, 3:9}", FALSE),
+    T("a := {}; b := func(x){ a[x-1]=x+1 }; b(0); b(5); return a[4]-a[-1]", VAL_NUM(5)),
+    
 };
 
 Value eval(const char *text) {
@@ -175,9 +193,10 @@ int main(int argc, char **argv) {
             assert(argc > 2);
             int n = atoi(argv[2]);
             text = tests[n].source;
-            // compileDecompile(s);
+            compileDecompile(text);
             ++argv;
             --argc;
+            return 0;
         } else if (!strcmp(argv[1], "-f")) {
             assert(argc > 2);
             FILE *fi = fopen(argv[2], "rb");

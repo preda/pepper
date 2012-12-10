@@ -322,8 +322,8 @@ CALL: {
 
  EQ:  *ptrC = equals(A, B)  ? TRUE : FALSE; STEP;
  NEQ: *ptrC = !equals(A, B) ? TRUE : FALSE; STEP;
- IS:  *ptrC = A == B; STEP;
- NIS: *ptrC = A != B; STEP;
+ IS:  *ptrC = A == B ? TRUE : FALSE; STEP;
+ NIS: *ptrC = A != B ? TRUE : FALSE; STEP;
 
  LT:  *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
  LE:  *ptrC = (equals(A, B) || lessThan(A, B)) ? TRUE : FALSE; STEP;
