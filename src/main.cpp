@@ -138,6 +138,12 @@ T tests[] = {
     T("return {a = 7}[\"a\"]", VAL_NUM(7)),
     T("a:={foo=5, bar=7, 9:13} return a == {\"foo\":5, \"bar\":7, 9:13}", TRUE),
     T("a:={foo=7}; return a.foo", VAL_NUM(7)),
+    T("a:={} a.foofoobar=5; return a[\"foofoobar\"]", VAL_NUM(5)),
+
+    // this call
+    T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
+    T("return ({f=func() { return this ? 3 : 4 }}.f)()", VAL_NUM(4)),
+    
 
 };
 

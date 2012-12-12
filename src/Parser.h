@@ -39,6 +39,7 @@ class Parser {
     Value mapExpr(int top);
     Value funcExpr(int top);
     Value ternaryExpr(int top);
+    Value callExpr(int top, Value func, Value self);
 
     void parList();
     void block();

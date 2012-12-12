@@ -351,6 +351,8 @@ Value Parser::arrayExpr(int top) {
 
 void Parser::parList() {
     consume('(');
+    ++proto->nArgs;
+    syms->set(hash64("this"), proto->localsTop++);
     ARG_LIST(if (TOKEN == TK_NAME) {
             ++proto->nArgs;
             syms->set(lexer->info.nameHash, proto->localsTop++);
@@ -416,31 +418,34 @@ Value Parser::suffixedExpr(int top) {
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
             emit(top+1, GET, top, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
-            a = VAL_REG(top);
             advance();
+            a = TOKEN == '(' ? callExpr(top+1, VAL_REG(top), a) : VAL_REG(top);
             break;
 
-        case '(': {
-            advance();
-            int base = top;
-            ERR(!IS_REG(a), E_CALL_NOT_FUNC);
-            if (IS_REG(a) && (int)a == base) { ++base; }
-            int nArg = 0;
-            ARG_LIST(int argPos = base + nArg;
-                     patchOrEmitMove(argPos, argPos, expr(argPos));
-                     ++nArg;);
-            consume(')');
-            emit(0, CALL, base, a, VAL_NUM(nArg));
-            if (base != top) {
-                emit(base+1, MOVE, top, VAL_REG(base), UNUSED);
-            }
-            a = VAL_REG(top);
-            break;
-        }
+        case '(': a = callExpr(top, a, NIL); break;
 
         default: return a;
         }
     }
+}
+
+Value Parser::callExpr(int top, Value a, Value self) {
+    consume('(');
+    int base = top;
+    ERR(!IS_REG(a), E_CALL_NOT_FUNC);
+    if (IS_REG(a) && (int)a == base) { ++base; }
+    emit(base, MOVE, base, self, UNUSED);
+    // patchOrEmitMove(base, base, self);
+    int nArg = 1;
+    ARG_LIST(int argPos = base + nArg;
+             patchOrEmitMove(argPos, argPos, expr(argPos));
+             ++nArg;);
+    consume(')');
+    emit(0, CALL, base, a, VAL_NUM(nArg));
+    if (base != top) {
+        emit(base+1, MOVE, top, VAL_REG(base), UNUSED);
+    }
+    return VAL_REG(top);
 }
 
 Proto *Parser::parseProto(int *outSlot) {

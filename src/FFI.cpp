@@ -166,8 +166,8 @@ static void makeFfiSignature(ffi_type **sign, int nArg, byte *argType) {
 }
 
 static Value ffiConstructInt(Value *stack, int nCallArg) {
-    ERR(nCallArg != 3, E_FFI_N_ARGS);
-    Value a = stack[0], b = stack[1], c = stack[2];
+    ERR(nCallArg != 4, E_FFI_N_ARGS);
+    Value a = stack[1], b = stack[2], c = stack[3];
     ERR(!IS_STRING(a) || !IS_STRING(b), E_FFI_TYPE_MISMATCH);
     char buf[256];
     char *p = buf;
@@ -202,6 +202,8 @@ extern "C" const char *mytest(const char *a, const char *b) {
 
 void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
     if (op != 0) { return; }
+    ++stack;
+    --nCallArg;
     const int nFixArg = d->nArg;
     int nArg = nFixArg;
     if (d->hasEllipsis) {
@@ -278,5 +280,5 @@ void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
     case VOID: break;
     default: assert(false);
     }    
-    stack[0] = v;
+    stack[-1] = v;
 }
