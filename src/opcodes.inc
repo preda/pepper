@@ -8,8 +8,10 @@ _(JNIS),   // if !(A is B) pc += C
 _(CALL),   // C is base, A is func, B is nArgs
 _(RET),    // return A
 _(FUNC),   // C = made func, A is proto
-_(GET),    // C=A[B]
-_(SET),    // C[A]=B
+_(IGET),   // index get, C=A[B]
+_(ISET),   // index set, C[A]=B
+_(FGET),   // field get, C=A.B          
+_(FSET),   // field set, C.A=B
 _(MOVEUP), // C dest, A is src
 _(MOVE_R), // C dest, A is src
 _(MOVE_I), // D is int src

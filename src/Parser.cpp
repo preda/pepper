@@ -147,10 +147,11 @@ void Parser::exprOrAssignStat() {
         consume('=');
         ERR(!IS_REG(lhs), E_ASSIGN_TO_CONST);
         ERR(proto->patchPos < 0, E_ASSIGN_RHS);        
-        unsigned code = proto->code.pop();        
-        ERR(OP(code) != GET, E_ASSIGN_RHS); // (lhs & FLAG_DONT_PATCH)
+        unsigned code = proto->code.pop();
+        int op = OP(code);
+        ERR(op != IGET && op != FGET, E_ASSIGN_RHS); // (lhs & FLAG_DONT_PATCH)
         assert((int)lhs == OC(code));
-        emit(proto->localsTop+3, SET, OA(code), VAL_REG(OB(code)), expr(proto->localsTop+2));
+        emit(proto->localsTop+3, op+1, OA(code), VAL_REG(OB(code)), expr(proto->localsTop+2));
     }    
 }
 
@@ -311,7 +312,7 @@ Value Parser::mapExpr(int top) {
         Value v = expr(topAbove(k, top+1));
         
         if (IS_REG(k) || IS_REG(v)) {
-            emit(top+2, SET, slot, k, v);
+            emit(top+2, ISET, slot, k, v);
         } else {
             map->set(k, v);
         }
@@ -336,7 +337,7 @@ Value Parser::arrayExpr(int top) {
         if (TOKEN == ']') { break; }
         Value elem = expr(top);
         if (IS_REG(elem)) {
-            emit(slot, SET, slot, VAL_NUM(pos), elem);
+            emit(slot, ISET, slot, VAL_NUM(pos), elem);
         } else {
             array->push(elem);
         }
@@ -409,7 +410,7 @@ Value Parser::suffixedExpr(int top) {
         switch(t) {
         case '[':
             advance();
-            emit(top+2, GET, top, a, expr(top+1));
+            emit(top+2, IGET, top, a, expr(top+1));
             a = VAL_REG(top);
             consume(']');
             break;
@@ -417,7 +418,7 @@ Value Parser::suffixedExpr(int top) {
         case '.':
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
-            emit(top+2, GET, top+1, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
+            emit(top+2, FGET, top+1, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
             advance();
             a = TOKEN == '(' ? callExpr(top+2, VAL_REG(top+1), a) : VAL_REG(top+1);
             break;
@@ -789,7 +790,9 @@ void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
             a = VAL_REG(top);
         }
     }
-    if (op == SET && (dest == UP_EMPTY_ARRAY || dest == UP_EMPTY_MAP)) {
+    
+    if ((op == ISET || op == FSET) && (dest == UP_EMPTY_ARRAY || dest == UP_EMPTY_MAP)) {
+        assert(op == ISET);
         proto->patchPos = -1;
         return;
     }

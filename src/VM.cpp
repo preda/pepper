@@ -219,8 +219,13 @@ FUNC:
     *ptrC = VAL_OBJ(Func::alloc(PROTO(A), regs + 256, regs, OB(code)));
     STEP;
 
-GET: *ptrC = doGet(A, B); STEP;
-SET: doSet(*ptrC, A, B);  STEP;
+    // index, A[B]
+IGET: *ptrC = doGet(A, B); STEP;
+ISET: doSet(*ptrC, A, B);  STEP;
+
+    // field, A.B
+FGET: *ptrC = doGet(A, B); STEP;
+FSET: doSet(*ptrC, A, B);  STEP;
 
 RET: {
         regs[0] = A;
@@ -336,7 +341,8 @@ bool opcodeHasDest(int op) {
     case JMP:
     case CALL:
     case RET:
-    case SET:
+    case ISET:
+    case FSET:
         return false;
     }
     return true;
