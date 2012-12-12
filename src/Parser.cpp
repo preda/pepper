@@ -417,9 +417,9 @@ Value Parser::suffixedExpr(int top) {
         case '.':
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
-            emit(top+1, GET, top, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
+            emit(top+2, GET, top+1, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
             advance();
-            a = TOKEN == '(' ? callExpr(top+1, VAL_REG(top), a) : VAL_REG(top);
+            a = TOKEN == '(' ? callExpr(top+2, VAL_REG(top+1), a) : VAL_REG(top+1);
             break;
 
         case '(': a = callExpr(top, a, NIL); break;

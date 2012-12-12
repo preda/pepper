@@ -143,6 +143,8 @@ T tests[] = {
     // this call
     T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
     T("return ({f=func() { return this ? 3 : 4 }}.f)()", VAL_NUM(4)),
+    T("return {f=func() { return this ? this.bar+1 : 4 }, bar=5}.f()", VAL_NUM(6)),
+    T("return ({f=func() { return this ? 2*this.barbar : 4 }, barbar=5}).f()", VAL_NUM(10)),
     
 
 };
