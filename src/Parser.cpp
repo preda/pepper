@@ -69,7 +69,8 @@ Func *Parser::parseFunc(const char *text) {
 Func *Parser::parseStatList(const char *text) {
     SymbolTable syms;
     Proto *proto = Proto::alloc(0);
-    syms.set(hash64("ffi"), -(N_CONST_UPS + 1));
+    syms.set("ffi", -(N_CONST_UPS + 1));
+    syms.set("str", -(N_CONST_UPS + 2));
     syms.pushContext();
 
     if (Parser::parseStatList(proto, &syms, text)) { return 0; }
@@ -78,7 +79,10 @@ Func *Parser::parseStatList(const char *text) {
 }
 
 Func *Parser::makeFunc(Proto *proto, int slot) {
-    Value builtins[] = { VAL_OBJ(CFunc::alloc(ffiConstruct, 0)) };
+    Value builtins[] = { 
+        VAL_OBJ(CFunc::alloc(ffiConstruct)),
+        VAL_OBJ(Map::alloc()),
+    };
     Value dummyRegs;
     return Func::alloc(proto, builtins + N_CONST_UPS + 1, &dummyRegs, slot);
 }
@@ -155,7 +159,7 @@ void Parser::exprOrAssignStat() {
     }    
 }
 
-#define HERE (proto->code.size)
+#define HERE (proto->code.size())
 
 void Parser::forStat() {
     consume(TK_FOR);
@@ -190,16 +194,16 @@ void Parser::forStat() {
 void Parser::whileStat() {
     consume(TK_WHILE);
     unsigned pos1 = emitHole();
-    unsigned pos2 = proto->code.size;
+    unsigned pos2 = HERE;
     Value a = expr(proto->localsTop);
     Vector<unsigned> copyExp;
     Vector<unsigned> &code = proto->code;
-    while (code.size > pos2) {
+    while (code.size() > pos2) {
         copyExp.push(code.pop());
     }
     block();
     emitJump(pos1, JMP, UNUSED, HERE);
-    while (copyExp.size) {
+    while (copyExp.size()) {
         code.push(copyExp.pop());
     }
     emitJump(HERE, JT, a, pos2);
@@ -302,7 +306,7 @@ Value Parser::mapExpr(int top) {
         if (TOKEN == '}') { break; }
         Value k;
         if (TOKEN == TK_NAME && lexer->lookahead() == '=') {
-            k = String::makeVal(lexer->info.name.buf, lexer->info.name.size-1);
+            k = String::makeVal(lexer->info.name.buf(), lexer->info.name.size()-1);
             consume(TK_NAME);
             consume('=');
         } else {
@@ -396,8 +400,6 @@ Value Parser::suffixedExpr(int top) {
 
     case TK_FUNC: a = funcExpr(top); callOnly = true; break;
 
-    // case '?':
-        
     default: ERR(true, E_SYNTAX);
     }
 
@@ -418,7 +420,7 @@ Value Parser::suffixedExpr(int top) {
         case '.':
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
-            emit(top+2, FGET, top+1, a, String::makeVal(lexer->info.name.buf, lexer->info.name.size-1));
+            emit(top+2, FGET, top+1, a, String::makeVal(lexer->info.name.buf(), lexer->info.name.size()-1));
             advance();
             a = TOKEN == '(' ? callExpr(top+2, VAL_REG(top+1), a) : VAL_REG(top+1);
             break;
@@ -633,12 +635,12 @@ Value Parser::subExpr(int top, int limit) {
         const int rightPrio = op == '^' || op == TK_LOG_AND || op == TK_LOG_OR ? prio-1 : prio;
         if (op == TK_LOG_AND || op == TK_LOG_OR) {
             if (!IS_REG(a)) {
-                int saveCodeSize = proto->code.size;
+                int saveCodeSize = proto->code.size();
                 Value b = subExpr(top, rightPrio);
                 if ((op==TK_LOG_AND && IS_FALSE(a)) ||
                     (op==TK_LOG_OR  && !IS_FALSE(a))) {
                     // drop b
-                    proto->code.size = saveCodeSize;                    
+                    proto->code.setSize(saveCodeSize);
                 } else {
                     a = b;
                 }
@@ -694,16 +696,16 @@ Value Parser::expr(int top) {
 
 void Parser::patchOrEmitMove(int top, int dest, Value src) {
     int patchPos = proto->patchPos;
-    assert(patchPos == -1 || patchPos == (int)proto->code.size-1 || patchPos == (int)proto->code.size-3);
+    assert(patchPos == -1 || patchPos == (int)proto->code.size()-1 || patchPos == (int)proto->code.size()-3);
     if (dest >= 0 && IS_REG(src) && (int)src >= 0 && patchPos >= 0) {
         int srcSlot = (int) src;
-        unsigned code = proto->code.buf[patchPos];
+        unsigned code = proto->code.get(patchPos);
         int op = OP(code);
         if (opcodeHasDest(op)) {
             int oldDest = OC(code);
             assert(srcSlot == oldDest);        
             if (oldDest == dest) { return; } // everything is in the right place
-            proto->code.buf[patchPos] = CODE_CAB(OP(code), dest, OA(code), OB(code));
+            proto->code.set(patchPos, CODE_CAB(OP(code), dest, OA(code), OB(code)));
             return; // patched
         }
     }
@@ -760,8 +762,8 @@ static Value mapSpecialConsts(Value a) {
 }
 
 void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
-    assert(to <= proto->code.size);
-    assert(pos  <= proto->code.size);
+    assert(to  <= proto->code.size());
+    assert(pos <= proto->code.size());
     assert(op == JMP || op == JF || op == JT || op == FOR || op == LOOP);
     const int offset = to - pos - 1;
     assert(offset != 0);
@@ -805,7 +807,7 @@ void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
 
 void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
     // assert(dest >= 0);
-    proto->patchPos = proto->code.size;
+    proto->patchPos = proto->code.size();
 
     if (dest < 0) {
         if (op == MOVE && IS_REG(a)) {
@@ -849,7 +851,7 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
         ++top;
     }
     if ((op == SHL || op == SHR) && isByteInt(b)) {
-        proto->patchPos = proto->code.size;
+        proto->patchPos = proto->code.size();
         proto->code.push(CODE_CAB(op+1, dest, a, (int) GET_NUM(b)));
         return;
     }
@@ -857,7 +859,7 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
         emitCode(top+1, MOVE, top, b, UNUSED);
         b = VAL_REG(top);
     }
-    proto->patchPos = proto->code.size;
+    proto->patchPos = proto->code.size();
     proto->code.push(CODE_CAB(op, dest, a, b));
 }
 

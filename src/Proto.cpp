@@ -1,4 +1,5 @@
 #include "Proto.h"
+#include "Object.h"
 
 /*
 enum {
@@ -13,6 +14,7 @@ enum {
 */
 
 Proto::Proto(Proto *up) :
+    type(O_PROTO),
     nArgs(0),
     level(0),
     localsTop(0),

@@ -9,9 +9,10 @@
 #include <string.h>
 #include <assert.h>
 
-Map::Map(const unsigned iniSize) {
-    // printf("Map %p\n", this);
-    size = 0;
+Map::Map(const unsigned iniSize) :
+    _size(0)
+{
+    ((Object *) this)->setType(O_MAP);
     n = 8;
     while ((iniSize << 1) > n) {
         n += n;
@@ -29,27 +30,27 @@ Map::~Map() {
 #define HASH(pos) (hashCode(keys[pos]) & mask)
 
 Map *Map::alloc(Vector<Value> *keys, Vector<Value> *vals) {
-    Map *m = alloc(keys->size);
+    Map *m = alloc(keys->size());
     m->set(keys, vals);
     return m;
 }
 
 bool Map::equals(Map *o) {
-    if (size != o->size) {
+    if (size() != o->size()) {
         return false;
     }
     return true; // TODO
 }
 
 void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
-    for (Value *pk=keys->buf, *end=pk+keys->size, *pv=vals->buf; pk < end; ++pk, ++pv) {
+    for (Value *pk=keys->buf(), *end=pk+keys->size(), *pv=vals->buf(); pk < end; ++pk, ++pv) {
         set(*pk, *pv, true);
     }
 }
 
 Map *Map::copy() {
     Map *m = alloc(0);
-    m->size = size;
+    m->setSize(size());
     m->n = n;
     m->buf = (Value *) malloc(n * 12);
     memcpy(m->buf, buf, n * 12);
@@ -73,7 +74,8 @@ bool Map::set(Value key, Value val, bool overwrite) {
     if (!val) {
         return remove(key);
     }
-    if (size + size >= n) {
+    unsigned s = size();
+    if ((s << 1) >= n) {
         grow();
     }
     const unsigned mask = n - 1;
@@ -83,10 +85,10 @@ bool Map::set(Value key, Value val, bool overwrite) {
     while (true) {
         const int pos = map[h];
         if (pos == EMPTY) {
-            map[h] = size;
-            keys[size]          = key;
-            keys[size + (n>>1)] = val;
-            ++size;
+            map[h] = s;
+            keys[s]          = key;
+            keys[s + (n>>1)] = val;
+            incSize();
             return false;
         }
         if (keys[pos] == key) { 
@@ -112,7 +114,7 @@ void Map::add(Value v) {
 }
 
 void Map::appendMap(Map *m) {
-    Value *pk = m->buf, *end = m->buf + m->size;
+    Value *pk = m->buf, *end = m->buf + m->size();
     Value *pv = pk + (m->n >> 1);
     while (pk < end) {
         set(*pk++, *pv++, false);
@@ -120,7 +122,7 @@ void Map::appendMap(Map *m) {
 }
 
 void Map::appendArray(Array *a) {
-    for (Value *p = a->vect.buf, *end = a->vect.buf+a->vect.size; p < end; ++p) {
+    for (Value *p = a->buf(), *end = p+a->size(); p < end; ++p) {
         set(*p, ONE, false);
     }
 }
@@ -160,15 +162,16 @@ bool Map::remove(Value key) {
             hole = h;
         }
     }
-    if (deletePos != size-1) {
-        int newSize = size - 1;
+    unsigned s = size();
+    if (deletePos != s - 1) {
+        int newSize = s - 1;
         keys[deletePos] = keys[newSize];
         keys[deletePos + (n>>1)] = keys[newSize + (n>>1)];
         h = HASH(newSize);
         while (map[h] != newSize) { INC(h); }
         map[h] = deletePos;
     }
-    --size;
+    _size -= (1<<4); //    --size;
     return true;
 }
 
@@ -176,12 +179,12 @@ void Map::grow() {
     n += n;
     buf = (Value *) realloc(buf, n * 24);
     memset(buf + n, 0xff, n * 4);
-    memcpy(buf + (n>>1), buf + (n>>2), size * 8);
+    memcpy(buf + (n>>1), buf + (n>>2), size() * 8);
     const unsigned mask = n - 1;
     int * const map = (int *)(buf + n);
     // Value * const keys = buf;
     int i = 0;
-    for (Value *p = buf, *end = buf+size; p < end; ++p, ++i) {
+    for (Value *p = buf, *end = buf+size(); p < end; ++p, ++i) {
         unsigned h = hashCode(*p) & mask;
         while (map[h] != EMPTY) { INC(h); }
         map[h] = i;

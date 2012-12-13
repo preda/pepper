@@ -20,8 +20,8 @@ class Proto {
     Vector<unsigned> code;
     Proto *up; // level-1
 
-    unsigned nUp() { return ups.size + N_CONST_UPS; }
-    short *getUpBuf() { return ups.buf; }
+    unsigned nUp() { return ups.size() + N_CONST_UPS; }
+    short *getUpBuf() { return ups.buf(); }
     void addUp(short slot) { ups.push(slot); }
 
     ~Proto();

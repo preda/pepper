@@ -63,10 +63,10 @@ int Lexer::advanceInt(TokenInfo *info) {
                     c = *++p;
                 }
                 info->name.push(0);
-                if (HashEntry *e = keywords.get(info->name.buf)) {
+                if (HashEntry *e = keywords.get(info->name.buf())) {
                     return e->d.slot;
                 }
-                info->nameHash = hash64(info->name.buf);
+                info->nameHash = hash64(info->name.buf());
                 return TK_NAME;
             } else if (isDigit(c)) {
                 char *p1, *p2;
@@ -154,5 +154,5 @@ Value Lexer::readString() {
     }
     ERR(p >= end, E_OPEN_STRING);
     ++p;
-    return String::makeVal(s.buf, s.size);
+    return String::makeVal(s.buf(), s.size());
 }

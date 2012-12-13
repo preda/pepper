@@ -13,7 +13,7 @@ Array *Array::alloc(int iniSize) {
 }
 
 void Array::traverse() {
-    GC::markVector(vect.buf, vect.size);
+    GC::markVector(vect.buf(), vect.size());
 }
 
 Map *Map::alloc(unsigned iniSize) {
@@ -21,8 +21,8 @@ Map *Map::alloc(unsigned iniSize) {
 }
 
 void Map::traverse() {
-    GC::markVector(buf, size);
-    GC::markVector(buf+(n>>1), size);
+    GC::markVector(buf, size());
+    GC::markVector(buf+(n>>1), size());
 }
 
 Func *Func::alloc(Proto *proto, Value *contextUps, Value *regs, byte recSlot) {
@@ -40,15 +40,15 @@ Proto *Proto::alloc(Proto *up) {
 
 void Proto::traverse() {
     GC::mark((Object*) up);
-    GC::markVectorObj(consts.buf, consts.size);
+    GC::markVectorObj(consts.buf(), consts.size());
 }
 
-CFunc *CFunc::alloc(tfunc f, int dataSize) {
-    return new (GC::alloc(O_CFUNC, sizeof(CFunc) + dataSize, true)) CFunc(f);
+CFunc *CFunc::alloc(tfunc f, unsigned dataSize) {
+    return new (GC::alloc(O_CFUNC, sizeof(CFunc) + dataSize, dataSize != 0)) CFunc(f);
 }
 
 String *String::alloc(unsigned size) {
     String *s = (String *) GC::alloc(O_STR, sizeof(String) + size + 1, false);
-    s->size = size;
+    s->setSize(size);
     return s;
 }

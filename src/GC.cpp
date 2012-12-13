@@ -8,6 +8,7 @@
 #include "Proto.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define EMPTY_MARK ((unsigned long)-1L)
 
@@ -85,13 +86,14 @@ Object *GC::_alloc(int type, int bytes, bool traversable) {
         growMap();
     }
     Object *p = (Object *) malloc(bytes);
-    p->type = type;
+    memset(p, 0, bytes);
+    // p->setType(type);
     add((unsigned long)p | (traversable ? BIT_TRAVERSABLE : 0));
     ++nPtr;
     return p;
 }
 
-#define DISPATCH(o) switch(o->type) {\
+#define DISPATCH(o) switch(o->type()) { \
  case O_ARRAY: ACTION(o, Array);  break;\
  case O_MAP:   ACTION(o, Map);    break;\
  case O_STR:   ACTION(o, String); break;\
@@ -117,7 +119,7 @@ void GC::_markAndSweep(Object *root) {
         Vector<Object*> stack(1024);
         grayStack = &stack;
         stack.push(root);
-        while (stack.size) {
+        while (stack.size()) {
             traverse(stack.pop());
         }
         grayStack = 0;

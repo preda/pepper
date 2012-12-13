@@ -4,11 +4,10 @@
 #include "Proto.h"
 
 class Func {
- private:
     Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot);
+    byte type;
 
  public:
-    byte type;
     Proto *proto;
     Value *ups;
 

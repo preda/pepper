@@ -72,6 +72,12 @@ T tests[] = {
     // len
     T("return #\"foo\"==3", TRUE),
     T("var tralala=\"tralala\" return #tralala", VAL_NUM(7)),
+    T("return #[]", ZERO),
+    T("a:={} return #a-1", VAL_NUM(-1)),
+    T("a:=[4, 5]; return #a", VAL_NUM(2)),
+    T("foofoo:={a=4, barbar=5, \"1\":\"2\"}; return 2*#foofoo", VAL_NUM(6)),
+
+
     T("var s6=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_NUM(7)),
 
     // ffi
@@ -139,7 +145,7 @@ T tests[] = {
     T("a:={foo=5, bar=7, 9:13} return a == {\"foo\":5, \"bar\":7, 9:13}", TRUE),
     T("a:={foo=7}; return a.foo", VAL_NUM(7)),
     T("a:={} a.foofoobar=5; return a[\"foofoobar\"]", VAL_NUM(5)),
-
+    
     // this call
     T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
     T("return ({f=func() { return this ? 3 : 4 }}.f)()", VAL_NUM(4)),

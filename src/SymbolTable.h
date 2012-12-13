@@ -58,4 +58,8 @@ class SymbolTable {
     SymbolData get(const char *str) {
         return get(hash64(str));
     }
+
+    SymbolData set(const char *key, int slot) {
+        return set(hash64(key), slot);
+    }
 };

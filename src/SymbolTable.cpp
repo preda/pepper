@@ -4,8 +4,8 @@
 
 int SymbolTable::popContext() {
     SymbolVect *currUndo = undoLog + level;
-    int n = currUndo->size;
-    Symbol *buf = currUndo->buf;
+    int n = currUndo->size();
+    Symbol *buf = currUndo->buf();
     for (Symbol *s = buf + n - 1; s >= buf; --s) {
         undo(s);
     }

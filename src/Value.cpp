@@ -19,5 +19,5 @@ unsigned hashCode(Value a) {
 unsigned len(Value a) {
     if (IS_SHORT_STR(a)) { return SHORT_STR_LEN(a); }
     ERR(!(IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a)), E_LEN_NOT_COLLECTION);
-    return GET_OBJ(a)->size;
+    return GET_OBJ(a)->size();
 }

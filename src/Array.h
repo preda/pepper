@@ -12,7 +12,6 @@ class Array {
     void appendArray(Array *a) { vect.append(&(a->vect)); }
 
  public:
-    byte type;
     Vector<Value> vect;
 
     ~Array();
@@ -24,7 +23,9 @@ class Array {
     void traverse();
 
     void push(Value val) { vect.push(val); }
-    unsigned size() { return vect.size; }
+    unsigned size()      { return vect.size(); }
+    Value *buf()         { return vect.buf(); }
+
     void add(Value v);
     bool equals(Array *a);
     bool lessThan(Array *a);

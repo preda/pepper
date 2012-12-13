@@ -1,8 +1,10 @@
 #include "CFunc.h"
 
-CFunc::CFunc(tfunc f) : func(f) {
+CFunc::CFunc(tfunc f) : 
+    type(O_CFUNC),
+    cfunc(f) {
 }
 
 CFunc::~CFunc() {
-    func(2, data, 0, 0);
+    cfunc(CFUNC_DELETE, data, 0, 0);
 }

@@ -104,7 +104,7 @@ inline bool IS_SHORT_STR_TAG(int t) { return t >= T_STR0 && t <= T_STR5; }
 #define FALSE ZERO
 #define TRUE  ONE
 
-#define O_TYPE(v) (GET_OBJ(v)->type)
+#define O_TYPE(v) (GET_OBJ(v)->type())
 #define IS_O_TYPE(v,what) (IS_OBJ(v) && O_TYPE(v)==what)
 #define IS_PROTO(v) IS_O_TYPE(v, O_PROTO)
 #define IS_ARRAY(v) IS_O_TYPE(v, O_ARRAY)

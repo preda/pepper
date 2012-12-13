@@ -1,14 +1,18 @@
 #include "Func.h"
 #include "Proto.h"
 #include "Value.h"
+/*
 #include "Array.h"
 #include "Map.h"
 #include "CFunc.h"
 #include "FFI.h"
+*/
 
 #include <stdlib.h>
 
-Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) {
+Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) :
+    type(O_FUNC)
+{
     this->proto = proto;
     if (recSlot != 0xff) {
         regs[recSlot] = VAL_OBJ(this);

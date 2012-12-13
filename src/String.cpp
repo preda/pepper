@@ -52,11 +52,11 @@ unsigned String::hashCode(char *buf, int size) {
 }
 
 unsigned String::hashCode() {
-    return hashCode(s, size);
+    return hashCode(s, size());
 }
 
 bool String::equals(String *other) {
-    return size == other->size && !memcmp(s, other->s, size);
+    return _size == other->_size && !memcmp(s, other->s, size());
     // && *(int*)s==*(int*)other->s 
 }
 

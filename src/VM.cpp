@@ -115,8 +115,9 @@ Value *VM::maybeGrowStack(Value *regs) {
 }
 
 bool objEquals(Object *a, Object *b) {
-    if (a->type == b->type) {
-        switch (a->type) {
+    unsigned atype = a->type();
+    if (atype == b->type()) {
+        switch (atype) {
         case O_STR:    return ((String*)a)->equals((String*)b);
         case O_ARRAY:  return ((Array*)a)->equals((Array*)b);
         case O_MAP:    return ((Map*)a)->equals((Map*)b);
@@ -166,11 +167,11 @@ Value VM::run(Func *func, int nArg, Value *args) {
     unsigned code = 0;
     Value A, B;
     Value *ptrC;
-    unsigned *pc = func->proto->code.buf;
+    unsigned *pc = func->proto->code.buf();
 
     if (int err = setjmp(jumpBuf)) {
         (void) err;
-        printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf - 1), code); 
+        printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code); 
         return NIL;
     }
 
@@ -229,7 +230,7 @@ FSET: doSet(*ptrC, A, B);  STEP;
 
 RET: {
         regs[0] = A;
-        if (retInfo.size == 0) { return A; }
+        if (!retInfo.size()) { return A; }
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
         regs       = stack + ri->base;
@@ -286,7 +287,7 @@ CALL: {
             ret->func  = activeFunc;
             regs = maybeGrowStack(base);
             copyUpvals(f, regs);
-            pc   = proto->code.buf;
+            pc   = proto->code.buf();
             activeFunc = f;
         } else { // O_CFUNC
             CFunc *cf = (CFunc *) GET_OBJ(A);

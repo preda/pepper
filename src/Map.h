@@ -7,6 +7,9 @@ class Array;
 class String;
 
 class Map {
+    unsigned _size;
+    unsigned n;
+
     static const int EMPTY = -1;
     // static const int HOLE  = -2;
     Map(unsigned iniSize);
@@ -19,9 +22,11 @@ class Map {
     void appendArray(Array *a);
 
  public:
-    byte type;
-    unsigned size, n;
     Value *buf;
+
+    unsigned size() { return _size >> 4; }
+    void setSize(unsigned s) { _size = (s << 4) | O_MAP; }
+    void incSize() { _size += (1<<4); }
 
     static Map *alloc(unsigned iniSize = 0);
     static Map *alloc(Vector<Value> *keys, Vector<Value> *vals);

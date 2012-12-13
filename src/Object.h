@@ -7,8 +7,12 @@ typedef unsigned char byte;
 
 class GC;
 
-struct Object {
-    byte type;
-    unsigned size;
+class Object {
+    unsigned _size;
+
+ public:
     unsigned hashCode();
+    unsigned type() { return _size & 0xf; }
+    unsigned size() { return _size >> 4; }
+    void setType(unsigned t);
 };

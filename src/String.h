@@ -4,6 +4,9 @@
 #include "Value.h"
 
 class String {
+ private:
+    unsigned _size;    
+
  public:
     static Value makeVal(const char *s);
     static Value makeVal(const char *s, unsigned size);
@@ -15,12 +18,12 @@ class String {
     static Value concat(Value a, Value b);
     static Value get(Value a, Value pos);
 
-    byte type;
-    unsigned size;
     char s[0];
 
     ~String();
     void traverse() {}
     unsigned hashCode();
     bool equals(String *other);
+    unsigned size() { return _size >> 4; }
+    void setSize(unsigned s) { _size = (s << 4) | O_STR; }
 };
