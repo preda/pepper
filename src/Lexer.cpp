@@ -122,8 +122,9 @@ int Lexer::advanceInt(TokenInfo *info) {
         case ':': case '-': case '+':
             return *p == '=' ? ++p, c + TK_EQUAL : c;
                 
+        case '\'':
         case '"':
-            info->stringVal = readString();
+            info->stringVal = readString(c);
             return TK_STRING;
         }
     }
@@ -133,10 +134,10 @@ int Lexer::advanceInt(TokenInfo *info) {
     return TK_END; // error
 }
 
-Value Lexer::readString() {
+Value Lexer::readString(char endChar) {
     char c;
     Vector<char> s;
-    while (p < end && (c=*p) != '"') {
+    while (p < end && (c=*p) != endChar) {
         ++p;
         if (c == '\\') {
             c = *p++;

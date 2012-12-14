@@ -167,6 +167,7 @@ T tests[] = {
     T("s:=\"hayneedfoo\"; return s.find(\"need\")", VAL_NUM(3)),
     T("return \"hayneedfoo\".find(\"needl\")", VAL_NUM(-1)),
     T("s:=\"hayneedfoo\"; return s.find()", NIL),
+    T("return 'foo' == \"foo\"", TRUE),
     
 };
 

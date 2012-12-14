@@ -46,7 +46,7 @@ class Lexer {
 
 
     SymbolMap keywords;
-    Value readString();
+    Value readString(char endChar);
     int advanceInt(TokenInfo *info);
 
  public:
