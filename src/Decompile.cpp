@@ -115,13 +115,13 @@ void printBytecode(unsigned *start, int size) {
             printf("%3s,  %3s\n", sc, sa);
             break;
 
-        case IGET:
-        case FGET:
+        case GETI:
+        case GETF:
             printf("%3s,  %3s %3s\n", sc, sa, sb);
             break;
 
-        case ISET:
-        case FSET:
+        case SETI:
+        case SETF:
             printf("%3s %3s,  %3s\n", sc, sa, sb);
             break;
             

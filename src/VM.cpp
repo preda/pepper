@@ -233,12 +233,15 @@ FUNC:
     STEP;
 
     // index, A[B]
-IGET: *ptrC = indexGet(A, B); STEP;
-ISET: indexSet(*ptrC, A, B);  STEP;
+GETI: *ptrC = indexGet(A, B); STEP;
+SETI: indexSet(*ptrC, A, B);  STEP;
 
     // field, A.B
-FGET: *ptrC = fieldGet(A, B); STEP;
-FSET: fieldSet(*ptrC, A, B);  STEP;
+GETF: *ptrC = fieldGet(A, B); STEP;
+SETF: fieldSet(*ptrC, A, B);  STEP;
+
+GETS: *ptrC = NIL; STEP;
+SETS: *ptrC = NIL; STEP;
 
 RET: {
         regs[0] = A;
@@ -354,8 +357,8 @@ bool opcodeHasDest(int op) {
     case JMP:
     case CALL:
     case RET:
-    case ISET:
-    case FSET:
+    case SETI:
+    case SETF:
         return false;
     }
     return true;
