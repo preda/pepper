@@ -8,17 +8,24 @@ class Array {
 
     Value _get(s64 pos);
     void  _set(s64 pos, Value val);
-    void appendChars(char *s, int size);
-    void appendArray(Array *a) { vect.append(&(a->vect)); }
+
+    void append(Value *buf, int size) { vect.append(buf, size); }
+    void append(Array *a) { append(a->buf(), a->size()); }
+    void append(char *s, int size);
+
+    static Array *alloc(Vector<Value> *vect);
 
  public:
     Vector<Value> vect;
 
     ~Array();
     static Array *alloc(int iniSize = 0);
-    static Array *alloc(Vector<Value> *vect);
+
     Value get(Value pos);
     void  set(Value pos, Value v);
+
+    Value getSlice(Value pos1, Value pos2);
+    void setSlice(Value pos1, Value pos2, Value v);
     
     void traverse();
 

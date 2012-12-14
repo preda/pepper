@@ -12,8 +12,8 @@ _(GETI),   // index get, C=A[B]
 _(SETI),   // index set, C[A]=B
 _(GETF),   // field get, C=A.B          
 _(SETF),   // field set, C.A=B
-_(GETS),   // slice get
-_(SETS),   // slice set
+_(GETS),   // slice get C=A[B:B+1]
+_(SETS),   // slice set C[A:A+1]=B
 _(MOVEUP), // C dest, A is src
 _(MOVE_R), // C dest, A is src
 _(MOVE_I), // D is int src

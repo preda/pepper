@@ -18,36 +18,7 @@ int catchError();
 #define max(a, b) ((a)<(b)?(b):(a))
 
 enum {
-    E_VAR_NAME = 1,
-    E_NAME_NOT_FOUND,
-    E_TODO,
-    E_WRONG_TYPE,
-    E_DIV_ZERO,
-    E_ASSIGN_TO_CONST,
-    E_ASSIGN_RHS,
-    E_SYNTAX,
-    E_OBJECT_TYPE,
-    E_SET_NEGATIVE_INDEX,
-    E_INDEX_NOT_NUMBER,
-    E_NOT_INDEXABLE,
-    E_STRING_WRITE,
-    E_LEN_NOT_COLLECTION,
-    E_ADD_NOT_COLLECTION,
-    E_STR_ADD_TYPE,
-
-    E_OPEN_STRING,
-
-    E_FFI_TYPE_MISMATCH,
-    E_FFI_VARARG,
-    E_FFI_INVALID_SIGNATURE,
-    E_FFI_N_ARGS,
-    E_FFI_CIF,
-
-    E_CALL_NIL,
-    E_CALL_NOT_FUNC,
-
-    E_FOR_NAME,
-    E_FOR_NOT_NUMBER,
-
-    E_EXPECTED = 256,
+#define _(x) E_##x
+#include "error.inc"
+#undef _
 };

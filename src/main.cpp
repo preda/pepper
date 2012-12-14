@@ -45,11 +45,6 @@ T tests[] = {
     // strings
     T("var a = \"foo\" var b = \"bar\" return a + b", String::makeVal("foobar")),
 
-    // array
-    T("var a = [3, 4, 5]; return a[2]", VAL_NUM(5)),
-    T("var foobar = [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
-    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::makeVal("tralala")),
-
     // comparison
     T("return \"foo\" < \"bar\"", FALSE),
     T("return -3 < -2", TRUE),
@@ -132,6 +127,10 @@ T tests[] = {
     T("return [1] === [1]", FALSE),
     T("return 13 !== 13", FALSE),
 
+    // array
+    T("var a = [3, 4, 5]; return a[2]", VAL_NUM(5)),
+    T("var foobar = [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
+    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::makeVal("tralala")),
 
     // map
     T("a:={} b:={} a[1]=13 return b[1]", NIL),
@@ -145,6 +144,17 @@ T tests[] = {
     T("a:={foo=5, bar=7, 9:13} return a == {\"foo\":5, \"bar\":7, 9:13}", TRUE),
     T("a:={foo=7}; return a.foo", VAL_NUM(7)),
     T("a:={} a.foofoobar=5; return a[\"foofoobar\"]", VAL_NUM(5)),
+    
+    // slice array
+    T("var a = [3, 4, 5]; return a[2:3] == [5]", TRUE),
+    T("var a = [3, 4, 5]; return a[0:-1] == [3, 4]", TRUE),
+    T("return #([3, 4, 5][1:10])", VAL_NUM(2)),
+    T("return [3, 4, 5][-3:-2] == [3]", TRUE),
+
+    // slice string
+    T("return \"foo\"[-5:-1]", String::makeVal("fo")),
+    T("return \"aoeuaoeu\"[-100:1] == \"a\"", TRUE),
+    T("a:=\"foobarrar\" b:=3 c:=a[b:-b] return c + c", String::makeVal("barbar")),
     
     // this call
     T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),

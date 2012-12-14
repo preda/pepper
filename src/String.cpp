@@ -50,6 +50,20 @@ Value String::get(Value s, Value p) {
     return VALUE_(T_STR1, (unsigned char) *(GET_CSTR(s) + (unsigned)pos));
 }
 
+Value String::getSlice(Value s, Value p1, Value p2) {
+    assert(IS_STRING(s));
+    ERR(!IS_NUM(p1) || !IS_NUM(p2), E_INDEX_NOT_NUMBER);
+    s64 pos1 = (s64) GET_NUM(p1);
+    s64 pos2 = (s64) GET_NUM(p2);
+    unsigned size = len(s);
+    if (pos1 < 0) { pos1 += size; }
+    if (pos2 < 0) { pos2 += size; }
+    if (pos1 < 0) { pos1 = 0; }
+    if (pos2 > size) { pos2 = size; }
+    // if (pos1 < 0 || pos2 >= size) { return NIL; }
+    return makeVal(GET_CSTR(s) + pos1, (pos1 < pos2) ? (unsigned)(pos2-pos1) : 0);
+}
+
 unsigned String::hashCode(char *buf, int size) {
     unsigned char *p = (unsigned char *) buf;
     unsigned h = 0;

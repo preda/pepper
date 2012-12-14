@@ -60,12 +60,37 @@ Value Array::get(Value pos) {
     return _get((s64) GET_NUM(pos));
 }
 
+Value Array::getSlice(Value p1, Value p2) {
+    ERR(!IS_NUM(p1) || !IS_NUM(p2), E_INDEX_NOT_NUMBER);
+    s64 pos1 = (s64) GET_NUM(p1);
+    s64 pos2 = (s64) GET_NUM(p2);
+    unsigned sz = size();
+    if (pos1 < 0) { 
+        pos1 += sz;
+        if (pos1 < 0) {
+            pos1 = 0;
+        }
+    }
+    if (pos2 < 0) { 
+        pos2 += sz; 
+    } else if (pos2 > sz) { 
+        pos2 = sz;
+    }    
+    Array *a = Array::alloc();
+    a->append(vect.buf() + pos1, (pos1 < pos2) ? (unsigned)(pos2-pos1) : 0);
+    return VAL_OBJ(a);
+}
+
+void Array::setSlice(Value pos1, Value pos2, Value v) {
+    // TODO
+}
+
 void Array::set(Value pos, Value v) {
     ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
     _set((s64) GET_NUM(pos), v); 
 }
 
-void Array::appendChars(char *s, int size) {
+void Array::append(char *s, int size) {
     Value c = String::makeVal(1);
     char *pc = GET_CSTR(c);
     unsigned oldSize = vect.size();
@@ -79,8 +104,8 @@ void Array::appendChars(char *s, int size) {
 void Array::add(Value v) {
     ERR(!(IS_ARRAY(v) || IS_STRING(v) || IS_MAP(v)), E_ADD_NOT_COLLECTION);
     if (IS_STRING(v)) {
-        appendChars(GET_CSTR(v), len(v));
+        append(GET_CSTR(v), len(v));
     } else {
-        appendArray((Array *) GET_OBJ(v)); // handles both MAP & ARRAY
+        append((Array *) GET_OBJ(v)); // handles both MAP & ARRAY
     }
 }

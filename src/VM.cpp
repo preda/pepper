@@ -74,7 +74,7 @@ static Value doSHR(Value v, int shift) {
     return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) >> shift));
 }
 
-static Value indexGet(Value a, Value b) {
+static Value getIndex(Value a, Value b) {
     return 
         IS_ARRAY(a)  ? ARRAY(a)->get(b)  :
         IS_STRING(a) ? String::get(a, b) :
@@ -82,15 +82,15 @@ static Value indexGet(Value a, Value b) {
         ERROR(E_NOT_INDEXABLE);
 }
 
-static Value fieldGet(Value a, Value b) {
+static Value getField(Value a, Value b) {
     if (IS_STRING(a)) {
         return String::methods->get(b);
     } else {
-        return indexGet(a, b);
+        return getIndex(a, b);
     }
 }
 
-static void indexSet(Value c, Value a, Value b) {
+static void setIndex(Value c, Value a, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);
     if (IS_ARRAY(c)) {
         ARRAY(c)->set(a, b);
@@ -101,8 +101,21 @@ static void indexSet(Value c, Value a, Value b) {
     }
 }
 
-static void fieldSet(Value c, Value a, Value b) {
-    indexSet(c, a, b);
+static void setField(Value c, Value a, Value b) {
+    setIndex(c, a, b);
+}
+
+static Value getSlice(Value a, Value b1, Value b2) {
+    return 
+        IS_ARRAY(a)  ? ARRAY(a)->getSlice(b1, b2) :
+        IS_STRING(a) ? String::getSlice(a, b1, b2) :
+        ERROR(E_NOT_SLICEABLE);
+}
+
+static void setSlice(Value c, Value a1, Value a2, Value b) {
+    ERR(IS_STRING(c), E_STRING_WRITE);
+    ERR(!IS_ARRAY(c), E_NOT_SLICEABLE);
+    ARRAY(c)->setSlice(a1, a2, b);
 }
 
 VM::VM() {
@@ -233,15 +246,15 @@ FUNC:
     STEP;
 
     // index, A[B]
-GETI: *ptrC = indexGet(A, B); STEP;
-SETI: indexSet(*ptrC, A, B);  STEP;
+GETI: *ptrC = getIndex(A, B); STEP;
+SETI: setIndex(*ptrC, A, B);  STEP;
 
     // field, A.B
-GETF: *ptrC = fieldGet(A, B); STEP;
-SETF: fieldSet(*ptrC, A, B);  STEP;
+GETF: *ptrC = getField(A, B); STEP;
+SETF: setField(*ptrC, A, B);  STEP;
 
-GETS: *ptrC = NIL; STEP;
-SETS: *ptrC = NIL; STEP;
+ GETS: *ptrC = getSlice(A, B, regs[OB(code)+1]); STEP;
+ SETS: setSlice(*ptrC, A, regs[OA(code)+1], B);  STEP;
 
 RET: {
         regs[0] = A;

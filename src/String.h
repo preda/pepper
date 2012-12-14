@@ -21,6 +21,7 @@ class String {
     static unsigned hashCode(char *buf, int size);
     static Value concat(Value a, Value b);
     static Value get(Value a, Value pos);
+    static Value getSlice(Value a, Value pos1, Value pos2);
 
     char s[0];
 

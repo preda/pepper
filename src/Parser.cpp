@@ -413,12 +413,22 @@ Value Parser::suffixedExpr(int top) {
         }
         indexOnly = callOnly = false;
         switch(t) {
-        case '[':
+        case '[': {
             advance();
-            emit(top+2, GETI, top, a, expr(top+1));
+            Value b = expr(top+1);
+            if (TOKEN == ':') {
+                advance();
+                patchOrEmitMove(top+2, top+1, b);
+                Value c = expr(top+2);
+                patchOrEmitMove(top+3, top+2, c);
+                emit(top+3, GETS, top, a, VAL_REG(top+1));
+            } else {
+                emit(top+2, GETI, top, a, b);
+            }
             a = VAL_REG(top);
             consume(']');
             break;
+        }
 
         case '.':
             advance();
