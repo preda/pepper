@@ -1,9 +1,18 @@
 #include "String.h"
 #include "Object.h"
+#include "Map.h"
+#include "CFunc.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+
+Map *String::methods;
+
+void String::staticInit() {
+    methods = Map::alloc();
+    methods->set(makeVal("find"), VAL_OBJ(CFunc::alloc(method_find)));
+}
 
 Value String::makeVal(unsigned len) {
     return len <= 5 ? VAL_TAG(T_STR0 + len) : VAL_OBJ(String::alloc(len));
@@ -92,7 +101,7 @@ Value String::concat(Value a, Value b) {
     return stringConcat(a, pb, sb);
 }
 
-Value String::find(int op, void *data, Value *stack, int nCallArg) {
+Value String::method_find(int op, void *data, Value *stack, int nCallArg) {
     assert(nCallArg > 0);
     Value *p = stack, *end = p + nCallArg;
     Value v1 = *p++;

@@ -74,7 +74,7 @@ static Value doSHR(Value v, int shift) {
     return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) >> shift));
 }
 
-Value doGet(Value a, Value b) {
+static Value indexGet(Value a, Value b) {
     return 
         IS_ARRAY(a)  ? ARRAY(a)->get(b)  :
         IS_STRING(a) ? String::get(a, b) :
@@ -82,7 +82,15 @@ Value doGet(Value a, Value b) {
         ERROR(E_NOT_INDEXABLE);
 }
 
-void doSet(Value c, Value a, Value b) {
+static Value fieldGet(Value a, Value b) {
+    if (IS_STRING(a)) {
+        return String::methods->get(b);
+    } else {
+        return indexGet(a, b);
+    }
+}
+
+static void indexSet(Value c, Value a, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);
     if (IS_ARRAY(c)) {
         ARRAY(c)->set(a, b);
@@ -91,6 +99,10 @@ void doSet(Value c, Value a, Value b) {
     } else {
         ERROR(E_NOT_INDEXABLE);
     }
+}
+
+static void fieldSet(Value c, Value a, Value b) {
+    indexSet(c, a, b);
 }
 
 VM::VM() {
@@ -221,12 +233,12 @@ FUNC:
     STEP;
 
     // index, A[B]
-IGET: *ptrC = doGet(A, B); STEP;
-ISET: doSet(*ptrC, A, B);  STEP;
+IGET: *ptrC = indexGet(A, B); STEP;
+ISET: indexSet(*ptrC, A, B);  STEP;
 
     // field, A.B
-FGET: *ptrC = doGet(A, B); STEP;
-FSET: doSet(*ptrC, A, B);  STEP;
+FGET: *ptrC = fieldGet(A, B); STEP;
+FSET: fieldSet(*ptrC, A, B);  STEP;
 
 RET: {
         regs[0] = A;

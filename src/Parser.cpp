@@ -79,11 +79,11 @@ Func *Parser::parseStatList(const char *text) {
 }
 
 Func *Parser::makeFunc(Proto *proto, int slot) {
-    Map *strMethods = Map::alloc();
-    strMethods->set(String::makeVal("find"), VAL_OBJ(CFunc::alloc(String::find)));
+    // Map *strMethods = Map::alloc();
+    // strMethods->set(String::makeVal("find"), VAL_OBJ(CFunc::alloc(String::find)));
 
     Value builtins[] = { 
-        VAL_OBJ(strMethods),
+        VAL_OBJ(String::methods),
         VAL_OBJ(CFunc::alloc(ffiConstruct)),
     };
     Value dummyRegs;

@@ -154,6 +154,10 @@ T tests[] = {
     
     // string
     T("f:=string.find; return f(\"hayneedfoo\", \"need\")", VAL_NUM(3)),
+    T("s:=\"hayneedfoo\"; return s.find(\"need\")", VAL_NUM(3)),
+    T("return \"hayneedfoo\".find(\"needl\")", VAL_NUM(-1)),
+    T("s:=\"hayneedfoo\"; return s.find()", NIL),
+    
 };
 
 Value eval(const char *text) {
@@ -181,6 +185,8 @@ static long long getTimeUsec() {
 }
 
 int main(int argc, char **argv) {
+    String::staticInit();
+
     bool verbose = false;
     if (argc > 1 && !strcmp(argv[1], "-v")) {
         verbose = true;

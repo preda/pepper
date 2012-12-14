@@ -3,11 +3,15 @@
 #include "common.h"
 #include "Value.h"
 
+class Map;
+
 class String {
  private:
     unsigned _size;    
 
  public:
+    static void staticInit();
+
     static Value makeVal(const char *s);
     static Value makeVal(const char *s, unsigned size);
     static Value makeVal(unsigned size);
@@ -28,5 +32,7 @@ class String {
     void setSize(unsigned s) { _size = (s << 4) | O_STR; }
 
     // static int find(Valua a, Value b);
-    static Value find(int op, void *data, Value *stack, int nCallArg);
+    static Value method_find(int op, void *data, Value *stack, int nCallArg);
+
+    static Map *methods;
 };
