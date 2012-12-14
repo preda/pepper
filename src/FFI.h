@@ -13,5 +13,5 @@ struct FFIData {
     ffi_type *ffiArgs[8];
 };
 
-void ffiCall(int op, FFIData *data, Value *stack, int nCallArg);
-void ffiConstruct(int op, void *data, Value *stack, int nCallArg);
+Value ffiCall(int op, FFIData *data, Value *stack, int nCallArg);
+Value ffiConstruct(int op, void *data, Value *stack, int nCallArg);

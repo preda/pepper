@@ -26,4 +26,7 @@ class String {
     bool equals(String *other);
     unsigned size() { return _size >> 4; }
     void setSize(unsigned s) { _size = (s << 4) | O_STR; }
+
+    // static int find(Valua a, Value b);
+    static Value find(int op, void *data, Value *stack, int nCallArg);
 };

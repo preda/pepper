@@ -91,3 +91,25 @@ Value String::concat(Value a, Value b) {
     }
     return stringConcat(a, pb, sb);
 }
+
+Value String::find(int op, void *data, Value *stack, int nCallArg) {
+    assert(nCallArg > 0);
+    Value *p = stack, *end = p + nCallArg;
+    Value v1 = *p++;
+    if (v1 == NIL) {
+        if (p >= end) { return NIL; }
+        v1 = *p++;
+    }
+    if (p >= end) { return NIL; }
+    Value v2 = *p++;
+    if (!IS_STRING(v1) || !IS_STRING(v2)) {
+        return NIL;
+    }
+    
+    char *str1 = GET_CSTR(v1);
+    char *str2 = GET_CSTR(v2);
+    // unsigned len1 = len(v1);
+    // unsigned len2 = len(v2);
+    char *pos = strstr(str1, str2);
+    return VAL_NUM(pos ? pos - str1 : -1);
+}

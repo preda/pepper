@@ -70,7 +70,7 @@ Func *Parser::parseStatList(const char *text) {
     SymbolTable syms;
     Proto *proto = Proto::alloc(0);
     syms.set("ffi", -(N_CONST_UPS + 1));
-    syms.set("str", -(N_CONST_UPS + 2));
+    syms.set("string", -(N_CONST_UPS + 2));
     syms.pushContext();
 
     if (Parser::parseStatList(proto, &syms, text)) { return 0; }
@@ -79,12 +79,15 @@ Func *Parser::parseStatList(const char *text) {
 }
 
 Func *Parser::makeFunc(Proto *proto, int slot) {
+    Map *strMethods = Map::alloc();
+    strMethods->set(String::makeVal("find"), VAL_OBJ(CFunc::alloc(String::find)));
+
     Value builtins[] = { 
+        VAL_OBJ(strMethods),
         VAL_OBJ(CFunc::alloc(ffiConstruct)),
-        VAL_OBJ(Map::alloc()),
     };
     Value dummyRegs;
-    return Func::alloc(proto, builtins + N_CONST_UPS + 1, &dummyRegs, slot);
+    return Func::alloc(proto, builtins + N_CONST_UPS + sizeof(builtins)/sizeof(builtins[0]), &dummyRegs, slot);
 }
 
 int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {

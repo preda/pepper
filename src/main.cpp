@@ -151,6 +151,9 @@ T tests[] = {
     T("return ({f=func() { return this ? 3 : 4 }}.f)()", VAL_NUM(4)),
     T("return {f=func() { return this ? this.bar+1 : 4 }, bar=5}.f()", VAL_NUM(6)),
     T("return ({f=func() { return this ? 2*this.barbar : 4 }, barbar=5}).f()", VAL_NUM(10)),
+    
+    // string
+    T("f:=string.find; return f(\"hayneedfoo\", \"need\")", VAL_NUM(3)),
 };
 
 Value eval(const char *text) {

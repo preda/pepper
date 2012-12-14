@@ -192,16 +192,12 @@ static Value ffiConstructInt(Value *stack, int nCallArg) {
     return VAL_OBJ(cfunc);
 }
 
-void ffiConstruct(int op, void *data, Value *stack, int nCallArg) {
-    stack[0] = op == 0 ? ffiConstructInt(stack, nCallArg) : NIL;
+Value ffiConstruct(int op, void *data, Value *stack, int nCallArg) {
+    return op == 0 ? ffiConstructInt(stack, nCallArg) : NIL;
 }
 
-extern "C" const char *mytest(const char *a, const char *b) {
-    return a;
-}
-
-void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
-    if (op != 0) { return; }
+Value ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
+    if (op != 0) { return NIL; }
     ++stack;
     --nCallArg;
     const int nFixArg = d->nArg;
@@ -279,6 +275,7 @@ void ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
     case PTRDIFF:  v = VAL_NUM(ret.ptr - GET_CSTR(stack[0])); break;
     case VOID: break;
     default: assert(false);
-    }    
-    stack[-1] = v;
+    }
+    return v;
+    // stack[-1] = v;
 }

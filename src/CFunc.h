@@ -2,7 +2,7 @@
 
 #include "Value.h"
 
-typedef void (*tfunc)(int op, void *data, Value *stack, int nCallArg);
+typedef Value (*tfunc)(int op, void *data, Value *stack, int nCallArg);
 
 class CFunc {
     byte type;
@@ -27,6 +27,6 @@ enum {
     void traverse() { cfunc(CFUNC_GC_TRAVERSE, data, 0, 0); }
 
     void call(Value *stack, int nCallArg) {
-        cfunc(CFUNC_CALL, data, stack, nCallArg);
+        *stack = cfunc(CFUNC_CALL, data, stack, nCallArg);
     }
 };
