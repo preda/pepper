@@ -3,6 +3,8 @@
 #include "Vector.h"
 #include "Value.h"
 
+class GC;
+
 class Array {
     Array(int iniSize);
 
@@ -13,22 +15,21 @@ class Array {
     void append(Array *a) { append(a->buf(), a->size()); }
     void append(char *s, int size);
 
-    static Array *alloc(Vector<Value> *vect);
+    static Array *alloc(GC *gc, Vector<Value> *vect);
 
  public:
     Vector<Value> vect;
 
     ~Array();
-    static Array *alloc(int iniSize = 0);
+    static Array *alloc(GC *gc, int iniSize = 0);
+    void traverse(GC *gc);
 
     Value get(Value pos);
     void  set(Value pos, Value v);
 
-    Value getSlice(Value pos1, Value pos2);
+    Value getSlice(GC *gc, Value pos1, Value pos2);
     void setSlice(Value pos1, Value pos2, Value v);
     
-    void traverse();
-
     void push(Value val) { vect.push(val); }
     unsigned size()      { return vect.size(); }
     Value *buf()         { return vect.buf(); }

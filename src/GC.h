@@ -1,7 +1,8 @@
+// Copyright (C) 2012 Mihai Preda
+
 #pragma once
 
 #include "Value.h"
-#include <stdio.h>
 
 struct Object;
 template <typename T> struct Vector;
@@ -17,17 +18,20 @@ class GC {
 
     void add(unsigned long v);
     void growMap();
-
-    Object *_alloc(int type, int bytes, bool traversable);
-    void _mark(Object *p);
-    void _markAndSweep(Object *root);
-    void _markVector(Value *buf, int size);
-    void _markVectorObj(Object **buf, int size);
+    void traverse(Object *o);
 
  public:
     GC();
     ~GC();
 
+    Object *alloc(int type, int bytes, bool traversable);
+    void mark(Object *p);
+    void markAndSweep(Object *root);
+    void markVector(Value *buf, int size);
+    void markVectorObj(Object **buf, int size);
+
+
+    /*
     static Object *alloc(int type, int bytes, bool traversable) {
         // printf("GC::alloc %d %d %d\n", type, bytes, traversable);
         return gc->_alloc(type, bytes, traversable);
@@ -48,4 +52,5 @@ class GC {
     static void markVectorObj(Object **buf, int size) {
         gc->_markVectorObj(buf, size);
     }
+    */
 };

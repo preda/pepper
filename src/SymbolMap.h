@@ -18,7 +18,7 @@ struct SymbolData {
     SymbolData(int k, int l, int s) : kind(k), level(l), slot(s) {}
 
     bool isEmpty() {
-        return kind==0 || kind==1;
+        return kind == KIND_EMPTY || kind == KIND_BRIDGE;
     }
 };
 

@@ -7,6 +7,7 @@
 #include "Proto.h"
 #include "Value.h"
 #include "Object.h"
+#include "Pepper.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -19,35 +20,35 @@
 
 #define INT(x) VAL_INT((signed char)x)
 
-static Value arrayAdd(Value a, Value b) {
+static Value arrayAdd(GC *gc, Value a, Value b) {
     assert(IS_ARRAY(a));
     ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
-    Array *array = Array::alloc();
+    Array *array = Array::alloc(gc);
     array->add(a);
     array->add(b);
     return VAL_OBJ(array);
 }
 
-static Value mapAdd(Value a, Value b) {
+static Value mapAdd(GC *gc, Value a, Value b) {
     assert(IS_MAP(a));
     ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
-    Map *map = MAP(a)->copy();
+    Map *map = MAP(a)->copy(gc);
     map->add(b);
     return VAL_OBJ(map);
 }
 
-Value doAdd(Value a, Value b) {
+Value doAdd(GC *gc, Value a, Value b) {
     int ta = TAG(a);
     if (IS_NUM_TAG(ta) && IS_NUM(b)) {
         return VAL_NUM(GET_NUM(a) + GET_NUM(b));
     }
     if (IS_STRING(a)) {
-        return String::concat(a, b);
+        return String::concat(gc, a, b);
     }
     ERR(ta != T_OBJ, E_WRONG_TYPE);
     int type = O_TYPE(a);
     ERR(type != O_ARRAY && type != O_MAP, E_WRONG_TYPE);
-    return type == O_ARRAY ? arrayAdd(a, b) : mapAdd(a, b);
+    return type == O_ARRAY ? arrayAdd(gc, a, b) : mapAdd(gc, a, b);
 }
 
 Value doMod(Value a, Value b) {
@@ -82,9 +83,9 @@ static Value getIndex(Value a, Value b) {
         ERROR(E_NOT_INDEXABLE);
 }
 
-static Value getField(Value a, Value b) {
+Value VM::getField(Value a, Value b) {
     if (IS_STRING(a)) {
-        return String::methods->get(b);
+        return getField(pepper->builtinString, b);
     } else {
         return getIndex(a, b);
     }
@@ -105,10 +106,10 @@ static void setField(Value c, Value a, Value b) {
     setIndex(c, a, b);
 }
 
-static Value getSlice(Value a, Value b1, Value b2) {
+static Value getSlice(GC *gc, Value a, Value b1, Value b2) {
     return 
-        IS_ARRAY(a)  ? ARRAY(a)->getSlice(b1, b2) :
-        IS_STRING(a) ? String::getSlice(a, b1, b2) :
+        IS_ARRAY(a)  ? ARRAY(a)->getSlice(gc, b1, b2) :
+        IS_STRING(a) ? String::getSlice(gc, a, b1, b2) :
         ERROR(E_NOT_SLICEABLE);
 }
 
@@ -118,7 +119,8 @@ static void setSlice(Value c, Value a1, Value a2, Value b) {
     ARRAY(c)->setSlice(a1, a2, b);
 }
 
-VM::VM() {
+VM::VM(Pepper *pepper) : pepper(pepper), gc(pepper->getGC())
+{
     stackSize = 512;
     stack = (Value *) calloc(stackSize, sizeof(Value));
 }
@@ -170,6 +172,7 @@ bool lessThan(Value a, Value b) {
     return (IS_NUM(a) && IS_NUM(b)) ? GET_NUM(a) < GET_NUM(b) : lessThanNonNum(a, b);
 }
 
+/*
 static Value constUps[N_CONST_UPS] = {
     VAL_OBJ(Map::alloc()),
     VAL_OBJ(Array::alloc()), 
@@ -179,12 +182,13 @@ static Value constUps[N_CONST_UPS] = {
     ZERO,
     NIL,
 };
+*/
 
 static void copyUpvals(Func *f, Value *regs) {
     unsigned nUp = f->proto->nUp();
-    unsigned nOwnUp = nUp - N_CONST_UPS;
-    memcpy(regs + (256-nUp), f->ups, nOwnUp * sizeof(Value));
-    memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
+    // unsigned nOwnUp = nUp - N_CONST_UPS;
+    memcpy(regs + (256-nUp), f->ups, nUp * sizeof(Value));
+    // memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
 }
 
 extern __thread jmp_buf jumpBuf;
@@ -242,7 +246,7 @@ Value VM::run(Func *func, int nArg, Value *args) {
 
 FUNC:
     assert(IS_PROTO(A));
-    *ptrC = VAL_OBJ(Func::alloc(PROTO(A), regs + 256, regs, OB(code)));
+    *ptrC = VAL_OBJ(Func::alloc(gc, PROTO(A), regs + 256, regs, OB(code)));
     STEP;
 
     // index, A[B]
@@ -253,7 +257,7 @@ SETI: setIndex(*ptrC, A, B);  STEP;
 GETF: *ptrC = getField(A, B); STEP;
 SETF: setField(*ptrC, A, B);  STEP;
 
- GETS: *ptrC = getSlice(A, B, regs[OB(code)+1]); STEP;
+ GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); STEP;
  SETS: setSlice(*ptrC, A, regs[OA(code)+1], B);  STEP;
 
 RET: {
@@ -267,15 +271,6 @@ RET: {
         copyUpvals(activeFunc, regs);
         STEP;
     }
-
-            /*
-                memmove(regs, base, nArgs * sizeof(Value));
-                base = regs;
-                if (activeFunc != f) {
-                    copyUpvals(f, regs);
-                }
-            */
-
 
 CALL: { 
         ERR(!IS_OBJ(A), E_CALL_NOT_FUNC);
@@ -299,10 +294,10 @@ CALL: {
             }
             if (hasEllipsis) {
                 if (nEffArgs < nArgs) {
-                    base[nArgs-1] = VAL_OBJ(Array::alloc());
+                    base[nArgs-1] = VAL_OBJ(Array::alloc(gc));
                 } else {
                     int nExtra = nEffArgs - nArgs;
-                    Array *a = Array::alloc(nExtra);
+                    Array *a = Array::alloc(gc, nExtra);
                     for (Value *p=base+nArgs-1, *end=base+nEffArgs; p < end; ++p) {
                         a->push(*p);
                     }
@@ -319,7 +314,7 @@ CALL: {
             activeFunc = f;
         } else { // O_CFUNC
             CFunc *cf = (CFunc *) GET_OBJ(A);
-            cf->call(base, nEffArgs);
+            cf->call(gc, base, nEffArgs);
         }
         STEP;
     }
@@ -338,7 +333,7 @@ CALL: {
  NOTL:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
     // notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
 
- ADD: *ptrC = doAdd(A, B); STEP;     
+ ADD: *ptrC = doAdd(gc, A, B); STEP;
  SUB: *ptrC = BINOP(-, A, B); STEP;
  MUL: *ptrC = BINOP(*, A, B); STEP;
  DIV: *ptrC = BINOP(/, A, B); STEP;

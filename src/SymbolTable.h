@@ -36,10 +36,7 @@ class SymbolTable {
 
     void print();
 
-    int pushContext() {
-        return ++level;
-    }
-
+    int pushContext();
     int popContext();
     
     SymbolData get(u64 key) {

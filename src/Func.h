@@ -3,6 +3,8 @@
 #include "Value.h"
 #include "Proto.h"
 
+class GC;
+
 class Func {
     Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot);
     byte type;
@@ -12,10 +14,10 @@ class Func {
     Value *ups;
 
     unsigned nUp() { return proto->nUp(); }
-    unsigned nOwnUp() { return proto->nUp() - N_CONST_UPS; }
+    // unsigned nOwnUp() { return proto->nUp() - N_CONST_UPS; }
 
-    static Func *alloc(Proto *proto, Value *contextUps, Value *regs, byte recSlot);
+    static Func *alloc(GC *gc, Proto *proto, Value *contextUps, Value *regs, byte recSlot);
     ~Func();
 
-    void traverse();
+    void traverse(GC *gc);
 };

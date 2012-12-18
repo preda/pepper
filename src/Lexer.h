@@ -41,8 +41,11 @@ struct TokenInfo {
     Vector<char> name;
 };
 
+class GC;
+
 class Lexer {
     const char *string, *end;
+    GC *gc;
 
 
     SymbolMap keywords;
@@ -53,7 +56,7 @@ class Lexer {
     const char *p;
     int lineNumber;
 
-    Lexer(const char *string);
+    Lexer(GC *gc, const char *string);
 
     int advance();
     int lookahead();

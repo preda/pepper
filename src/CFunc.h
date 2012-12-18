@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Value.h"
+class GC;
 
-typedef Value (*tfunc)(int op, void *data, Value *stack, int nCallArg);
+typedef Value (*tfunc)(GC *gc, int op, void *data, Value *stack, int nCallArg);
 
 class CFunc {
     byte type;
@@ -10,23 +11,24 @@ class CFunc {
 
     CFunc(tfunc f);
 
-enum {
-    CFUNC_CALL   = 0,
-    CFUNC_INIT   = 1,
-    CFUNC_DELETE = 2,
-    CFUNC_GC_TRAVERSE = 3,
-};
+    enum {
+        CFUNC_CALL   = 0,
+        CFUNC_INIT   = 1,
+        CFUNC_DELETE = 2,
+        CFUNC_GC_TRAVERSE = 3,
+    };
 
- public:
+ public: 
     byte data[0];
 
     ~CFunc();
 
-    static CFunc *alloc(tfunc f, unsigned dataSize = 0);
+    static CFunc *alloc(GC *gc, tfunc f, unsigned dataSize = 0);
+    static Value value(GC *gc, tfunc f);
 
-    void traverse() { cfunc(CFUNC_GC_TRAVERSE, data, 0, 0); }
+    void traverse(GC *gc) { cfunc(gc, CFUNC_GC_TRAVERSE, data, (Value *) gc, 0); }
 
-    void call(Value *stack, int nCallArg) {
-        *stack = cfunc(CFUNC_CALL, data, stack, nCallArg);
+    void call(GC *gc, Value *stack, int nCallArg) {
+        *stack = cfunc(gc, CFUNC_CALL, data, stack, nCallArg);
     }
 };

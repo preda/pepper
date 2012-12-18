@@ -1,14 +1,14 @@
 #include "Func.h"
 #include "Proto.h"
 #include "Value.h"
-/*
-#include "Array.h"
-#include "Map.h"
-#include "CFunc.h"
-#include "FFI.h"
-*/
+#include "GC.h"
 
 #include <stdlib.h>
+
+void Func::traverse(GC *gc) { 
+    gc->markVector(ups, nUp());
+    gc->mark((Object *) proto);
+}
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) :
     type(O_FUNC)
@@ -17,7 +17,7 @@ Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) :
     if (recSlot != 0xff) {
         regs[recSlot] = VAL_OBJ(this);
     }
-    int n = nOwnUp();
+    int n = nUp();
     ups = n ? (Value *) calloc(n, sizeof(Value)) : 0;
     Value *up = ups + n - 1;
     for (short *p = proto->getUpBuf(), *end = p+n; p < end; ++p, --up) {

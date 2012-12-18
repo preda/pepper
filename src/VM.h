@@ -5,7 +5,7 @@
 #include "RetInfo.h"
 #include "Func.h"
 
-Value doAdd(Value a, Value b);
+Value doAdd(GC *gc, Value a, Value b);
 Value doMod(Value a, Value b);
 Value doPow(Value a, Value b);
 
@@ -57,17 +57,22 @@ enum {
 
 bool opcodeHasDest(int opcode);
 
+class Pepper;
+
 class VM {
+    Pepper *pepper;
+    GC *gc;
     Value *stack;
     unsigned stackSize;
     Func *activeFunc;
-
     Vector<RetInfo> retInfo;
 
     Value *maybeGrowStack(Value *regs);
+    Value getField(Value a, Value b);
+    
 
  public:
-    VM();
+    VM(Pepper *pepper);
     ~VM();
     Value run(Func *f, int nArg = 0, Value *args = 0);
 };

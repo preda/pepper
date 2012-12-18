@@ -6,6 +6,7 @@
 #include "String.h"
 #include "Array.h"
 #include "Map.h"
+#include "Pepper.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -24,13 +25,42 @@ struct T {
     Value result;
 };
 
+Value eval(Pepper *pepper, const char *text) {
+    Func *f = pepper->parseStatList(text);
+    // printFunc(f);
+    return f ? pepper->run(f) : NIL;
+}
+
+bool compileDecompile(Pepper *pepper, const char *text) {
+    printf("\n'%s'\n\n", text);
+    Func *f = pepper->parseStatList(text);
+    if (f) { 
+        printFunc(f); 
+        Value ret = pepper->run(f);
+        printValue(ret);
+        return true;
+    }
+    return false;
+}
+
+static long long getTimeUsec() {
+    timeval tv;
+    timezone tz;
+    gettimeofday(&tv, &tz);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
+
+int main(int argc, char **argv) {
+    Pepper *pepper = new Pepper();
+    GC *gc = pepper->getGC();
+
 T tests[] = {
     T("return nil", NIL),
     T("return -1", VAL_NUM(-1)),
     T("return 0", VAL_NUM(0)),
     T("return \"\"", EMPTY_STRING),
-    T("return []", VAL_OBJ(Array::alloc())),
-    T("return {}", VAL_OBJ(Map::alloc())),
+    T("return []", pepper->EMPTY_ARRAY),
+    T("return {}", pepper->EMPTY_MAP),
 
     T("f:=func() { return 1 } return f()", ONE),
     T("f:=func(x) { return -1 } return f(5)", VAL_NUM(-1)),
@@ -43,7 +73,7 @@ T tests[] = {
     T("a:=2; a=3; b:=a; return a", VAL_NUM(3)),
 
     // strings
-    T("var a = \"foo\" var b = \"bar\" return a + b", String::makeVal("foobar")),
+    T("var a = \"foo\" var b = \"bar\" return a + b", String::value(gc, "foobar")),
 
     // comparison
     T("return \"foo\" < \"bar\"", FALSE),
@@ -130,7 +160,7 @@ T tests[] = {
     // array
     T("var a = [3, 4, 5]; return a[2]", VAL_NUM(5)),
     T("var foobar = [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
-    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::makeVal("tralala")),
+    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::value(gc, "tralala")),
 
     // map
     T("a:={} b:={} a[1]=13 return b[1]", NIL),
@@ -152,9 +182,9 @@ T tests[] = {
     T("return [3, 4, 5][-3:-2] == [3]", TRUE),
 
     // slice string
-    T("return \"foo\"[-5:-1]", String::makeVal("fo")),
+    T("return \"foo\"[-5:-1]", String::value(gc, "fo")),
     T("return \"aoeuaoeu\"[-100:1] == \"a\"", TRUE),
-    T("a:=\"foobarrar\" b:=3 c:=a[b:-b] return c + c", String::makeVal("barbar")),
+    T("a:=\"foobarrar\" b:=3 c:=a[b:-b] return c + c", String::value(gc, "barbar")),
     
     // this call
     T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
@@ -171,33 +201,6 @@ T tests[] = {
     
 };
 
-Value eval(const char *text) {
-    Func *f = Parser::parseStatList(text);
-    return f ? VM().run(f) : NIL;
-}
-
-bool compileDecompile(const char *text) {
-    printf("\n'%s'\n\n", text);
-    Func *f = Parser::parseStatList(text);
-    if (f) { 
-        printFunc(f); 
-        Value ret = VM().run(f);
-        printValue(ret);
-        return true;
-    }
-    return false;
-}
-
-static long long getTimeUsec() {
-    timeval tv;
-    timezone tz;
-    gettimeofday(&tv, &tz);
-    return tv.tv_sec * 1000000 + tv.tv_usec;
-}
-
-int main(int argc, char **argv) {
-    String::staticInit();
-
     bool verbose = false;
     if (argc > 1 && !strcmp(argv[1], "-v")) {
         verbose = true;
@@ -209,7 +212,7 @@ int main(int argc, char **argv) {
         int nFail = 0;
         for (int i = 0; i < n; ++i) {
             T &t = tests[i];
-            Value ret = eval(t.source);
+            Value ret = eval(pepper, t.source);
             if (!equals(ret, t.result)) {
                 fprintf(stderr, "\n%2d FAIL '%s'\n", i, t.source);
                 printValue(ret);
@@ -228,7 +231,8 @@ int main(int argc, char **argv) {
             assert(argc > 2);
             int n = atoi(argv[2]);
             text = tests[n].source;
-            compileDecompile(text);
+            eval(pepper, text);
+            compileDecompile(pepper, text);
             ++argv;
             --argc;
             return 0;
@@ -248,7 +252,7 @@ int main(int argc, char **argv) {
         }
 
         long long t1 = getTimeUsec();
-        Func *f = Parser::parseFunc(text);
+        Func *f = pepper->parseFunc(text);
         if (verbose) {
             printFunc(f);
         }
@@ -262,7 +266,7 @@ int main(int argc, char **argv) {
         for (int i = 0; i < n; ++i) {
             fargs[i] = VAL_NUM(atoi(argv[2 + i]));                     
         }
-        Value ret = VM().run(f, n, fargs);
+        Value ret = pepper->run(f, n, fargs);
         long long t3 = getTimeUsec();
         printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
         printValue(ret);

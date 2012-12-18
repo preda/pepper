@@ -10,6 +10,7 @@
 #include "SymbolTable.h"
 #include "CFunc.h"
 #include "FFI.h"
+#include "Pepper.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -17,17 +18,15 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-#define UNUSED      VAL_REG(0)
-
-static const Value EMPTY_ARRAY = VAL_OBJ(Array::alloc());
-static const Value EMPTY_MAP   = VAL_OBJ(Map::alloc());
-
+#define UNUSED VAL_REG(0)
 #define TOKEN (lexer->token)
 
-Parser::Parser(Proto *proto, SymbolTable *syms, Lexer *lexer) {
+Parser::Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer) {
     this->proto = proto;
     this->syms  = syms;
     this->lexer = lexer;
+    this->context = context;
+    this->gc = context->getGC();
     lexer->advance();
 }
 
@@ -48,55 +47,42 @@ void Parser::consume(int t) {
 
 extern __thread jmp_buf jumpBuf;
 
-Func *Parser::parseFunc(const char *text) {
-    SymbolTable syms;
-    syms.set(hash64("ffi"), -(N_CONST_UPS + 1));
-    syms.pushContext();
-    Lexer lexer(text);
+Func *Parser::parseFunc(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text) {
+    GC *gc = context->getGC();
+    Lexer lexer(gc, text);
 
     if (int err = setjmp(jumpBuf)) {
         printf("err %d at line %d, before '%s'\n", err, lexer.lineNumber, lexer.p);
         return 0;
     }
 
-    Proto *proto = Proto::alloc(0);
-    Parser parser(proto, &syms, &lexer);
+    Proto *proto = Proto::alloc(gc, 0);
+    Parser parser(context, proto, syms, &lexer);
     int slot;
     Proto *funcProto = parser.parseProto(&slot);
-    return makeFunc(funcProto, slot);
+    return makeFunc(gc, funcProto, upsTop, slot);
 }
 
-Func *Parser::parseStatList(const char *text) {
-    SymbolTable syms;
-    Proto *proto = Proto::alloc(0);
-    syms.set("ffi", -(N_CONST_UPS + 1));
-    syms.set("string", -(N_CONST_UPS + 2));
-    syms.pushContext();
-
-    if (Parser::parseStatList(proto, &syms, text)) { return 0; }
+Func *Parser::parseStatList(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text) {
+    GC *gc = context->getGC();
+    Proto *proto = Proto::alloc(gc, 0);
+    if (Parser::parseStatList(context, proto, syms, text)) { return 0; }
     close(proto);
-    return makeFunc(proto, -1);
+    return makeFunc(gc, proto, upsTop, -1);
 }
 
-Func *Parser::makeFunc(Proto *proto, int slot) {
-    // Map *strMethods = Map::alloc();
-    // strMethods->set(String::makeVal("find"), VAL_OBJ(CFunc::alloc(String::find)));
-
-    Value builtins[] = { 
-        VAL_OBJ(String::methods),
-        VAL_OBJ(CFunc::alloc(ffiConstruct)),
-    };
+Func *Parser::makeFunc(GC *gc, Proto *proto, Value *upsTop, int slot) {
     Value dummyRegs;
-    return Func::alloc(proto, builtins + N_CONST_UPS + sizeof(builtins)/sizeof(builtins[0]), &dummyRegs, slot);
+    return Func::alloc(gc, proto, upsTop, &dummyRegs, slot);
 }
 
-int Parser::parseStatList(Proto *proto, SymbolTable *syms, const char *text) {
-    Lexer lexer(text);
+int Parser::parseStatList(Pepper *context, Proto *proto, SymbolTable *syms, const char *text) {
+    Lexer lexer(context->getGC(), text);
     if (int err = setjmp(jumpBuf)) {
         printf("at line %d, '%s'\n", lexer.lineNumber, lexer.p);
         return err;
     }
-    Parser parser(proto, syms, &lexer);
+    Parser parser(context, proto, syms, &lexer);
     parser.statList();
     return 0;
 }
@@ -285,6 +271,7 @@ SymbolData Parser::lookupName(u64 name) {
             s = createUpval(proto, name, s);
         }
     }
+    assert(s.slot < proto->localsTop);
     return s;
 }
 
@@ -298,18 +285,18 @@ Value Parser::mapExpr(int top) {
     consume('{');
     if (TOKEN=='}') {
         consume('}');
-        return EMPTY_MAP;
+        return context->EMPTY_MAP;
     }
     int slot = top;
     
-    Map *map = Map::alloc();
-    emit(slot, ADD, slot, EMPTY_MAP, VAL_OBJ(map));
+    Map *map = Map::alloc(gc);
+    emit(slot, ADD, slot, context->EMPTY_MAP, VAL_OBJ(map));
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == '}') { break; }
         Value k;
         if (TOKEN == TK_NAME && lexer->lookahead() == '=') {
-            k = String::makeVal(lexer->info.name.buf(), lexer->info.name.size()-1);
+            k = String::value(gc, lexer->info.name.buf(), lexer->info.name.size()-1);
             consume(TK_NAME);
             consume('=');
         } else {
@@ -334,11 +321,11 @@ Value Parser::arrayExpr(int top) {
     consume('[');
     if (TOKEN==']') {
         consume(']');
-        return EMPTY_ARRAY;
+        return context->EMPTY_ARRAY;
     }
     int slot = top++;
-    Array *array = Array::alloc();
-    emit(slot, ADD, slot, EMPTY_ARRAY, VAL_OBJ(array));
+    Array *array = Array::alloc(gc);
+    emit(slot, ADD, slot, context->EMPTY_ARRAY, VAL_OBJ(array));
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == ']') { break; }
@@ -433,7 +420,7 @@ Value Parser::suffixedExpr(int top) {
         case '.':
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
-            emit(top+2, GETF, top+1, a, String::makeVal(lexer->info.name.buf(), lexer->info.name.size()-1));
+            emit(top+2, GETF, top+1, a, String::value(gc, lexer->info.name.buf(), lexer->info.name.size()-1));
             advance();
             a = TOKEN == '(' ? callExpr(top+2, VAL_REG(top+1), a) : VAL_REG(top+1);
             break;
@@ -480,7 +467,7 @@ Proto *Parser::parseProto(int *outSlot) {
         }
     }
 
-    proto = Proto::alloc(proto);
+    proto = Proto::alloc(gc, proto);
     syms->pushContext();
     parList();
     block();
@@ -524,10 +511,10 @@ static Value foldUnary(int op, Value a) {
     return NIL;
 }
 
-static Value foldBinary(int op, Value a, Value b) {
+static Value foldBinary(GC *gc, int op, Value a, Value b) {
     if (!IS_REG(a) && !IS_REG(b)) {
         switch (op) {
-        case '+': return doAdd(a, b);
+        case '+': return doAdd(gc, a, b);
         case '-': return doSub(a, b);
         case '*': return doMul(a, b);
         case '/': return doDiv(a, b);
@@ -558,7 +545,7 @@ Value Parser::codeUnary(int top, int op, Value a) {
 
 Value Parser::codeBinary(int top, int op, Value a, Value b) {
     {
-        Value c = foldBinary(op, a, b);
+        Value c = foldBinary(gc, op, a, b);
         if (c != NIL) { return c; }
     }
     Value c;
@@ -755,7 +742,7 @@ static bool isShortInt(Value a) {
     return isRangeInt(a, -(1<<15), (1<<15)-1);
 }
 
-static Value mapSpecialConsts(Value a) {
+Value Parser::mapSpecialConsts(Value a) {
     if (a == NIL) {
         return VAL_REG(UP_NIL);
     } else if (a == ZERO) {
@@ -766,9 +753,9 @@ static Value mapSpecialConsts(Value a) {
         return VAL_REG(UP_NEG_ONE);
     } else if (a == EMPTY_STRING) {
         return VAL_REG(UP_EMPTY_STRING);
-    } else if (a == EMPTY_ARRAY) {
+    } else if (a == context->EMPTY_ARRAY) {
         return VAL_REG(UP_EMPTY_ARRAY);
-    } else if (a == EMPTY_MAP) {
+    } else if (a == context->EMPTY_MAP) {
         return VAL_REG(UP_EMPTY_MAP);
     }
     return a;
@@ -794,7 +781,7 @@ void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
 }
 
 void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
-    if (a == EMPTY_ARRAY || a == EMPTY_MAP) {
+    if (a == context->EMPTY_ARRAY || a == context->EMPTY_MAP) {
         if (op == MOVE) {
             assert(b == UNUSED);
             op = ADD;

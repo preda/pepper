@@ -3,11 +3,18 @@
 #include "String.h"
 #include "Value.h"
 #include "Object.h"
+#include "GC.h"
+#include "NameValue.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+void Map::traverse(GC *gc) {
+    gc->markVector(buf, size());
+    gc->markVector(buf+(n>>1), size());
+}
 
 Map::Map(const unsigned iniSize) :
     _size(0)
@@ -26,11 +33,19 @@ Map::~Map() {
     buf = 0;
 }
 
+Value Map::value(GC *gc, unsigned n, NameValue *p) {
+    Map *m = Map::alloc(gc, n);
+    for (NameValue *end = p + n; p < end; ++p) {
+        m->set(String::value(gc, p->name), p->value);
+    }
+    return VAL_OBJ(m);
+}
+
 #define INC(h) h = (h + 1) & mask
 #define HASH(pos) (hashCode(keys[pos]) & mask)
 
-Map *Map::alloc(Vector<Value> *keys, Vector<Value> *vals) {
-    Map *m = alloc(keys->size());
+Map *Map::alloc(GC *gc, Vector<Value> *keys, Vector<Value> *vals) {
+    Map *m = alloc(gc, keys->size());
     m->set(keys, vals);
     return m;
 }
@@ -48,8 +63,8 @@ void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
     }
 }
 
-Map *Map::copy() {
-    Map *m = alloc(0);
+Map *Map::copy(GC *gc) {
+    Map *m = alloc(gc, 0);
     m->setSize(size());
     m->n = n;
     m->buf = (Value *) malloc(n * 12);
@@ -128,7 +143,7 @@ void Map::appendArray(Array *a) {
 }
 
 void Map::appendChars(char *s, int size) {
-    Value c = String::makeVal(1);
+    Value c = String::value(0, 1);
     char *pc = GET_CSTR(c);
     for (char *end = s + size; s < end; ++s) {
         *pc = *s;

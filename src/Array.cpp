@@ -1,7 +1,10 @@
+// Copyright (C) 2012 Mihai Preda
+
 #include "Array.h"
 #include "String.h"
 #include "Value.h"
 #include "Object.h"
+#include "GC.h"
 #include <assert.h>
 
 Array::Array(int iniSize) : vect(iniSize) {
@@ -11,8 +14,12 @@ Array::Array(int iniSize) : vect(iniSize) {
 Array::~Array() {
 }
 
-Array *Array::alloc(Vector<Value> *v) {
-    Array *a = alloc(v->size());
+void Array::traverse(GC *gc) {
+    gc->markVector(vect.buf(), vect.size());
+}
+
+Array *Array::alloc(GC *gc, Vector<Value> *v) {
+    Array *a = alloc(gc, v->size());
     a->vect.append(v);
     return a;
 }
@@ -60,7 +67,7 @@ Value Array::get(Value pos) {
     return _get((s64) GET_NUM(pos));
 }
 
-Value Array::getSlice(Value p1, Value p2) {
+Value Array::getSlice(GC *gc, Value p1, Value p2) {
     ERR(!IS_NUM(p1) || !IS_NUM(p2), E_INDEX_NOT_NUMBER);
     s64 pos1 = (s64) GET_NUM(p1);
     s64 pos2 = (s64) GET_NUM(p2);
@@ -76,7 +83,7 @@ Value Array::getSlice(Value p1, Value p2) {
     } else if (pos2 > sz) { 
         pos2 = sz;
     }    
-    Array *a = Array::alloc();
+    Array *a = Array::alloc(gc);
     a->append(vect.buf() + pos1, (pos1 < pos2) ? (unsigned)(pos2-pos1) : 0);
     return VAL_OBJ(a);
 }
@@ -91,7 +98,7 @@ void Array::set(Value pos, Value v) {
 }
 
 void Array::append(char *s, int size) {
-    Value c = String::makeVal(1);
+    Value c = String::value(0, 1);
     char *pc = GET_CSTR(c);
     unsigned oldSize = vect.size();
     vect.setSize(oldSize + size);

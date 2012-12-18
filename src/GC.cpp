@@ -1,3 +1,5 @@
+// Copyright (C) 2012 Mihai Preda
+
 #include "GC.h"
 #include "Object.h"
 #include "Vector.h"
@@ -11,8 +13,6 @@
 #include <string.h>
 
 #define EMPTY_MARK ((unsigned long)-1L)
-
-GC *GC::gc = new GC();
 
 GC::GC() {
     nBits = 0;
@@ -52,7 +52,7 @@ void GC::add(unsigned long v) {
     map[i] = v;
 }
 
-void GC::_mark(Object *o) {
+void GC::mark(Object *o) {
     unsigned long p = (long) o;
     const unsigned mask = (1<<nBits) - 1;
     unsigned i = PTR_HASH(p) & mask;
@@ -68,20 +68,20 @@ void GC::_mark(Object *o) {
     }
 }
 
-void GC::_markVector(Value *p, int size) {
+void GC::markVector(Value *p, int size) {
     for (Value *end = p + size; p < end; ++p) {
         Value v = *p;
-        if (IS_OBJ(v)) { _mark(GET_OBJ(v)); }
+        if (IS_OBJ(v)) { mark(GET_OBJ(v)); }
     }
 }
 
-void GC::_markVectorObj(Object **p, int size) {
+void GC::markVectorObj(Object **p, int size) {
     for (Object **end = p + size; p < end; ++p) {
-        _mark(*p);
+        mark(*p);
     }
 }
 
-Object *GC::_alloc(int type, int bytes, bool traversable) {
+Object *GC::alloc(int type, int bytes, bool traversable) {
     if (nPtr >= (1 << (nBits-1))) {
         growMap();
     }
@@ -108,13 +108,13 @@ static void destruct(Object *o) {
 }
 
 
-static void traverse(Object *o) {
-#define ACTION(o, type) ((type *)o)->traverse()
+void GC::traverse(Object *o) {
+#define ACTION(o, type) ((type *)o)->traverse(this)
     DISPATCH(o);
 #undef ACTION
 }
 
-void GC::_markAndSweep(Object *root) {
+void GC::markAndSweep(Object *root) {
     {
         Vector<Object*> stack(1024);
         grayStack = &stack;

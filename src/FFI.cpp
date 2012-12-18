@@ -165,7 +165,7 @@ static void makeFfiSignature(ffi_type **sign, int nArg, byte *argType) {
     }
 }
 
-static Value ffiConstructInt(Value *stack, int nCallArg) {
+static Value ffiConstructInt(GC *gc, Value *stack, int nCallArg) {
     ERR(nCallArg != 4, E_FFI_N_ARGS);
     Value a = stack[1], b = stack[2], c = stack[3];
     ERR(!IS_STRING(a) || !IS_STRING(b), E_FFI_TYPE_MISMATCH);
@@ -179,9 +179,10 @@ static Value ffiConstructInt(Value *stack, int nCallArg) {
     void *handle = dlopen(p, 0);
     void (*func)() = (void(*)()) dlsym(handle, GET_CSTR(a));
     if (!func) { return NIL; }
-    CFunc *cfunc = CFunc::alloc((tfunc) ffiCall, sizeof(FFIData));
+    CFunc *cfunc = CFunc::alloc(gc, (tfunc) ffiCall, sizeof(FFIData));
     FFIData *d = (FFIData *) cfunc->data;
     d->func = func;
+    d->gc = gc;
     int nArg = d->nArg = parseTypesC(GET_CSTR(b), 8, d->argType, &d->retType, &d->hasEllipsis);
     if (nArg < 0) { return NIL; }
     makeFfiSignature(d->ffiArgs, nArg, d->argType);
@@ -192,11 +193,11 @@ static Value ffiConstructInt(Value *stack, int nCallArg) {
     return VAL_OBJ(cfunc);
 }
 
-Value ffiConstruct(int op, void *data, Value *stack, int nCallArg) {
-    return op == 0 ? ffiConstructInt(stack, nCallArg) : NIL;
+Value ffiConstruct(GC *gc, int op, void *data, Value *stack, int nCallArg) {
+    return op == 0 ? ffiConstructInt(gc, stack, nCallArg) : NIL;
 }
 
-Value ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
+Value ffiCall(GC *gc, int op, FFIData *d, Value *stack, int nCallArg) {
     if (op != 0) { return NIL; }
     ++stack;
     --nCallArg;
@@ -271,7 +272,7 @@ Value ffiCall(int op, FFIData *d, Value *stack, int nCallArg) {
     case LLONG:    v = VAL_NUM(ret.v); break;
     case DOUBLE:   v = VAL_NUM(ret.dbl); break;
     case FLOAT:    v = VAL_NUM(ret.flt); break;
-    case CHAR_PTR: v = String::makeVal(ret.ptr, strlen(ret.ptr)); break;
+    case CHAR_PTR: v = String::value(d->gc, ret.ptr, strlen(ret.ptr)); break;
     case PTRDIFF:  v = VAL_NUM(ret.ptr - GET_CSTR(stack[0])); break;
     case VOID: break;
     default: assert(false);

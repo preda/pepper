@@ -6,14 +6,18 @@ class Lexer;
 class SymbolTable;
 class Proto;
 class Func;
+class GC;
+class Pepper;
 struct SymbolData;
 
 class Parser {
     Proto *proto;
     SymbolTable *syms;
     Lexer *lexer;
+    Pepper *context;
+    GC *gc;
 
-    Parser(Proto *proto, SymbolTable *syms, Lexer *lexer);
+    Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();
     
     SymbolData createUpval(Proto *proto, u64 name, SymbolData sym);
@@ -52,12 +56,13 @@ class Parser {
     void forStat();
     void exprOrAssignStat();
     Proto *parseProto(int *outSlot);
-    static Func  *makeFunc(Proto *proto, int recSlot);
+    Value mapSpecialConsts(Value a);
+    static Func  *makeFunc(GC *gc, Proto *proto, Value *upsTop, int recSlot);
 
 public:
-    static Func *parseFunc(const char *text);
-    static Func *parseStatList(const char *text);
+    static Func *parseFunc(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text);
+    static Func *parseStatList(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text);
 
-    static int parseStatList(Proto *proto, SymbolTable *symbols, const char *text);
+    static int parseStatList(Pepper *context, Proto *proto, SymbolTable *symbols, const char *text);
     static void close(Proto *proto);
 };

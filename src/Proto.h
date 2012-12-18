@@ -5,6 +5,8 @@
 
 #define N_CONST_UPS (7)
 
+class GC;
+
 class Proto {
     byte type;
     Proto(Proto *up);
@@ -20,12 +22,12 @@ class Proto {
     Vector<unsigned> code;
     Proto *up; // level-1
 
-    unsigned nUp() { return ups.size() + N_CONST_UPS; }
+    unsigned nUp() { return ups.size(); }
     short *getUpBuf() { return ups.buf(); }
     void addUp(short slot) { ups.push(slot); }
 
     ~Proto();
-    static Proto *alloc(Proto *up);
-    void traverse();
+    static Proto *alloc(GC *gc, Proto *up);
+    void traverse(GC *gc);
     void freeze() {}
 };

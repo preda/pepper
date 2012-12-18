@@ -4,36 +4,31 @@
 #include "Value.h"
 
 class Map;
+class GC;
 
 class String {
  private:
-    unsigned _size;    
+    unsigned _size;
 
  public:
-    static void staticInit();
+    static Value method_find(GC *gc, int op, void *data, Value *stack, int nCallArg);
+    static Value value(GC *gc, const char *s);
+    static Value value(GC *gc, const char *s, unsigned size);
+    static Value value(GC *gc, unsigned size);
 
-    static Value makeVal(const char *s);
-    static Value makeVal(const char *s, unsigned size);
-    static Value makeVal(unsigned size);
-
-    static String *alloc(const char *p, unsigned size);
-    static String *alloc(unsigned size);
+    static String *alloc(GC *gc, const char *p, unsigned size);
+    static String *alloc(GC *gc, unsigned size);
     static unsigned hashCode(char *buf, int size);
-    static Value concat(Value a, Value b);
+    static Value concat(GC *gc, Value a, Value b);
     static Value get(Value a, Value pos);
-    static Value getSlice(Value a, Value pos1, Value pos2);
+    static Value getSlice(GC *gc, Value a, Value pos1, Value pos2);
 
     char s[0];
 
     ~String();
-    void traverse() {}
+    void traverse(GC *gc) {}
     unsigned hashCode();
     bool equals(String *other);
     unsigned size() { return _size >> 4; }
     void setSize(unsigned s) { _size = (s << 4) | O_STR; }
-
-    // static int find(Valua a, Value b);
-    static Value method_find(int op, void *data, Value *stack, int nCallArg);
-
-    static Map *methods;
 };

@@ -6,5 +6,9 @@ CFunc::CFunc(tfunc f) :
 }
 
 CFunc::~CFunc() {
-    cfunc(CFUNC_DELETE, data, 0, 0);
+    cfunc(0, CFUNC_DELETE, data, 0, 0);
+}
+
+Value CFunc::value(GC *gc, tfunc f) {
+    return VAL_OBJ(alloc(gc, f));
 }

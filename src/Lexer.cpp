@@ -23,8 +23,9 @@ static const char *tokens[] = {
 };
 //    "is",
 
-Lexer::Lexer(const char *string) {
+Lexer::Lexer(GC *gc, const char *string) {
     this->string = (char *) string;
+    this->gc = gc;
     p   = string;
     end = string + strlen(string);
     lineNumber = 0;
@@ -155,5 +156,5 @@ Value Lexer::readString(char endChar) {
     }
     ERR(p >= end, E_OPEN_STRING);
     ++p;
-    return String::makeVal(s.buf(), s.size());
+    return String::value(gc, s.buf(), s.size());
 }

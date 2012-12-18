@@ -1,5 +1,6 @@
 #include "Proto.h"
 #include "Object.h"
+#include "GC.h"
 
 /*
 enum {
@@ -13,6 +14,11 @@ enum {
 };
 */
 
+void Proto::traverse(GC *gc) {
+    gc->mark((Object*) up);
+    gc->markVectorObj(consts.buf(), consts.size());
+}
+
 Proto::Proto(Proto *up) :
     type(O_PROTO),
     nArgs(0),
@@ -21,6 +27,9 @@ Proto::Proto(Proto *up) :
     patchPos(-1),
     up(up) {
     level = (up ? up->level : 0) + 1;
+    for (int i = 0; i < N_CONST_UPS; ++i) {
+        ups.push(-(i+1));
+    }
 }
 
 Proto::~Proto() {
