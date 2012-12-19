@@ -16,7 +16,7 @@
 
 Pepper::Pepper() :
     gc(new GC()),
-    syms(new SymbolTable()),
+    syms(new SymbolTable(gc)),
     vm(new VM(this)),
 
     EMPTY_ARRAY(VAL_OBJ(Array::alloc(gc))),
@@ -29,8 +29,8 @@ Pepper::Pepper() :
     builtinString = Map::value(gc, ASIZE(stringMethods), stringMethods);
     
     NameValue builtins[] = {
-        NameValue("type",   NIL),
-        NameValue("print",  NIL),
+        NameValue("type",   VNIL),
+        NameValue("print",  VNIL),
         NameValue("string", builtinString),
         NameValue("ffi",    CFunc::value(gc, ffiConstruct)),
 
@@ -40,7 +40,7 @@ Pepper::Pepper() :
         NameValue(VAL_NUM(-1)),
         NameValue(ONE),
         NameValue(ZERO),
-        NameValue("nil", NIL),
+        NameValue("nil", VNIL),
     };
 
     const int nUps = ASIZE(builtins);
@@ -49,7 +49,7 @@ Pepper::Pepper() :
     for (int i = 0; i < nUps; ++i) {
         NameValue *nv = &builtins[i];
         if (nv->name) {
-            syms->set(nv->name, i - nUps);
+            syms->set(String::value(gc, nv->name), i - nUps);
         }
         ups[i] = nv->value;
     }

@@ -1,12 +1,10 @@
 #pragma once
 
-#include "SymbolMap.h"
 #include "Vector.h"
 #include "common.h"
 
 enum TOKENS {
-    TK_BEGIN_KEYWORD = 1,
-    TK_BREAK = 1,
+    TK_BREAK,
     TK_CONTINUE,
     TK_ELSE,
     TK_FOR,
@@ -35,20 +33,19 @@ struct TokenInfo {
     union {
         s64 intVal;
         double doubleVal;
-        Value stringVal;
-        u64 nameHash;
+        Value name;
     };
-    Vector<char> name;
 };
 
 class GC;
+class Map;
 
 class Lexer {
     const char *string, *end;
     GC *gc;
+    Map *keywords;
+    Vector<char> name;
 
-
-    SymbolMap keywords;
     Value readString(char endChar);
     int advanceInt(TokenInfo *info);
 

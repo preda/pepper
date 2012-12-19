@@ -1,8 +1,8 @@
 #include "Vector.h"
 #include "Value.h"
 #include "Object.h"
-#include "SymbolMap.h"
 #include "RetInfo.h"
+#include "SymbolTable.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -70,15 +70,4 @@ template class Vector<Value>;
 template class Vector<Object*>;
 template class Vector<char>;
 template class Vector<RetInfo>;
-template class Vector<Symbol>;
-
-
-    /*
-    void add(int pos, T v) {        
-        reserve(size+1);
-        if (pos < size) {
-            memmove(buf + pos + 1, buf + pos, (size - pos) * sizeof(T));            
-        }
-        buf[size++] = v;
-    }
-    */
+template class Vector<SymbolTable::UndoEntry>;

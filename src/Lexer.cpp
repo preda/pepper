@@ -2,6 +2,7 @@
 #include "Vector.h"
 #include "String.h"
 #include "Value.h"
+#include "Map.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -12,7 +13,6 @@ static bool isDigit(char c)    { return '0' <= c && c <= '9'; }
 static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
 
 static const char *tokens[] = {
-    "<begin-keyword>",
     "break", "continue", 
     "else", "for", "while", "func", "goto",
     "if", "nil", "return", "var",
@@ -23,15 +23,18 @@ static const char *tokens[] = {
 };
 //    "is",
 
-Lexer::Lexer(GC *gc, const char *string) {
-    this->string = (char *) string;
-    this->gc = gc;
+Lexer::Lexer(GC *gc, const char *string) :
+    string(string),
+    gc(gc),
+    keywords(Map::alloc(gc))
+{
+    // this->string = (char *) string;
+    // this->gc = gc;
     p   = string;
     end = string + strlen(string);
     lineNumber = 0;
-    for (int i = TK_BEGIN_KEYWORD; i < TK_END_KEYWORD; ++i) {
-        HashEntry *e = keywords.add(hash64(tokens[i]));
-        e->d = SymbolData(KIND_KEYWORD, 0, i);
+    for (int i = 0; i < TK_END_KEYWORD; ++i) {
+        keywords->set(String::value(gc, tokens[i]), VAL_REG(i));
     }
 }
 
@@ -57,17 +60,19 @@ int Lexer::advanceInt(TokenInfo *info) {
         switch (c) {
         default:
             if (isAlpha(c)) {  
-                --p;                
-                info->name.clear();
+                --p;
+                name.clear();
                 while (isAlphaNum(c)) {
-                    info->name.push(c);
+                    name.push(c);
                     c = *++p;
                 }
-                info->name.push(0);
-                if (HashEntry *e = keywords.get(info->name.buf())) {
-                    return e->d.slot;
+                name.push(0);
+                Value str = String::value(gc, name.buf());
+                Value v = keywords->get(str);
+                if (!IS_NIL(v)) {
+                    return (int) v;
                 }
-                info->nameHash = hash64(info->name.buf());
+                info->name = str;
                 return TK_NAME;
             } else if (isDigit(c)) {
                 char *p1, *p2;
@@ -125,7 +130,7 @@ int Lexer::advanceInt(TokenInfo *info) {
                 
         case '\'':
         case '"':
-            info->stringVal = readString(c);
+            info->name = readString(c);
             return TK_STRING;
         }
     }

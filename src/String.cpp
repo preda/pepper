@@ -46,7 +46,7 @@ Value String::get(Value s, Value p) {
     s64 pos = (s64) GET_NUM(p);
     unsigned size = len(s);
     if (pos < 0) { pos += size; }
-    if (pos >= size || pos < 0) { return NIL; }
+    if (pos >= size || pos < 0) { return VNIL; }
     return VALUE_(T_STR1, (unsigned char) *(GET_CSTR(s) + (unsigned)pos));
 }
 
@@ -60,7 +60,7 @@ Value String::getSlice(GC *gc, Value s, Value p1, Value p2) {
     if (pos2 < 0) { pos2 += size; }
     if (pos1 < 0) { pos1 = 0; }
     if (pos2 > size) { pos2 = size; }
-    // if (pos1 < 0 || pos2 >= size) { return NIL; }
+    // if (pos1 < 0 || pos2 >= size) { return VNIL; }
     return value(gc, GET_CSTR(s) + pos1, (pos1 < pos2) ? (unsigned)(pos2-pos1) : 0);
 }
 
@@ -119,14 +119,14 @@ Value String::method_find(GC *gc, int op, void *data, Value *stack, int nCallArg
     assert(nCallArg > 0);
     Value *p = stack, *end = p + nCallArg;
     Value v1 = *p++;
-    if (v1 == NIL) {
-        if (p >= end) { return NIL; }
+    if (IS_NIL(v1)) {
+        if (p >= end) { return VNIL; }
         v1 = *p++;
     }
-    if (p >= end) { return NIL; }
+    if (p >= end) { return VNIL; }
     Value v2 = *p++;
     if (!IS_STRING(v1) || !IS_STRING(v2)) {
-        return NIL;
+        return VNIL;
     }
     
     char *str1 = GET_CSTR(v1);

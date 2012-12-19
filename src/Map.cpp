@@ -1,3 +1,5 @@
+// Copyright (C) 2012 Mihai Preda
+
 #include "Map.h"
 #include "Array.h"
 #include "String.h"
@@ -79,14 +81,14 @@ Value Map::get(Value key) {
     unsigned h = hashCode(key) & mask;
     while (true) {
         const int pos = map[h];
-        if (pos == EMPTY) { return NIL; }
+        if (pos == EMPTY) { return VNIL; }
         if (::equals(keys[pos], key)) { return keys[pos + (n>>1)]; }
         INC(h);
     }
 }
 
 bool Map::set(Value key, Value val, bool overwrite) {
-    if (!val) {
+    if (IS_NIL(val)) {
         return remove(key);
     }
     unsigned s = size();

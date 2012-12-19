@@ -201,7 +201,7 @@ Value VM::run(Func *func, int nArg, Value *args) {
     if (int err = setjmp(jumpBuf)) {
         (void) err;
         printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code); 
-        return NIL;
+        return VNIL;
     }
 
 
@@ -290,7 +290,7 @@ CALL: {
                 nArgs = -nArgs - 1;
             }
             for (Value *p=base+nEffArgs, *end=base+nArgs; p < end; ++p) {
-                *p = NIL;
+                *p = VNIL;
             }
             if (hasEllipsis) {
                 if (nEffArgs < nArgs) {

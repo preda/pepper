@@ -28,7 +28,7 @@ struct T {
 Value eval(Pepper *pepper, const char *text) {
     Func *f = pepper->parseStatList(text);
     // printFunc(f);
-    return f ? pepper->run(f) : NIL;
+    return f ? pepper->run(f) : VNIL;
 }
 
 bool compileDecompile(Pepper *pepper, const char *text) {
@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
     GC *gc = pepper->getGC();
 
 T tests[] = {
-    T("return nil", NIL),
+    T("return nil", VNIL),
     T("return -1", VAL_NUM(-1)),
     T("return 0", VAL_NUM(0)),
     T("return \"\"", EMPTY_STRING),
@@ -83,7 +83,7 @@ T tests[] = {
 
     // bool ops
     T("var a=2 var b=3 var c=nil return a+1 && b+2 || c+3", VAL_NUM(5)),
-    T("return 1 && nil && 13", NIL),
+    T("return 1 && nil && 13", VNIL),
     T("return 13 || 14", VAL_NUM(13)),
     T("a:=0 b:=3 c:=4 return a || b || c", VAL_NUM(3)),
     T("a:=0 b:=3 c:=4 return a || (b && a) || c", VAL_NUM(4)),
@@ -92,7 +92,7 @@ T tests[] = {
     T("a:=0 b:=3 c:=4 return a || c && b", VAL_NUM(3)),
     T("a:=0 b:=3 c:=4 return (b || a) && (a || c)", VAL_NUM(4)),
     
-    T("var a=[]; a[1]=2; var b=[]; return b[1]", NIL),
+    T("var a=[]; a[1]=2; var b=[]; return b[1]", VNIL),
     
     // len
     T("return #\"foo\"==3", TRUE),
@@ -163,7 +163,7 @@ T tests[] = {
     T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::value(gc, "tralala")),
 
     // map
-    T("a:={} b:={} a[1]=13 return b[1]", NIL),
+    T("a:={} b:={} a[1]=13 return b[1]", VNIL),
     T("return {\"foo\" : 13}[\"foo\"]", VAL_NUM(13)),
     T("a := {\"foofoobar\" : 13}; return a[\"foofoobar\"]", VAL_NUM(13)),
     T("a := {}; a[2]=4; a[3]=9; return a[2]", VAL_NUM(4)),
@@ -196,7 +196,7 @@ T tests[] = {
     T("f:=string.find; return f(\"hayneedfoo\", \"need\")", VAL_NUM(3)),
     T("s:=\"hayneedfoo\"; return s.find(\"need\")", VAL_NUM(3)),
     T("return \"hayneedfoo\".find(\"needl\")", VAL_NUM(-1)),
-    T("s:=\"hayneedfoo\"; return s.find()", NIL),
+    T("s:=\"hayneedfoo\"; return s.find()", VNIL),
     T("return 'foo' == \"foo\"", TRUE),
     
 };

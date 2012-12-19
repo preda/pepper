@@ -108,7 +108,7 @@ void Parser::statement() {
 
     case TK_NAME: 
         if (lexer->lookahead() == '=') {
-            int slot = lookupSlot(lexer->info.nameHash);
+            int slot = lookupSlot(lexer->info.name);
             advance();
             consume('=');
             patchOrEmitMove(proto->localsTop+1, slot, expr(proto->localsTop));
@@ -122,7 +122,7 @@ void Parser::statement() {
 
     case TK_RETURN:
         advance();
-        emit(proto->localsTop, RET, 0, TOKEN == ';' ? NIL : expr(proto->localsTop), UNUSED);
+        emit(proto->localsTop, RET, 0, TOKEN == ';' ? VNIL : expr(proto->localsTop), UNUSED);
         break;        
 
     default: exprOrAssignStat(); break;
@@ -153,7 +153,7 @@ void Parser::exprOrAssignStat() {
 void Parser::forStat() {
     consume(TK_FOR);
     ERR(TOKEN != TK_NAME, E_FOR_NAME);
-    u64 name = lexer->info.nameHash;
+    Value name = lexer->info.name;
     int slot = proto->localsTop++;
     advance();
     consume(':'+TK_EQUAL);
@@ -220,23 +220,26 @@ void Parser::ifStat() {
 
 void Parser::varStat() {
     ERR(TOKEN != TK_NAME, E_VAR_NAME);
-    u64 name = lexer->info.nameHash;
+    Value name = lexer->info.name;
     advance();
     int top = proto->localsTop;
-    Value a = NIL;
+    Value a = VNIL;
     int aSlot = -1;
     if (TOKEN == '=' || TOKEN == ':'+TK_EQUAL) {
         advance();
         a = expr(top);
-        SymbolData s = syms->get(name);
-        if (s.kind != KIND_EMPTY && s.level == proto->level && s.slot >= 0) {
-            aSlot = s.slot; // reuse existing local with same name
+        Value s = syms->get(name);
+        int level = s & 0xff;
+        int slot  = s >> 8;
+        if (!IS_NIL(s) && level == proto->level && slot >= 0) {
+            aSlot = slot; // reuse existing local with same name
         }
     } else {
-        SymbolData s = lookupName(name);
-        if (s.kind != KIND_EMPTY) {
-            if (s.slot < 0) {
-                a = VAL_REG(s.slot); // init from upval with same name
+        Value s = lookupName(name);
+        if (!IS_NIL(s)) {
+            int slot = s >> 8;
+            if (slot < 0) {
+                a = VAL_REG(slot); // init from upval with same name
             } else {
                 return; // reuse existing local unchanged
             }
@@ -254,17 +257,33 @@ static bool isUnaryOp(int token) {
     return token=='!' || token=='-' || token=='#' || token=='~';
 }
 
-SymbolData Parser::createUpval(Proto *proto, u64 name, SymbolData sym) {
-    if (sym.level < proto->level - 1) {
-        sym = createUpval(proto->up, name, sym);
+int Parser::createUpval(Proto *proto, Value name, int level, int slot) {
+    assert(level < proto->level);
+    if (level < proto->level - 1) {
+        slot = createUpval(proto->up, name, level, slot);
     }
-    assert(sym.level == proto->level - 1);
-    proto->addUp(sym.slot);
-    return syms->set(proto->level, name, -proto->nUp());
+    // assert(level == proto->level - 1);
+    proto->addUp(slot);
+    // return syms->set(proto->level, name, -proto->nUp());
+    return -proto->nUp();
 }
 
-SymbolData Parser::lookupName(u64 name) {
-    SymbolData s = syms->get(name);
+int Parser::lookupName(Value name) {
+    Value s = syms->get(name);
+    if (IS_NIL(s)) {
+        return 256; //marker not found
+    }
+    int v = (int) s;
+    int level = v & 0xff;
+    int slot  = v >> 8;
+    assert(level <= proto->level);
+    if (level < proto->level) {
+        slot = createUpval(proto, name, level, slot);
+    }
+    assert(slot < proto->localsTop);
+    return slot;
+    
+    /*
     if (s.kind != KIND_EMPTY) {
         assert(s.level <= proto->level);
         if (s.level < proto->level) {
@@ -273,12 +292,13 @@ SymbolData Parser::lookupName(u64 name) {
     }
     assert(s.slot < proto->localsTop);
     return s;
+    */
 }
 
-int Parser::lookupSlot(u64 name) {
-    SymbolData sym = lookupName(name);
-    ERR(sym.kind == KIND_EMPTY, E_NAME_NOT_FOUND);
-    return sym.slot;
+int Parser::lookupSlot(Value name) {
+    int slot = lookupName(name);
+    ERR(slot == 256, E_NAME_NOT_FOUND);
+    return slot;
 }
 
 Value Parser::mapExpr(int top) {
@@ -296,7 +316,7 @@ Value Parser::mapExpr(int top) {
         if (TOKEN == '}') { break; }
         Value k;
         if (TOKEN == TK_NAME && lexer->lookahead() == '=') {
-            k = String::value(gc, lexer->info.name.buf(), lexer->info.name.size()-1);
+            k = lexer->info.name;
             consume(TK_NAME);
             consume('=');
         } else {
@@ -347,26 +367,26 @@ Value Parser::arrayExpr(int top) {
 void Parser::parList() {
     consume('(');
     ++proto->nArgs;
-    syms->set(hash64("this"), proto->localsTop++);
+    syms->set(String::value(gc, "this"), proto->localsTop++);
     ARG_LIST(if (TOKEN == TK_NAME) {
             ++proto->nArgs;
-            syms->set(lexer->info.nameHash, proto->localsTop++);
+            syms->set(lexer->info.name, proto->localsTop++);
         }
         consume(TK_NAME););
     consume(')');
 }
 
 Value Parser::suffixedExpr(int top) {
-    Value a = NIL;
+    Value a = VNIL;
     bool indexOnly = false;
     bool callOnly  = false;
     switch (lexer->token) {
     case TK_INTEGER: a = VAL_NUM(lexer->info.intVal); advance(); return a;
     case TK_DOUBLE:  a = VAL_NUM(lexer->info.doubleVal); advance(); return a;
-    case TK_NIL:     a = NIL; advance(); return a;
+    case TK_NIL:     a = VNIL; advance(); return a;
 
     case TK_NAME: {
-        u64 name = lexer->info.nameHash;
+        Value name = lexer->info.name;
         advance();
         a = VAL_REG(lookupSlot(name));
         proto->patchPos = -1;
@@ -380,7 +400,7 @@ Value Parser::suffixedExpr(int top) {
         break;
 
     case TK_STRING:
-        a = lexer->info.stringVal;
+        a = lexer->info.name;
         advance();
         indexOnly = true;
         break;
@@ -420,12 +440,12 @@ Value Parser::suffixedExpr(int top) {
         case '.':
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
-            emit(top+2, GETF, top+1, a, String::value(gc, lexer->info.name.buf(), lexer->info.name.size()-1));
+            emit(top+2, GETF, top+1, a, lexer->info.name);
             advance();
             a = TOKEN == '(' ? callExpr(top+2, VAL_REG(top+1), a) : VAL_REG(top+1);
             break;
 
-        case '(': a = callExpr(top, a, NIL); break;
+        case '(': a = callExpr(top, a, VNIL); break;
 
         default: return a;
         }
@@ -455,23 +475,26 @@ Proto *Parser::parseProto(int *outSlot) {
     consume(TK_FUNC);
     int slot = -1;
     if (TOKEN == TK_NAME) {
-        u64 name = lexer->info.nameHash;
+        syms->set(lexer->info.name, slot=proto->localsTop++);
         advance();
-        
-        SymbolData s = syms->get(name);
-        if (s.kind != KIND_EMPTY && s.level == proto->level && s.slot >= 0) {
-            slot = s.slot;
+    }
+        /*
+        Value s = syms->get(name);
+        int level = s & 0xff;
+        int sSlot  = s >> 8;
+        if (!IS_NIL(s) && level == proto->level && sSlot >= 0) {
+            slot = sSlot;
         } else {
             slot = proto->localsTop++;
             syms->set(name, slot);
         }
-    }
+        */
 
     proto = Proto::alloc(gc, proto);
     syms->pushContext();
     parList();
     block();
-    emit(0, RET, 0, NIL, UNUSED);
+    emit(0, RET, 0, VNIL, UNUSED);
     proto->freeze();
     Proto *funcProto = proto;
     syms->popContext();
@@ -508,7 +531,7 @@ static Value foldUnary(int op, Value a) {
         case '#': return IS_ARRAY(a) || IS_STRING(a) || IS_MAP(a) ? VAL_NUM(len(a)) : ERROR(E_WRONG_TYPE);
         }
     }
-    return NIL;
+    return VNIL;
 }
 
 static Value foldBinary(GC *gc, int op, Value a, Value b) {
@@ -522,13 +545,13 @@ static Value foldBinary(GC *gc, int op, Value a, Value b) {
         case '^': return doPow(a, b);            
         }
     }
-    return NIL;
+    return VNIL;
 }
 
 Value Parser::codeUnary(int top, int op, Value a) {
     {
         Value c = foldUnary(op, a);
-        if (c != NIL) { return c; }
+        if (!IS_NIL(c)) { return c; }
     }
     Value b = UNUSED;
     int opcode = 0;
@@ -546,7 +569,7 @@ Value Parser::codeUnary(int top, int op, Value a) {
 Value Parser::codeBinary(int top, int op, Value a, Value b) {
     {
         Value c = foldBinary(gc, op, a, b);
-        if (c != NIL) { return c; }
+        if (!IS_NIL(c)) { return c; }
     }
     Value c;
     int opcode = 0;
@@ -743,7 +766,7 @@ static bool isShortInt(Value a) {
 }
 
 Value Parser::mapSpecialConsts(Value a) {
-    if (a == NIL) {
+    if (IS_NIL(a)) {
         return VAL_REG(UP_NIL);
     } else if (a == ZERO) {
         return VAL_REG(UP_ZERO);

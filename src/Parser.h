@@ -20,9 +20,9 @@ class Parser {
     Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();
     
-    SymbolData createUpval(Proto *proto, u64 name, SymbolData sym);
-    SymbolData lookupName(u64 name);
-    int lookupSlot(u64 name);
+    int createUpval(Proto *proto, Value name, int level, int slot);
+    int lookupName(Value name);
+    int lookupSlot(Value name);
 
     int  emitHole();
     void emit(unsigned top, int op, int dest, Value a, Value b);

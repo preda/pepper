@@ -178,13 +178,13 @@ static Value ffiConstructInt(GC *gc, Value *stack, int nCallArg) {
     }
     void *handle = dlopen(p, 0);
     void (*func)() = (void(*)()) dlsym(handle, GET_CSTR(a));
-    if (!func) { return NIL; }
+    if (!func) { return VNIL; }
     CFunc *cfunc = CFunc::alloc(gc, (tfunc) ffiCall, sizeof(FFIData));
     FFIData *d = (FFIData *) cfunc->data;
     d->func = func;
     d->gc = gc;
     int nArg = d->nArg = parseTypesC(GET_CSTR(b), 8, d->argType, &d->retType, &d->hasEllipsis);
-    if (nArg < 0) { return NIL; }
+    if (nArg < 0) { return VNIL; }
     makeFfiSignature(d->ffiArgs, nArg, d->argType);
     if (!d->hasEllipsis) {
         int ret = ffi_prep_cif(&d->cif, FFI_DEFAULT_ABI, nArg, ffiTypes[d->retType], d->ffiArgs);
@@ -194,11 +194,11 @@ static Value ffiConstructInt(GC *gc, Value *stack, int nCallArg) {
 }
 
 Value ffiConstruct(GC *gc, int op, void *data, Value *stack, int nCallArg) {
-    return op == 0 ? ffiConstructInt(gc, stack, nCallArg) : NIL;
+    return op == 0 ? ffiConstructInt(gc, stack, nCallArg) : VNIL;
 }
 
 Value ffiCall(GC *gc, int op, FFIData *d, Value *stack, int nCallArg) {
-    if (op != 0) { return NIL; }
+    if (op != 0) { return VNIL; }
     ++stack;
     --nCallArg;
     const int nFixArg = d->nArg;
@@ -266,7 +266,7 @@ Value ffiCall(GC *gc, int op, FFIData *d, Value *stack, int nCallArg) {
     } ret;
     ffi_raw_call(&d->cif, d->func, &ret, args);
 
-    Value v = NIL;
+    Value v = VNIL;
     switch (d->retType) {
     case INT:      v = VAL_NUM(ret.i); break;
     case LLONG:    v = VAL_NUM(ret.v); break;

@@ -1,3 +1,5 @@
+// Copyright (C) 2012 Mihai Preda
+
 #pragma once
 
 #include "Value.h"

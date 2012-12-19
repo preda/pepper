@@ -51,7 +51,7 @@ bool Array::equals(Array *a) {
 Value Array::_get(s64 pos) { 
     unsigned sz = size();
     if (pos < 0) { pos += sz; }
-    if (pos >= sz || pos < 0) { return NIL; } // index out of range
+    if (pos >= sz || pos < 0) { return VNIL; } // index out of range
     return vect.get(pos); 
 }
 
