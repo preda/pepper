@@ -284,15 +284,21 @@ CALL: {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
-            bool hasEllipsis = false;
-            if (nArgs < 0) {
-                hasEllipsis = true;
+            bool hasEllipsis = nArgs < 0;
+            if (hasEllipsis) {
                 nArgs = -nArgs - 1;
             }
-            for (Value *p=base+nEffArgs, *end=base+nArgs; p < end; ++p) {
+            for (Value *p = base + nEffArgs, *end = base + nArgs; p < end; ++p) {
                 *p = VNIL;
             }
             if (hasEllipsis) {
+                Array *a = Array::alloc(gc);
+                for (Value *p = base + nArgs, *end = base + nEffArgs; p < end; ++p) {
+                    a->push(*p);
+                }
+                base[nArgs] = VAL_OBJ(a);
+            }
+            /*
                 if (nEffArgs < nArgs) {
                     base[nArgs-1] = VAL_OBJ(Array::alloc(gc));
                 } else {
@@ -303,7 +309,8 @@ CALL: {
                     }
                     base[nArgs-1] = VAL_OBJ(a);
                 }
-            }
+            */
+
             RetInfo *ret = retInfo.push();
             ret->pc    = pc;
             ret->base  = regs - stack;

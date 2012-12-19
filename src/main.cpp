@@ -199,6 +199,10 @@ T tests[] = {
     T("s:=\"hayneedfoo\"; return s.find()", VNIL),
     T("return 'foo' == \"foo\"", TRUE),
     
+    // vararg
+    T("return func(*args) { return #args }([13, 15])", VAL_NUM(1)),
+    T("func foobar(*args) { return args[-1] } return foobar(13, 15)", VAL_NUM(15)),
+    T("func sum(*args) { s:=0; for i := 0:#args { s = s + args[i] }; return s }; return sum(3, 5, 7)", VAL_NUM(3+5+7)),
 };
 
     bool verbose = false;
@@ -231,7 +235,7 @@ T tests[] = {
             assert(argc > 2);
             int n = atoi(argv[2]);
             text = tests[n].source;
-            eval(pepper, text);
+            // eval(pepper, text);
             compileDecompile(pepper, text);
             ++argv;
             --argc;

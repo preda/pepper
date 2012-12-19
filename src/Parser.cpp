@@ -175,7 +175,9 @@ void Parser::forStat() {
     int pos1 = emitHole();
     int pos2 = HERE;
     syms->set(name, slot);
+    proto->localsTop++;
     block();
+    //TODO assert proto->localsTop reverted
     emitJump(HERE, LOOP, VAL_REG(slot), pos2);
     emitJump(pos1, FOR,  VAL_REG(slot), HERE);
 }
@@ -368,12 +370,22 @@ void Parser::parList() {
     consume('(');
     ++proto->nArgs;
     syms->set(String::value(gc, "this"), proto->localsTop++);
-    ARG_LIST(if (TOKEN == TK_NAME) {
-            ++proto->nArgs;
-            syms->set(lexer->info.name, proto->localsTop++);
-        }
-        consume(TK_NAME););
+    bool hasEllipsis = false;
+    ARG_LIST(
+             if (TOKEN == '*') {
+                 advance();
+                 hasEllipsis = true;
+             }
+             ERR(TOKEN != TK_NAME, E_SYNTAX);
+             ++proto->nArgs;
+             syms->set(lexer->info.name, proto->localsTop++);
+             advance();
+             );
     consume(')');
+    if (hasEllipsis) {
+        assert(proto->nArgs > 0);
+        proto->nArgs = -proto->nArgs;
+    }
 }
 
 Value Parser::suffixedExpr(int top) {
