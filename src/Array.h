@@ -8,10 +8,6 @@ class GC;
 class Array {
     Array(int iniSize);
 
-    Value _get(s64 pos);
-    void  _set(s64 pos, Value val);
-
-    void append(Value *buf, int size) { vect.append(buf, size); }
     void append(Array *a) { append(a->buf(), a->size()); }
     void append(char *s, int size);
 
@@ -24,11 +20,18 @@ class Array {
     static Array *alloc(GC *gc, int iniSize = 0);
     void traverse(GC *gc);
 
-    Value get(Value pos);
-    void  set(Value pos, Value v);
+    Value getI(int pos);
+    Value getV(Value pos);
 
-    Value getSlice(GC *gc, Value pos1, Value pos2);
-    void setSlice(Value pos1, Value pos2, Value v);
+    void  setI(int pos, Value val);
+    void  setV(Value pos, Value v);
+
+    Value getSliceV(GC *gc, Value pos1, Value pos2);
+    Value getSliceI(GC *gc, int pos1, int pos2);
+
+    void setSliceV(Value pos1, Value pos2, Value v);
+    void setSliceI(int pos1, int pos2, Value v);
+    void append(Value *buf, int size) { vect.append(buf, size); }
     
     void push(Value val) { vect.push(val); }
     unsigned size()      { return vect.size(); }

@@ -48,30 +48,32 @@ bool Array::equals(Array *a) {
     return true;
 }
 
-Value Array::_get(s64 pos) { 
-    unsigned sz = size();
+Value Array::getI(int pos) { 
+    int sz = size();
     if (pos < 0) { pos += sz; }
     if (pos >= sz || pos < 0) { return VNIL; } // index out of range
     return vect.get(pos); 
 }
 
-void Array::_set(s64 pos, Value v) {
-    unsigned sz = size();
+void Array::setI(int pos, Value v) {
+    int sz = size();
     if (pos < 0) { pos += sz; }
     ERR(pos < 0, E_SET_NEGATIVE_INDEX);
-    vect.set((unsigned) pos, v);
+    vect.set(pos, v);
 }
 
-Value Array::get(Value pos) {
+Value Array::getV(Value pos) {
     ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
-    return _get((s64) GET_NUM(pos));
+    return getI(GET_NUM(pos));
 }
 
-Value Array::getSlice(GC *gc, Value p1, Value p2) {
-    ERR(!IS_NUM(p1) || !IS_NUM(p2), E_INDEX_NOT_NUMBER);
-    s64 pos1 = (s64) GET_NUM(p1);
-    s64 pos2 = (s64) GET_NUM(p2);
-    unsigned sz = size();
+void Array::setV(Value pos, Value v) {
+    ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
+    setI(GET_NUM(pos), v); 
+}
+
+Value Array::getSliceI(GC *gc, int pos1, int pos2) {
+    int sz = size();
     if (pos1 < 0) { 
         pos1 += sz;
         if (pos1 < 0) {
@@ -88,13 +90,13 @@ Value Array::getSlice(GC *gc, Value p1, Value p2) {
     return VAL_OBJ(a);
 }
 
-void Array::setSlice(Value pos1, Value pos2, Value v) {
-    // TODO
+Value Array::getSliceV(GC *gc, Value p1, Value p2) {
+    ERR(!IS_NUM(p1) || !IS_NUM(p2), E_INDEX_NOT_NUMBER);
+    return getSliceI(gc, GET_NUM(p1), GET_NUM(p2));
 }
 
-void Array::set(Value pos, Value v) {
-    ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
-    _set((s64) GET_NUM(pos), v); 
+void Array::setSliceV(Value pos1, Value pos2, Value v) {
+    // TODO
 }
 
 void Array::append(char *s, int size) {

@@ -388,6 +388,37 @@ void Parser::parList() {
     }
 }
 
+Value Parser::callExpr(int top, Value a, Value self) {
+    consume('(');
+    int base = top;
+    ERR(!IS_REG(a), E_CALL_NOT_FUNC);
+    if (IS_REG(a) && (int)a == base) { ++base; }
+    emit(base, MOVE, base, self, UNUSED);
+    // patchOrEmitMove(base, base, self);
+    int nArg = 1;
+    int starPos = 0;
+    ARG_LIST(
+             if (TOKEN == '*') {                 
+                 ERR(starPos, E_ELLIPSIS);
+                 advance();
+                 starPos = nArg;
+             }
+             int argPos = base + nArg;
+             patchOrEmitMove(argPos, argPos, expr(argPos));
+             ++nArg;
+             );
+    consume(')');
+    ERR(starPos && starPos != nArg - 1, E_ELLIPSIS);
+    if (starPos) {
+        nArg = -nArg;
+    }
+    emit(0, CALL, base, a, VAL_NUM(nArg));
+    if (base != top) {
+        emit(base+1, MOVE, top, VAL_REG(base), UNUSED);
+    }
+    return VAL_REG(top);
+}
+
 Value Parser::suffixedExpr(int top) {
     Value a = VNIL;
     bool indexOnly = false;
@@ -462,25 +493,6 @@ Value Parser::suffixedExpr(int top) {
         default: return a;
         }
     }
-}
-
-Value Parser::callExpr(int top, Value a, Value self) {
-    consume('(');
-    int base = top;
-    ERR(!IS_REG(a), E_CALL_NOT_FUNC);
-    if (IS_REG(a) && (int)a == base) { ++base; }
-    emit(base, MOVE, base, self, UNUSED);
-    // patchOrEmitMove(base, base, self);
-    int nArg = 1;
-    ARG_LIST(int argPos = base + nArg;
-             patchOrEmitMove(argPos, argPos, expr(argPos));
-             ++nArg;);
-    consume(')');
-    emit(0, CALL, base, a, VAL_NUM(nArg));
-    if (base != top) {
-        emit(base+1, MOVE, top, VAL_REG(base), UNUSED);
-    }
-    return VAL_REG(top);
 }
 
 Proto *Parser::parseProto(int *outSlot) {

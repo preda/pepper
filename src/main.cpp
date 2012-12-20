@@ -203,6 +203,8 @@ T tests[] = {
     T("return func(*args) { return #args }([13, 15])", VAL_NUM(1)),
     T("func foobar(*args) { return args[-1] } return foobar(13, 15)", VAL_NUM(15)),
     T("func sum(*args) { s:=0; for i := 0:#args { s = s + args[i] }; return s }; return sum(3, 5, 7)", VAL_NUM(3+5+7)),
+    T("func sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)", VAL_NUM(11)),
+    T("func foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
 };
 
     bool verbose = false;

@@ -77,7 +77,7 @@ static Value doSHR(Value v, int shift) {
 
 static Value getIndex(Value a, Value b) {
     return 
-        IS_ARRAY(a)  ? ARRAY(a)->get(b)  :
+        IS_ARRAY(a)  ? ARRAY(a)->getV(b)  :
         IS_STRING(a) ? String::get(a, b) :
         IS_MAP(a)    ? MAP(a)->get(b)    :
         ERROR(E_NOT_INDEXABLE);
@@ -94,7 +94,7 @@ Value VM::getField(Value a, Value b) {
 static void setIndex(Value c, Value a, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);
     if (IS_ARRAY(c)) {
-        ARRAY(c)->set(a, b);
+        ARRAY(c)->setV(a, b);
     } else if (IS_MAP(c)){
         MAP(c)->set(a, b);
     } else {
@@ -108,7 +108,7 @@ static void setField(Value c, Value a, Value b) {
 
 static Value getSlice(GC *gc, Value a, Value b1, Value b2) {
     return 
-        IS_ARRAY(a)  ? ARRAY(a)->getSlice(gc, b1, b2) :
+        IS_ARRAY(a)  ? ARRAY(a)->getSliceV(gc, b1, b2) :
         IS_STRING(a) ? String::getSlice(gc, a, b1, b2) :
         ERROR(E_NOT_SLICEABLE);
 }
@@ -116,7 +116,7 @@ static Value getSlice(GC *gc, Value a, Value b1, Value b2) {
 static void setSlice(Value c, Value a1, Value a2, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);
     ERR(!IS_ARRAY(c), E_NOT_SLICEABLE);
-    ARRAY(c)->setSlice(a1, a2, b);
+    ARRAY(c)->setSliceV(a1, a2, b);
 }
 
 VM::VM(Pepper *pepper) : pepper(pepper), gc(pepper->getGC())
@@ -277,8 +277,21 @@ CALL: {
         const int type = O_TYPE(A);
         ERR(!(type == O_FUNC || type == O_CFUNC), E_CALL_NOT_FUNC);
 
-        const int nEffArgs = OB(code);
+        int nEffArgs = OSB(code);
         Value *base = ptrC;
+
+        assert(nEffArgs != 0);
+        Array *tail  = 0;
+        int tailPos  = 0;
+        int tailSize = 0;
+        if (nEffArgs < 0) { //last arg is *args
+            nEffArgs = -nEffArgs;
+            Value v = base[nEffArgs - 1];
+            ERR(!IS_ARRAY(v), E_ELLIPSIS);
+            tail = ARRAY(v);
+            --nEffArgs;
+            tailSize = tail->size();
+        }
 
         if (type == O_FUNC) {
             Func *f = (Func *) GET_OBJ(A);
@@ -288,6 +301,14 @@ CALL: {
             if (hasEllipsis) {
                 nArgs = -nArgs - 1;
             }
+            if (nEffArgs < nArgs && tailSize) {
+                int newEffArgs = min(nEffArgs + tailSize, nArgs);
+                tailPos = newEffArgs - nEffArgs;
+                for (int i = 0; i < tailPos; ++i) {
+                    base[nEffArgs + i] = tail->getI(i);
+                }
+                nEffArgs = newEffArgs;
+            }
             for (Value *p = base + nEffArgs, *end = base + nArgs; p < end; ++p) {
                 *p = VNIL;
             }
@@ -296,20 +317,11 @@ CALL: {
                 for (Value *p = base + nArgs, *end = base + nEffArgs; p < end; ++p) {
                     a->push(*p);
                 }
+                if (tailPos < tailSize) {
+                    a->append(tail->buf() + tailPos, tailSize - tailPos);
+                }
                 base[nArgs] = VAL_OBJ(a);
             }
-            /*
-                if (nEffArgs < nArgs) {
-                    base[nArgs-1] = VAL_OBJ(Array::alloc(gc));
-                } else {
-                    int nExtra = nEffArgs - nArgs;
-                    Array *a = Array::alloc(gc, nExtra);
-                    for (Value *p=base+nArgs-1, *end=base+nEffArgs; p < end; ++p) {
-                        a->push(*p);
-                    }
-                    base[nArgs-1] = VAL_OBJ(a);
-                }
-            */
 
             RetInfo *ret = retInfo.push();
             ret->pc    = pc;
@@ -320,12 +332,17 @@ CALL: {
             pc   = proto->code.buf();
             activeFunc = f;
         } else { // O_CFUNC
+            ERR(tailSize > 128, E_ELLIPSIS);
+            for (int i = 0; i < tailSize; ++i) {
+                base[nEffArgs + i] = tail->getI(i);
+            }
+            nEffArgs += tailSize;
             CFunc *cf = (CFunc *) GET_OBJ(A);
             cf->call(gc, base, nEffArgs);
         }
         STEP;
     }
-
+    
  MOVEUP: {
         const int slot = regs + 256 - ptrC;
         assert(slot > N_CONST_UPS); // E_UP_CONST);
