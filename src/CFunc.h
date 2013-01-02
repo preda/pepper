@@ -11,6 +11,7 @@ class CFunc {
 
     CFunc(tfunc f);
 
+ public: 
     enum {
         CFUNC_CALL   = 0,
         CFUNC_INIT   = 1,
@@ -18,7 +19,6 @@ class CFunc {
         CFUNC_GC_TRAVERSE = 3,
     };
 
- public: 
     byte data[0];
 
     ~CFunc();

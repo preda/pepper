@@ -15,7 +15,7 @@ Array::~Array() {
 }
 
 void Array::traverse(GC *gc) {
-    gc->markVector(vect.buf(), vect.size());
+    gc->markValVect(vect.buf(), vect.size());
 }
 
 Array *Array::alloc(GC *gc, Vector<Value> *v) {

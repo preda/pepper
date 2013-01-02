@@ -16,6 +16,8 @@ class Parser {
     Lexer *lexer;
     Pepper *context;
     GC *gc;
+    Value EMPTY_ARRAY, EMPTY_MAP;
+
 
     Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();

@@ -16,6 +16,7 @@ int catchError();
 
 #define min(a, b) ((a)<(b)?(a):(b))
 #define max(a, b) ((a)<(b)?(b):(a))
+#define ASIZE(x) (sizeof(x)/sizeof(x[0]))
 
 enum {
 #define _(x) E_##x

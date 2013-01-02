@@ -10,28 +10,20 @@
 #include "CFunc.h"
 #include "FFI.h"
 #include "String.h"
-#include "NameValue.h"
+// #include "NameValue.h"
 
-#define ASIZE(x) (sizeof(x)/sizeof(x[0]))
+#include <assert.h>
 
 Pepper::Pepper() :
     gc(new GC()),
-    syms(new SymbolTable(gc)),
-    vm(new VM(this)),
-
-    EMPTY_ARRAY(VAL_OBJ(Array::alloc(gc))),
-    EMPTY_MAP(VAL_OBJ(Map::alloc(gc)))
+    vm(new VM(this))
 {
-    NameValue stringMethods[] = {
-        NameValue("find", CFunc::value(gc, String::method_find)),
-    };
-
-    builtinString = Map::value(gc, ASIZE(stringMethods), stringMethods);
-    
+    assert(sizeof(Array) == 2 * sizeof(long));
+    /*
     NameValue builtins[] = {
         NameValue("type",   VNIL),
         NameValue("print",  VNIL),
-        NameValue("string", builtinString),
+        NameValue("string", Map::value(gc, ASIZE(stringMethods), stringMethods)),
         NameValue("ffi",    CFunc::value(gc, ffiConstruct)),
 
         NameValue(EMPTY_MAP),
@@ -54,16 +46,12 @@ Pepper::Pepper() :
         ups[i] = nv->value;
     }
     upsTop = ups + nUps;
+    */
 }
 
 Pepper::~Pepper() {
     delete gc;
     gc = 0;
-    delete syms;
-    syms = 0;
-    delete ups;
-    ups = 0;
-    upsTop = 0;
     delete vm;
     vm = 0;
 }
@@ -72,16 +60,47 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
     return vm->run(f, nArg, args);
 }
 
-Func *Pepper::parseFunc(const char *text) {
-    syms->pushContext();
-    Func *f = Parser::parseFunc(this, syms, upsTop, text);
-    syms->popContext();
+Func *Pepper::parse(const char *text, bool isFunc) {
+    Value ups[] = {
+        VNIL,
+        VNIL,
+        // Map::value(gc, ASIZE(stringMethods), stringMethods),
+        CFunc::value(gc, ffiConstruct),
+        VAL_OBJ(Map::alloc(gc)), VAL_OBJ(Array::alloc(gc)), EMPTY_STRING,
+        VAL_NUM(-1), ONE, ZERO,
+        VNIL,
+    };
+
+    const char *upNames[] = {
+        "type",
+        "print",
+        // "string",
+        "ffi",
+        0, 0, 0,
+        0, 0, 0,
+        "nil",
+    };
+    const int nUps = ASIZE(ups);
+    assert(nUps == ASIZE(upNames));
+
+    SymbolTable syms(gc);
+    for (int i = 0; i < nUps; ++i) {
+        if (upNames[i]) {
+            syms.set(String::value(gc, upNames[i]), i - nUps);
+        }
+    }
+    syms.pushContext();
+    Func *f = isFunc ? 
+        Parser::parseFunc(this, &syms, ups + nUps, text) :
+        Parser::parseStatList(this, &syms, ups + nUps, text);
+    syms.popContext();
     return f;
 }
 
+Func *Pepper::parseFunc(const char *text) {
+    return parse(text, true);
+}
+
 Func *Pepper::parseStatList(const char *text) {
-    syms->pushContext();
-    Func *f = Parser::parseStatList(this, syms, upsTop, text);
-    syms->popContext();
-    return f;
+    return parse(text, false);
 }

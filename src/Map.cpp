@@ -14,14 +14,13 @@
 #include <assert.h>
 
 void Map::traverse(GC *gc) {
-    gc->markVector(buf, size());
-    gc->markVector(buf+(n>>1), size());
+    gc->markValVect(buf, size());
+    gc->markValVect(buf+(n>>1), size());
 }
 
-Map::Map(const unsigned iniSize) :
-    _size(0)
-{
+Map::Map(const unsigned iniSize) {
     ((Object *) this)->setType(O_MAP);
+    setSize(iniSize); 
     n = 8;
     while ((iniSize << 1) > n) {
         n += n;
@@ -66,10 +65,9 @@ void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
 }
 
 Map *Map::copy(GC *gc) {
-    Map *m = alloc(gc, 0);
-    m->setSize(size());
-    m->n = n;
-    m->buf = (Value *) malloc(n * 12);
+    Map *m = alloc(gc, size());
+    assert(m->n <= n);
+    while (m->n < n) { grow(); }
     memcpy(m->buf, buf, n * 12);
     return m;
 }

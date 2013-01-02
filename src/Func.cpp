@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 void Func::traverse(GC *gc) { 
-    gc->markVector(ups, nUp());
+    gc->markValVect(ups, nUp());
     gc->mark((Object *) proto);
 }
 

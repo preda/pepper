@@ -15,7 +15,7 @@ SymbolTable::~SymbolTable() {
 }
 
 int SymbolTable::pushContext() {
-    printf("SymbolTable push level %d\n", level+1);
+    // printf("SymbolTable push level %d\n", level+1);
     return ++level;    
 }
 
@@ -30,7 +30,7 @@ int SymbolTable::popContext() {
     for (UndoEntry *p = buf + n - 1; p >= buf; --p) {
         undo(p);
     }
-    printf("SymbolTable pop level %d\n", level);
+    // printf("SymbolTable pop level %d\n", level);
     return --level;
 }
 

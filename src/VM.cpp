@@ -8,6 +8,8 @@
 #include "Value.h"
 #include "Object.h"
 #include "Pepper.h"
+#include "GC.h"
+#include "NameValue.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -85,7 +87,7 @@ static Value getIndex(Value a, Value b) {
 
 Value VM::getField(Value a, Value b) {
     if (IS_STRING(a)) {
-        return getField(pepper->builtinString, b);
+        return getField(stringMethods, b);
     } else {
         return getIndex(a, b);
     }
@@ -123,6 +125,12 @@ VM::VM(Pepper *pepper) : pepper(pepper), gc(pepper->getGC())
 {
     stackSize = 512;
     stack = (Value *) calloc(stackSize, sizeof(Value));
+    
+    NameValue strMethods[] = {
+        NameValue("find", CFunc::value(gc, String::method_find)),
+    };
+
+    stringMethods = Map::value(gc, ASIZE(strMethods), strMethods);
 }
 
 VM::~VM() {
@@ -191,6 +199,17 @@ static void copyUpvals(Func *f, Value *regs) {
     // memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
 }
 
+void VM::traverse() {
+    GC *gc = this->gc;
+    for (RetInfo *p = retInfo.buf(), *end = p + retInfo.size(); p < end; ++p) {
+        gc->mark((Object *) p->func);
+    }
+    if (activeFunc) {
+        gc->mark((Object *) activeFunc);
+    }
+    gc->mark(GET_OBJ(stringMethods));
+}
+
 extern __thread jmp_buf jumpBuf;
 Value VM::run(Func *func, int nArg, Value *args) {
     unsigned code = 0;
@@ -223,7 +242,7 @@ Value VM::run(Func *func, int nArg, Value *args) {
 
     STEP;
 
- JMP:                          pc += OD(code);    STEP;
+ JMP:  pc += OD(code);    STEP;
  JT:   if (!IS_FALSE(*ptrC)) { pc += OD(code);  } STEP;
  JF:   if ( IS_FALSE(*ptrC)) { pc += OD(code);  } STEP;
  JLT:  if (lessThan(A, B))   { pc += OSC(code); } STEP;
@@ -239,7 +258,7 @@ Value VM::run(Func *func, int nArg, Value *args) {
 
  LOOP: {
         const double counter = GET_NUM(*ptrC) + 1;
-        if (counter <  GET_NUM(*(ptrC+1))) { pc += OD(code); }
+        if (counter < GET_NUM(*(ptrC+1))) { pc += OD(code); }
         *ptrC = VAL_NUM(counter);
         STEP;
     }
@@ -263,6 +282,9 @@ SETF: setField(*ptrC, A, B);  STEP;
 RET: {
         regs[0] = A;
         if (!retInfo.size()) { return A; }
+        activeFunc = 0;
+        gc->maybeCollect(this, stack, regs-stack+1);
+
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
         regs       = stack + ri->base;

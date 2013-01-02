@@ -1,12 +1,12 @@
 #include "Parser.h"
 #include "Proto.h"
-#include "SymbolTable.h"
 #include "Decompile.h"
 #include "VM.h"
 #include "String.h"
 #include "Array.h"
 #include "Map.h"
 #include "Pepper.h"
+#include "GC.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -59,8 +59,8 @@ T tests[] = {
     T("return -1", VAL_NUM(-1)),
     T("return 0", VAL_NUM(0)),
     T("return \"\"", EMPTY_STRING),
-    T("return []", pepper->EMPTY_ARRAY),
-    T("return {}", pepper->EMPTY_MAP),
+    T("return #[]", VAL_NUM(0)),
+    T("return #{}", VAL_NUM(0)),
 
     T("f:=func() { return 1 } return f()", ONE),
     T("f:=func(x) { return -1 } return f(5)", VAL_NUM(-1)),
@@ -73,7 +73,7 @@ T tests[] = {
     T("a:=2; a=3; b:=a; return a", VAL_NUM(3)),
 
     // strings
-    T("var a = \"foo\" var b = \"bar\" return a + b", String::value(gc, "foobar")),
+    T("var a = \"foo\" var b = \"bar\" return a + b == 'foobar'", TRUE),
 
     // comparison
     T("return \"foo\" < \"bar\"", FALSE),
@@ -115,7 +115,7 @@ T tests[] = {
 
     // while
     T("i:=0; s:=0 while i < 4 { i = i + 1; s = s + i + 1 } return s", VAL_NUM(14)),
-    T("i:=0 s:=0 while i < 1000000 { s=s+i+1 i=i+1 } return s", VAL_NUM(500000500000ll)),
+    T("i:=0 s:=0 while i < 100000 { s=s+i+1 i=i+1 } return s",     VAL_NUM(5000050000ll)),
     T("i:=0 s:=0 while i < 100000 { s=s+i+0.5 i=i+0.5 } return s", VAL_NUM(10000050000)),
 
     T("s:=0 for i:=0:5 {s = s + i}; return s", VAL_NUM(10)),
@@ -140,7 +140,7 @@ T tests[] = {
 
     // recursion
     T("func f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
-    T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(1000000)", VAL_NUM(500000500001)),
+    T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(100000)", VAL_NUM(5000050001)),
 
     // ternary op
     T("return 1 ? 2 : 3", VAL_NUM(2)),
@@ -160,7 +160,7 @@ T tests[] = {
     // array
     T("var a = [3, 4, 5]; return a[2]", VAL_NUM(5)),
     T("var foobar = [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
-    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]", String::value(gc, "tralala")),
+    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]=='tralala'", TRUE),
 
     // map
     T("a:={} b:={} a[1]=13 return b[1]", VNIL),
@@ -184,7 +184,7 @@ T tests[] = {
     // slice string
     T("return \"foo\"[-5:-1]", String::value(gc, "fo")),
     T("return \"aoeuaoeu\"[-100:1] == \"a\"", TRUE),
-    T("a:=\"foobarrar\" b:=3 c:=a[b:-b] return c + c", String::value(gc, "barbar")),
+    T("a:=\"foobarrar\" b:=3 c:=a[b:-b] d:= c + c; return 'barbar'==d", TRUE),
     
     // this call
     T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
@@ -193,7 +193,7 @@ T tests[] = {
     T("return ({f=func() { return this ? 2*this.barbar : 4 }, barbar=5}).f()", VAL_NUM(10)),
     
     // string
-    T("f:=string.find; return f(\"hayneedfoo\", \"need\")", VAL_NUM(3)),
+    T("f:=''.find; return f(\"hayneedfoo\", \"need\")", VAL_NUM(3)),
     T("s:=\"hayneedfoo\"; return s.find(\"need\")", VAL_NUM(3)),
     T("return \"hayneedfoo\".find(\"needl\")", VAL_NUM(-1)),
     T("s:=\"hayneedfoo\"; return s.find()", VNIL),
@@ -230,7 +230,6 @@ T tests[] = {
             }
         }
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);
-        return nFail;
     } else {
         const char *text;        
         if (!strcmp(argv[1], "-t")) {
@@ -241,7 +240,6 @@ T tests[] = {
             compileDecompile(pepper, text);
             ++argv;
             --argc;
-            return 0;
         } else if (!strcmp(argv[1], "-f")) {
             assert(argc > 2);
             FILE *fi = fopen(argv[2], "rb");

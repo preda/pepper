@@ -15,4 +15,6 @@ class Object {
     unsigned type() { return _size & 0xf; }
     unsigned size() { return _size >> 4; }
     void setType(unsigned t);
+
+    static const char *getTypeName(int type);
 };

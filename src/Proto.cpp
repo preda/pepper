@@ -16,7 +16,7 @@ enum {
 
 void Proto::traverse(GC *gc) {
     gc->mark((Object*) up);
-    gc->markVectorObj(consts.buf(), consts.size());
+    gc->markObjVect(consts.buf(), consts.size());
 }
 
 Proto::Proto(Proto *up) :

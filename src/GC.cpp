@@ -8,17 +8,22 @@
 #include "String.h"
 #include "CFunc.h"
 #include "Proto.h"
+#include "VM.h"
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+#include <assert.h>
 
-#define EMPTY_MARK ((unsigned long)-1L)
+enum {BIT_MARK=1, BIT_TRAVERSABLE=2, };
 
-GC::GC() {
-    nBits = 0;
-    map   = 0;
-    nPtr  = 0;
-    growMap();
+GC::GC() :
+    size(32),
+    map((long *) calloc(size, sizeof(long))),
+    n(0),
+    nLastCollect(8),
+    grayStack(0)
+{
 }
 
 GC::~GC() {
@@ -27,69 +32,59 @@ GC::~GC() {
 }
 
 void GC::growMap() {
-    nBits = nBits ? nBits+1 : 10;
-    unsigned long *oldMap = map;
-    map = (unsigned long *) calloc(1<<nBits, sizeof(long));
-    if (oldMap) {
-        for (unsigned long *p = oldMap, *end = oldMap + (1<<(nBits-1)); p < end; ++p) {
-            unsigned long v = *p;
-            if (v && v != EMPTY_MARK) {
-                add(v);
-            }
-        }
-        free(oldMap);
+    size += size;
+    long *oldMap = map;
+    map = (long *) calloc(size, sizeof(long));
+    for (long *p = oldMap, *end = p + (size>>1); p < end; ++p) {
+        long v = *p;
+        if (v) { add(v); }
     }
+    free(oldMap);
 }
 
-void GC::add(unsigned long v) {
-    const unsigned mask = (1<<nBits) - 1;
+void GC::add(long v) {
+    const unsigned mask = size - 1;
     unsigned i = PTR_HASH(v) & mask;
-    unsigned step = 1;
-    unsigned long m;
-    while ((m=map[i]) && m != EMPTY_MARK) {
-        i = (i + step++) & mask;
-    }
+    while (map[i]) { i = (i + 1) & mask; }
     map[i] = v;
 }
 
 void GC::mark(Object *o) {
-    unsigned long p = (long) o;
-    const unsigned mask = (1<<nBits) - 1;
-    unsigned i = PTR_HASH(p) & mask;
-    unsigned step = 1;
-    while ((map[i] | 3) != (p | 3)) {
-        i = (i + step++) & mask;
-    }
-    if (!(map[i] & BIT_MARK)) {
-        map[i] |= BIT_MARK;
-        if (map[i] & BIT_TRAVERSABLE) {
-            grayStack->push(o);
+    if (o) {
+        const unsigned mask = size - 1;
+        long p = (long) o;
+        unsigned i = PTR_HASH(p) & mask;
+        p |= 3;
+        while ((map[i] | 3) != p && map[i]) { i = (i + 1) & mask; }
+        assert(map[i]);
+        if (!(map[i] & BIT_MARK)) {
+            map[i] |= BIT_MARK;
+            if (map[i] & BIT_TRAVERSABLE) {
+                grayStack->push(o);
+            }
         }
     }
 }
 
-void GC::markVector(Value *p, int size) {
+void GC::markValVect(Value *p, int size) {
     for (Value *end = p + size; p < end; ++p) {
-        Value v = *p;
+        const Value v = *p;
         if (IS_OBJ(v)) { mark(GET_OBJ(v)); }
     }
 }
 
-void GC::markVectorObj(Object **p, int size) {
+void GC::markObjVect(Object **p, int size) {
     for (Object **end = p + size; p < end; ++p) {
         mark(*p);
     }
 }
 
 Object *GC::alloc(int type, int bytes, bool traversable) {
-    if (nPtr >= (1 << (nBits-1))) {
-        growMap();
-    }
-    Object *p = (Object *) malloc(bytes);
-    memset(p, 0, bytes);
-    // p->setType(type);
-    add((unsigned long)p | (traversable ? BIT_TRAVERSABLE : 0));
-    ++nPtr;
+    if (n >= (size >> 1)) { growMap(); }
+    Object *p = (Object *) calloc(1, bytes);
+    add((long)p | (traversable ? BIT_TRAVERSABLE : 0));
+    ++n;
+    printf("alloc %d %p type %d %s\n", bytes, p, type, Object::getTypeName(type));
     return p;
 }
 
@@ -97,11 +92,14 @@ Object *GC::alloc(int type, int bytes, bool traversable) {
  case O_ARRAY: ACTION(o, Array);  break;\
  case O_MAP:   ACTION(o, Map);    break;\
  case O_STR:   ACTION(o, String); break;\
+ case O_FUNC:  ACTION(o, Func); break;\
  case O_CFUNC: ACTION(o, CFunc);  break;\
+ case O_PROTO: ACTION(o, Proto); break;\
  default: ERR(true, E_OBJECT_TYPE);\
 }
 
 static void destruct(Object *o) {
+    // printf("free %p type %d\n", o, o->type());
 #define ACTION(o, type) ((type *)o)->~type()
     DISPATCH(o);
 #undef ACTION
@@ -114,23 +112,53 @@ void GC::traverse(Object *o) {
 #undef ACTION
 }
 
-void GC::markAndSweep(Object *root) {
+static void release(long p) {
+    Object *obj = (Object *) (p & ~(long)(BIT_MARK | BIT_TRAVERSABLE));    
+    destruct(obj);
+    free(obj);
+}
+
+void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
+    // printf("GC before %d %d\n", n, size);
+    int nInitial = n;
     {
-        Vector<Object*> stack(1024);
+        Vector<Object*> stack;
         grayStack = &stack;
-        stack.push(root);
+        vm->traverse();
+        markValVect(vmStack, vmStackSize);
         while (stack.size()) {
             traverse(stack.pop());
         }
         grayStack = 0;
     }
-    
-    for (unsigned long *p = map, *end = map + (1<<nBits); p < end; ++p) {
-        if (*p && !(*p & BIT_MARK)) {
-            Object *obj = (Object *) *p;
-            *p = -1L;
-            destruct(obj);
-            free(obj);
+
+    const unsigned mask = size - 1;
+    for (long *p = map+size-1, *end = map-1; p != end; --p) {
+        const long clearMark = ~(long)BIT_MARK;
+        if (*p & BIT_MARK) {
+            *p &= clearMark;
+        } else if (*p) {
+            release(*p);
+            --n;
+            *p = 0;
+            long *hole = p;
+            long *pp = map + (((hole-map) + 1) & mask);
+            while (*pp) {
+                long *t = map + (PTR_HASH(*pp) & mask);
+                if (((hole - t) & mask) < ((pp - t) & mask)) {
+                    if (pp < hole && !(*pp & BIT_MARK)) {
+                        release(*pp);
+                        --n;
+                    } else {
+                        *hole = *pp;
+                    }
+                    hole  = pp;
+                    *hole = 0;
+                }
+                pp = map + (((pp-map) + 1) & mask);
+            }            
         }
     }
+    nLastCollect = n;
+    printf("GC collected %d left %d table %d\n", (nInitial - n), n, size);
 }

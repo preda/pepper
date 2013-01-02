@@ -66,13 +66,15 @@ class VM {
     unsigned stackSize;
     Func *activeFunc;
     Vector<RetInfo> retInfo;
+    Value stringMethods;
 
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
     
-
  public:
     VM(Pepper *pepper);
     ~VM();
     Value run(Func *f, int nArg = 0, Value *args = 0);
+
+    void traverse();
 };

@@ -27,6 +27,8 @@ Parser::Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer) {
     this->lexer = lexer;
     this->context = context;
     this->gc = context->getGC();
+    EMPTY_ARRAY = VAL_OBJ(Array::alloc(gc));
+    EMPTY_MAP   = VAL_OBJ(Map::alloc(gc));
     lexer->advance();
 }
 
@@ -307,12 +309,12 @@ Value Parser::mapExpr(int top) {
     consume('{');
     if (TOKEN=='}') {
         consume('}');
-        return context->EMPTY_MAP;
+        return EMPTY_MAP;
     }
     int slot = top;
     
     Map *map = Map::alloc(gc);
-    emit(slot, ADD, slot, context->EMPTY_MAP, VAL_OBJ(map));
+    emit(slot, ADD, slot, EMPTY_MAP, VAL_OBJ(map));
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == '}') { break; }
@@ -343,11 +345,11 @@ Value Parser::arrayExpr(int top) {
     consume('[');
     if (TOKEN==']') {
         consume(']');
-        return context->EMPTY_ARRAY;
+        return EMPTY_ARRAY;
     }
     int slot = top++;
     Array *array = Array::alloc(gc);
-    emit(slot, ADD, slot, context->EMPTY_ARRAY, VAL_OBJ(array));
+    emit(slot, ADD, slot, EMPTY_ARRAY, VAL_OBJ(array));
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == ']') { break; }
@@ -800,9 +802,9 @@ Value Parser::mapSpecialConsts(Value a) {
         return VAL_REG(UP_NEG_ONE);
     } else if (a == EMPTY_STRING) {
         return VAL_REG(UP_EMPTY_STRING);
-    } else if (a == context->EMPTY_ARRAY) {
+    } else if (a == EMPTY_ARRAY) {
         return VAL_REG(UP_EMPTY_ARRAY);
-    } else if (a == context->EMPTY_MAP) {
+    } else if (a == EMPTY_MAP) {
         return VAL_REG(UP_EMPTY_MAP);
     }
     return a;
@@ -828,7 +830,7 @@ void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
 }
 
 void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
-    if (a == context->EMPTY_ARRAY || a == context->EMPTY_MAP) {
+    if (a == EMPTY_ARRAY || a == EMPTY_MAP) {
         if (op == MOVE) {
             assert(b == UNUSED);
             op = ADD;

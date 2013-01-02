@@ -11,15 +11,11 @@ class Func;
 
 class Pepper {
     GC *gc;
-    SymbolTable *syms;
-    Value *ups, *upsTop;
     VM *vm;
+
+    Func *parse(const char *text, bool isFunc);
         
  public:
-    Value builtinString;
-    Value EMPTY_ARRAY;
-    Value EMPTY_MAP;
-
     Pepper();
     ~Pepper();
 

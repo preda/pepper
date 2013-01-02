@@ -11,3 +11,8 @@ void Object::setType(unsigned t) {
     assert(t <= 7);
     _size |= t;
 }
+
+const char *Object::getTypeName(int type) {
+    const char *names[] = {"UNDEF", "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", "STR"};
+    return names[type];
+}
