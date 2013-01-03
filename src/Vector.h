@@ -13,11 +13,20 @@ class Vector {
     ~Vector();
 
     void incSize() {
-        unsigned s = size();
+        const unsigned s = size();
         if (s & (s - 1)) {
             _size += (1<<4);
         } else {
             setSize(s + 1);
+        }
+    }
+
+    void decSize() {
+        const unsigned s = size();
+        if ((s - 1) & (s - 2)) {
+            _size -= (1<<4);
+        } else {
+            setSize(s - 1);
         }
     }
 
@@ -44,7 +53,7 @@ class Vector {
     T pop() {
         // assert(size() > 0);
         T ret = *top();
-        _size -= (1<<4);
+        decSize();
         return ret;
     }
 

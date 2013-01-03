@@ -121,9 +121,11 @@ static void setSlice(Value c, Value a1, Value a2, Value b) {
     ARRAY(c)->setSliceV(a1, a2, b);
 }
 
+#define INITIAL_STACK 512
+
 VM::VM(Pepper *pepper) : pepper(pepper), gc(pepper->getGC())
 {
-    stackSize = 512;
+    stackSize = INITIAL_STACK;
     stack = (Value *) calloc(stackSize, sizeof(Value));
     
     NameValue strMethods[] = {
@@ -281,9 +283,15 @@ SETF: setField(*ptrC, A, B);  STEP;
 
 RET: {
         regs[0] = A;
-        if (!retInfo.size()) { return A; }
         activeFunc = 0;
         gc->maybeCollect(this, stack, regs-stack+1);
+        if (!retInfo.size()) {
+            if (stackSize > INITIAL_STACK) {
+                stackSize = INITIAL_STACK;
+                stack = (Value *) realloc(stack, stackSize * sizeof(Value));
+            }
+            return A;
+        }
 
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;

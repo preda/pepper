@@ -26,6 +26,7 @@ Map::Map(const unsigned iniSize) {
         n += n;
     }
     buf = (Value *) malloc(n * 12);
+    memset(buf, 0, n * 8);
     memset(buf + n, 0xff, n * 4); 
 }
 

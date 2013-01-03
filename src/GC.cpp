@@ -84,7 +84,7 @@ Object *GC::alloc(int type, int bytes, bool traversable) {
     Object *p = (Object *) calloc(1, bytes);
     add((long)p | (traversable ? BIT_TRAVERSABLE : 0));
     ++n;
-    printf("alloc %d %p type %d %s\n", bytes, p, type, Object::getTypeName(type));
+    // printf("alloc %d %p type %d %s\n", bytes, p, type, Object::getTypeName(type));
     return p;
 }
 

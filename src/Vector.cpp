@@ -9,7 +9,7 @@
 #include <assert.h>
 
 template<typename T>
-Vector<T>::Vector(unsigned sizeHint) : 
+Vector<T>::Vector(unsigned sizeHint) :
   _size(0), 
   _buf((T *) calloc(2, sizeof(T)))
 {
