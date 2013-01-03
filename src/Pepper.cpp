@@ -10,7 +10,7 @@
 #include "CFunc.h"
 #include "FFI.h"
 #include "String.h"
-// #include "NameValue.h"
+#include "NameValue.h"
 
 #include <assert.h>
 
@@ -61,21 +61,22 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {
+    NameValue builtin[] = {
+        NameValue("type",  VNIL),
+        NameValue("print", VNIL),
+        NameValue("gc", VNIL),
+        NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
+    };
+
     Value ups[] = {
-        VNIL,
-        VNIL,
-        // Map::value(gc, ASIZE(stringMethods), stringMethods),
-        CFunc::value(gc, ffiConstruct),
+        Map::value(gc, ASIZE(builtin), builtin),
         VAL_OBJ(Map::alloc(gc)), VAL_OBJ(Array::alloc(gc)), EMPTY_STRING,
         VAL_NUM(-1), ONE, ZERO,
         VNIL,
     };
 
     const char *upNames[] = {
-        "type",
-        "print",
-        // "string",
-        "ffi",
+        "builtin",
         0, 0, 0,
         0, 0, 0,
         "nil",

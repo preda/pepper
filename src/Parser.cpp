@@ -477,7 +477,7 @@ Value Parser::suffixedExpr(int top) {
             } else {
                 emit(top+2, GETI, top, a, b);
             }
-            a = VAL_REG(top);
+            a = VAL_REG(top++);
             consume(']');
             break;
         }
@@ -485,12 +485,16 @@ Value Parser::suffixedExpr(int top) {
         case '.':
             advance();
             ERR(TOKEN != TK_NAME, E_SYNTAX);
-            emit(top+2, GETF, top+1, a, lexer->info.name);
+            if (IS_REG(a) && (int)a == top) {
+                ++top;
+            }
+            emit(top+1, GETF, top, a, lexer->info.name);
             advance();
-            a = TOKEN == '(' ? callExpr(top+2, VAL_REG(top+1), a) : VAL_REG(top+1);
+            a = TOKEN == '(' ? callExpr(top+1, VAL_REG(top), a) : VAL_REG(top);
+            ++top;
             break;
 
-        case '(': a = callExpr(top, a, VNIL); break;
+        case '(': a = callExpr(top++, a, VNIL); break;
 
         default: return a;
         }
