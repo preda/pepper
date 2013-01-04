@@ -1,4 +1,5 @@
-// this is the only file that uses "placement new", including <new>
+// this is the only file that uses "placement new"
+// and must include the <new> header
 
 #include "Array.h"
 #include "Map.h"
@@ -7,6 +8,8 @@
 #include "CFunc.h"
 #include "String.h"
 #include "GC.h"
+
+#include <assert.h>
 #include <new>
 
 Array *Array::alloc(GC *gc, int iniSize) {
@@ -26,5 +29,6 @@ Proto *Proto::alloc(GC *gc, Proto *up) {
 }
 
 CFunc *CFunc::alloc(GC *gc, tfunc f, unsigned dataSize) {
-    return new (gc->alloc(O_CFUNC, sizeof(CFunc) + dataSize, dataSize != 0)) CFunc(f);
+    assert(dataSize);
+    return new (gc->alloc(O_CFUNC, sizeof(CFunc) + dataSize, true)) CFunc(f);
 }

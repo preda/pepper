@@ -4,12 +4,15 @@
 
 typedef u64 Value;
 class Object;
+class VM;
+class GC;
 
 // Value tags
 enum {
     T_NIL = -1,
     T_OBJ = -2,
     T_REG = -3, // used during compilation only, to indicate register position
+    T_CF  = -4, // plain C function with no data
 
     T_STR0 = -14,
     T_STR1,
@@ -28,6 +31,8 @@ enum {
     O_PROTO,
     O_STR,
 };
+
+typedef Value (*tfunc)(VM *vm, int op, void *data, Value *stack, int nCallArg);
 
 union ValueUnion {
     double dbl;
@@ -57,21 +62,26 @@ inline Value VAL_REG(int i) {
 inline Value VAL_NUM(double dbl) { return ValueUnion{dbl: dbl}.v; }
 inline double GET_NUM(Value val) { return ValueUnion{v: val}.dbl; }
 
-inline Value VAL_OBJ(void *obj) {
-    ValueUnion u{ptr:obj};
-    u.tag = T_OBJ;
+inline Value VAL_PTR(int tag, void *ptr) {
+    ValueUnion u{ptr:ptr};
+    u.tag = tag;
     return u.v;
 }
 
-inline Object *GET_OBJ(Value v) {
-    if (sizeof(Object *) == 4) {
-        return (Object *) v;
+inline void *GET_PTR(Value v) {
+    if (sizeof(void *) == 4) {
+        return (void *) v;
     } else {
         ValueUnion u{v:v};
         u.tag = 0;
-        return (Object *) u.ptr;
+        return u.ptr;
     }
 }
+
+inline Value VAL_OBJ(void *obj) { return VAL_PTR(T_OBJ, obj); }
+inline Value VAL_CF(tfunc f)    { return VAL_PTR(T_CF, (void *) f); }
+inline Object *GET_OBJ(Value v) { return (Object *) GET_PTR(v); }
+inline tfunc   GET_CF(Value v)  { return (tfunc) GET_PTR(v); }
 
 #define STRING(v) ((String *) GET_OBJ(v))
 #define ARRAY(v) ((Array *) GET_OBJ(v))
@@ -86,6 +96,7 @@ inline Value VAL_TAG(short tag) { return ValueUnion{tag:tag}.v; }
 #define IS_NIL(v) (TAG(v) == T_NIL)
 #define IS_REG(v) (TAG(v) == T_REG)
 #define IS_OBJ(v) (TAG(v) == T_OBJ)
+#define IS_CF(v)  (TAG(v) == T_CF)
 inline bool IS_NUM_TAG(int t) { return (unsigned)t <= (unsigned)-16 || t == -8; }
 #define IS_NUM(v) IS_NUM_TAG(TAG(v))
 

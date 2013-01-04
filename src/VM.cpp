@@ -307,14 +307,11 @@ RET: {
     }
 
 CALL: { 
-        ERR(!IS_OBJ(A), E_CALL_NOT_FUNC);
-        const int type = O_TYPE(A);
-        ERR(!(type == O_FUNC || type == O_CFUNC), E_CALL_NOT_FUNC);
-
+        ERR(!IS_OBJ(A) && !IS_CF(A), E_CALL_NOT_FUNC);
         int nEffArgs = OSB(code);
+        assert(nEffArgs != 0);
         Value *base = ptrC;
 
-        assert(nEffArgs != 0);
         Array *tail  = 0;
         int tailPos  = 0;
         int tailSize = 0;
@@ -327,7 +324,7 @@ CALL: {
             tailSize = tail->size();
         }
 
-        if (type == O_FUNC) {
+        if (IS_OBJ(A) && (O_TYPE(A) == O_FUNC)) {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
             int nArgs = f->proto->nArgs;
@@ -365,14 +362,20 @@ CALL: {
             copyUpvals(f, regs);
             pc   = proto->code.buf();
             activeFunc = f;
-        } else { // O_CFUNC
+        } else {
             ERR(tailSize > 128, E_ELLIPSIS);
             for (int i = 0; i < tailSize; ++i) {
                 base[nEffArgs + i] = tail->getI(i);
             }
             nEffArgs += tailSize;
-            CFunc *cf = (CFunc *) GET_OBJ(A);
-            cf->call(this, base, nEffArgs);
+
+            if (IS_CF(A)) {
+                tfunc f = GET_CF(A);
+                *base = f(this, CFunc::CFUNC_CALL, 0, base, nEffArgs);
+            } else {
+                ERR(!IS_OBJ(A) || O_TYPE(A) != O_CFUNC, E_CALL_NOT_FUNC);
+                ((CFunc *) GET_OBJ(A))->call(this, base, nEffArgs);
+            }
         }
         STEP;
     }
