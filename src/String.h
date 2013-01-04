@@ -5,13 +5,14 @@
 
 class Map;
 class GC;
+class VM;
 
 class String {
  private:
     unsigned _size;
 
  public:
-    static Value method_find(GC *gc, int op, void *data, Value *stack, int nCallArg);
+    static Value method_find(VM *vm, int op, void *data, Value *stack, int nCallArg);
     static Value value(GC *gc, const char *s);
     static Value value(GC *gc, const char *s, unsigned size);
     static Value value(GC *gc, unsigned size);

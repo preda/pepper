@@ -212,6 +212,10 @@ void VM::traverse() {
     gc->mark(GET_OBJ(stringMethods));
 }
 
+void VM::gcCollect(Value *top) {
+    gc->collect(this, stack, top - stack);
+}
+
 extern __thread jmp_buf jumpBuf;
 Value VM::run(Func *func, int nArg, Value *args) {
     unsigned code = 0;
@@ -368,7 +372,7 @@ CALL: {
             }
             nEffArgs += tailSize;
             CFunc *cf = (CFunc *) GET_OBJ(A);
-            cf->call(gc, base, nEffArgs);
+            cf->call(this, base, nEffArgs);
         }
         STEP;
     }

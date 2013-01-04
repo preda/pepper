@@ -2,6 +2,7 @@
 #include "CFunc.h"
 #include "Object.h"
 #include "String.h"
+#include "VM.h"
 
 #include <string.h>
 #include <dlfcn.h>
@@ -182,7 +183,7 @@ static Value ffiConstructInt(GC *gc, Value *stack, int nCallArg) {
     CFunc *cfunc = CFunc::alloc(gc, (tfunc) ffiCall, sizeof(FFIData));
     FFIData *d = (FFIData *) cfunc->data;
     d->func = func;
-    d->gc = gc;
+    // d->gc = gc;
     int nArg = d->nArg = parseTypesC(GET_CSTR(b), 8, d->argType, &d->retType, &d->hasEllipsis);
     if (nArg < 0) { return VNIL; }
     makeFfiSignature(d->ffiArgs, nArg, d->argType);
@@ -193,11 +194,11 @@ static Value ffiConstructInt(GC *gc, Value *stack, int nCallArg) {
     return VAL_OBJ(cfunc);
 }
 
-Value ffiConstruct(GC *gc, int op, void *data, Value *stack, int nCallArg) {
-    return op == 0 ? ffiConstructInt(gc, stack, nCallArg) : VNIL;
+Value ffiConstruct(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    return op == 0 ? ffiConstructInt(vm->getGC(), stack, nCallArg) : VNIL;
 }
 
-Value ffiCall(GC *gc, int op, FFIData *d, Value *stack, int nCallArg) {
+Value ffiCall(VM *vm, int op, FFIData *d, Value *stack, int nCallArg) {
     if (op != 0) { return VNIL; }
     ++stack;
     --nCallArg;
@@ -272,7 +273,7 @@ Value ffiCall(GC *gc, int op, FFIData *d, Value *stack, int nCallArg) {
     case LLONG:    v = VAL_NUM(ret.v); break;
     case DOUBLE:   v = VAL_NUM(ret.dbl); break;
     case FLOAT:    v = VAL_NUM(ret.flt); break;
-    case CHAR_PTR: v = String::value(d->gc, ret.ptr, strlen(ret.ptr)); break;
+    case CHAR_PTR: v = String::value(vm->getGC(), ret.ptr, strlen(ret.ptr)); break;
     case PTRDIFF:  v = VAL_NUM(ret.ptr - GET_CSTR(stack[0])); break;
     case VOID: break;
     default: assert(false);

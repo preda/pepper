@@ -77,4 +77,6 @@ class VM {
     Value run(Func *f, int nArg = 0, Value *args = 0);
 
     void traverse();
+    void gcCollect(Value *stackTop);
+    GC *getGC() { return gc; }
 };

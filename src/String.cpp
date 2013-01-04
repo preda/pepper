@@ -115,7 +115,7 @@ Value String::concat(GC *gc, Value a, Value b) {
     return stringConcat(gc, a, pb, sb);
 }
 
-Value String::method_find(GC *gc, int op, void *data, Value *stack, int nCallArg) {
+Value String::method_find(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     if (op != CFunc::CFUNC_CALL) {
         return VNIL;
     }

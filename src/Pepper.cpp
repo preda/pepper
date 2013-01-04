@@ -60,11 +60,20 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
     return vm->run(f, nArg, args);
 }
 
+static Value funcGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    if (op != CFunc::CFUNC_CALL) {
+        return VNIL;
+    }
+    assert(nCallArg > 0);
+    vm->gcCollect(stack + nCallArg);
+    return VNIL;
+}
+
 Func *Pepper::parse(const char *text, bool isFunc) {
     NameValue builtin[] = {
         NameValue("type",  VNIL),
         NameValue("print", VNIL),
-        NameValue("gc", VNIL),
+        NameValue("gc",    CFunc::value(gc, funcGC)),
         NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
     };
 

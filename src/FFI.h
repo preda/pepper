@@ -4,6 +4,7 @@
 #include <ffi.h>
 
 class GC;
+class VM;
 
 struct FFIData {
     bool hasEllipsis;
@@ -13,8 +14,7 @@ struct FFIData {
     byte retType;
     byte argType[8];
     ffi_type *ffiArgs[8];
-    GC *gc;
 };
 
-Value ffiCall(GC *gc, int op, FFIData *data, Value *stack, int nCallArg);
-Value ffiConstruct(GC *gc, int op, void *data, Value *stack, int nCallArg);
+Value ffiCall(VM *vm, int op, FFIData *data, Value *stack, int nCallArg);
+Value ffiConstruct(VM *vm, int op, void *data, Value *stack, int nCallArg);

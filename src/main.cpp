@@ -205,6 +205,8 @@ T tests[] = {
     T("func sum(*args) { s:=0; for i := 0:#args { s = s + args[i] }; return s }; return sum(3, 5, 7)", VAL_NUM(3+5+7)),
     T("func sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)", VAL_NUM(11)),
     T("func foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
+
+    T("for i:= 0:10 { builtin.gc(); }; return 13", VAL_NUM(13)),
 };
 
     bool verbose = false;
