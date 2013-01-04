@@ -106,8 +106,8 @@ T tests[] = {
     T("var s6=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_NUM(7)),
 
     // ffi
-    T("var strlen=builtin.ffi(\"strlen\", \"int (char *)\", \"c\"); return strlen(\"bar hello foo\")", VAL_NUM(13)),
-    T("return builtin.ffi(\"strstr\", \"offset (char*, char *)\", \"c\")(\"big oneedle hayst\", \"need\")", VAL_NUM(5)),
+    // T("var strlen=builtin.ffi(\"strlen\", \"int (char *)\", \"c\"); return strlen(\"bar hello foo\")", VAL_NUM(13)),
+    // T("return builtin.ffi(\"strstr\", \"offset (char*, char *)\", \"c\")(\"big oneedle hayst\", \"need\")", VAL_NUM(5)),
 
     // assign
     T("a:=3; return a", VAL_NUM(3)),

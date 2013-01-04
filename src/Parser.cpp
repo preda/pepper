@@ -9,7 +9,6 @@
 #include "Proto.h"
 #include "SymbolTable.h"
 #include "CFunc.h"
-#include "FFI.h"
 #include "Pepper.h"
 
 #include <assert.h>

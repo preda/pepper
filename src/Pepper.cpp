@@ -8,7 +8,7 @@
 #include "Map.h"
 #include "SymbolTable.h"
 #include "CFunc.h"
-#include "FFI.h"
+// #include "FFI.h"
 #include "String.h"
 #include "NameValue.h"
 
@@ -19,34 +19,6 @@ Pepper::Pepper() :
     vm(new VM(this))
 {
     assert(sizeof(Array) == 2 * sizeof(long));
-    /*
-    NameValue builtins[] = {
-        NameValue("type",   VNIL),
-        NameValue("print",  VNIL),
-        NameValue("string", Map::value(gc, ASIZE(stringMethods), stringMethods)),
-        NameValue("ffi",    CFunc::value(gc, ffiConstruct)),
-
-        NameValue(EMPTY_MAP),
-        NameValue(EMPTY_ARRAY),
-        NameValue(EMPTY_STRING),
-        NameValue(VAL_NUM(-1)),
-        NameValue(ONE),
-        NameValue(ZERO),
-        NameValue("nil", VNIL),
-    };
-
-    const int nUps = ASIZE(builtins);
-    ups = new Value[nUps];
-
-    for (int i = 0; i < nUps; ++i) {
-        NameValue *nv = &builtins[i];
-        if (nv->name) {
-            syms->set(String::value(gc, nv->name), i - nUps);
-        }
-        ups[i] = nv->value;
-    }
-    upsTop = ups + nUps;
-    */
 }
 
 Pepper::~Pepper() {
@@ -74,7 +46,7 @@ Func *Pepper::parse(const char *text, bool isFunc) {
         NameValue("type",  VNIL),
         NameValue("print", VNIL),
         NameValue("gc",    CFunc::value(gc, funcGC)),
-        NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
+        // NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
     };
 
     Value ups[] = {
