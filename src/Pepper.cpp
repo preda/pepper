@@ -8,11 +8,12 @@
 #include "Map.h"
 #include "SymbolTable.h"
 #include "CFunc.h"
-// #include "FFI.h"
 #include "String.h"
 #include "NameValue.h"
+#include "Object.h"
 
 #include <assert.h>
+#include <stdio.h>
 
 Pepper::Pepper() :
     gc(new GC()),
@@ -33,18 +34,64 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
 }
 
 static Value funcGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
-    if (op != CFunc::CFUNC_CALL) {
-        return VNIL;
-    }
+    assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArg > 0);
     vm->gcCollect(stack + nCallArg);
     return VNIL;
 }
 
+static void printVal(Value v) {
+    if (IS_STRING(v)) {
+        printf("'%s'", GET_CSTR(v)); 
+    } else if (IS_NUM(v)) {
+        double d = GET_NUM(v);
+        if (d == (long long) d) {
+            printf("%lld", (long long) d);
+        } else {
+            printf("%f", d);
+        }
+    } else if (IS_OBJ(v)) {
+        Object *p = GET_OBJ(v);
+        if (IS_ARRAY(v)) {
+            Array *a = (Array *) p;
+            int size = a->size();
+            printf("[");
+            for (int i = 0; i < size; ++i) { 
+                if (i) { printf(", "); }
+                printVal(a->getI(i)); 
+            }
+            printf("]");
+        } else if (IS_MAP(v)) {
+            Map *m = (Map *) p;
+            int size = m->size();
+            for (int i = 0; i < size; ++i) {
+                if (i) { printf(", "); }                
+                // printVal(m->getI(i));
+            }
+        } else {
+            printf("%p ", p);
+        }
+    } else if (IS_NIL(v)) {
+        printf("NIL ");            
+    } else if (IS_CF(v)) {
+        printf("CFunc %p ", GET_CF(v));
+    }
+}
+
+static Value funcPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
+    assert(op == CFunc::CFUNC_CALL && !data);
+    assert(nCallArgs > 0);
+    
+    for (int i = 1; i < nCallArgs; ++i) {
+        printVal(stack[i]);
+    }
+    return VNIL;    
+}
+
 Func *Pepper::parse(const char *text, bool isFunc) {
     NameValue builtin[] = {
         NameValue("type",  VNIL),
-        NameValue("print", VNIL),
+        NameValue("print", CFunc::value(gc, funcPrint)),
         NameValue("gc",    CFunc::value(gc, funcGC)),
         // NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
     };

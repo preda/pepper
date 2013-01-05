@@ -37,6 +37,7 @@ class Map {
     static Value value(GC *gc, unsigned n, NameValue *entries);
     void traverse(GC *gc);
 
+    Value getI(unsigned pos);
     Value get(Value key);
     void set(Value key, Value v) { set(key, v, true); }
 
