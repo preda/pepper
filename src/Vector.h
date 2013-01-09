@@ -7,7 +7,7 @@ class Vector {
 
  public:
     T *buf() { return _buf; } // { return (T*)((long)_buf & ~7l); }
-    unsigned size() { return _size >> 4; }
+    int size() { return _size >> 4; }
 
     Vector(unsigned sizeHint = 0);
     ~Vector();
@@ -22,11 +22,11 @@ class Vector {
     }
 
     void decSize() {
-        const unsigned s = size();
-        if ((s - 1) & (s - 2)) {
+        const unsigned s = size() - 1;
+        if (s & (s - 1)) {
             _size -= (1<<4);
         } else {
-            setSize(s - 1);
+            setSize(s);
         }
     }
 
@@ -57,18 +57,11 @@ class Vector {
         return ret;
     }
 
-    T get(unsigned pos) {
-        // assert(pos < size());
-        return buf()[pos];
-    }
+    T get(int pos);
 
-    void set(unsigned pos, T v) {
-        if (pos >= size()) {
-            setSize(pos + 1);
-        }
-        buf()[pos] = v;
-    }
+    void setDirect(int pos, T v);
+    void setExtend(int pos, T v);
 
-    void removeRange(unsigned a, unsigned b);
+    void removeRange(int a, int b);
     void remove(unsigned pos) { removeRange(pos, pos + 1); }
 };

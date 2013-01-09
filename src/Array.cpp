@@ -59,7 +59,7 @@ void Array::setI(int pos, Value v) {
     int sz = size();
     if (pos < 0) { pos += sz; }
     ERR(pos < 0, E_SET_NEGATIVE_INDEX);
-    vect.set(pos, v);
+    vect.setExtend(pos, v);
 }
 
 Value Array::getV(Value pos) {

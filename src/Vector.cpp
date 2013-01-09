@@ -26,6 +26,26 @@ Vector<T>::~Vector() {
     _size = 0;
 }
 
+template<typename T>
+void Vector<T>::setDirect(int pos, T v) {
+    assert(pos >= 0 && pos < size());
+    buf()[pos] = v;
+}
+
+template<typename T>
+void Vector<T>::setExtend(int pos, T v) {
+    if (pos >= size()) {
+        setSize(pos + 1);
+    }
+    setDirect(pos, v);
+}
+
+template<typename T>
+T Vector<T>::get(int pos) {
+    assert(pos >= 0 && pos < size());
+    return buf()[pos];
+}
+
 static bool sameAllocSize(unsigned size1, unsigned size2) {
     if (size1 <= 2 || size2 <= 2) {
         return size1 <= 2 && size2 <= 2;
@@ -58,8 +78,8 @@ void Vector<T>::append(T *v, unsigned vSize) {
 }
 
 template<typename T>
-void Vector<T>::removeRange(unsigned a, unsigned b) {
-    assert(b <= size());
+void Vector<T>::removeRange(int a, int b) {
+    assert(a >= 0 && b >= 0 && b <= size());
     if (b < size()) { memmove(buf() + a, buf() + b, (size() - b) * sizeof(T)); }
     setSize(size() - (b - a));
 }

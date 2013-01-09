@@ -185,8 +185,8 @@ void Parser::forStat() {
 
 void Parser::whileStat() {
     consume(TK_WHILE);
-    unsigned pos1 = emitHole();
-    unsigned pos2 = HERE;
+    int pos1 = emitHole();
+    int pos2 = HERE;
     Value a = expr(proto->localsTop);
     Vector<unsigned> copyExp;
     Vector<unsigned> &code = proto->code;
@@ -757,7 +757,7 @@ void Parser::patchOrEmitMove(int top, int dest, Value src) {
             int oldDest = OC(code);
             assert(srcSlot == oldDest);        
             if (oldDest == dest) { return; } // everything is in the right place
-            proto->code.set(patchPos, CODE_CAB(OP(code), dest, OA(code), OB(code)));
+            proto->code.setDirect(patchPos, CODE_CAB(OP(code), dest, OA(code), OB(code)));
             return; // patched
         }
     }
@@ -813,9 +813,9 @@ Value Parser::mapSpecialConsts(Value a) {
     return a;
 }
 
-void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
-    assert(to  <= proto->code.size());
-    assert(pos <= proto->code.size());
+void Parser::emitJump(int pos, int op, Value a, int to) {
+    assert(to  >= 0  && to <= proto->code.size());
+    assert(pos >= 0 && pos <= proto->code.size());
     assert(op == JMP || op == JF || op == JT || op == FOR || op == LOOP);
     const int offset = to - pos - 1;
     assert(offset != 0);
@@ -829,7 +829,7 @@ void Parser::emitJump(unsigned pos, int op, Value a, unsigned to) {
         return; // never jump == no-op
     }
     if (op == JMP) { assert(a == UNUSED); }
-    proto->code.set(pos, CODE_CD(op, a, offset));
+    proto->code.setExtend(pos, CODE_CD(op, a, offset));
 }
 
 void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
