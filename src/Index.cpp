@@ -7,10 +7,11 @@
 #include <string.h>
 
 Index::Index() :
+    buf(0),
     allocSize(2),
     _size(0)    
 {
-    buf = (Value *) calloc(allocSize << 1, sizeof(Value));
+    remap();
 }
 
 Index::~Index() {
@@ -60,7 +61,7 @@ int Index::add(Value v) {
             map[h] = _size;
             buf[_size++] = v;            
             return -1;
-        } else if (equals(getVal(pos), v)) {
+        } else if (::equals(getVal(pos), v)) {
             return pos;
         }
         h = (h + 1) & mask;

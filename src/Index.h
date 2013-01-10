@@ -25,4 +25,6 @@ class Index {
     int remove(Value key); // returns: position of key, -1 if not found
     int getPos(Value key); // returns: position of key, -1 if not found
     Value getVal(int pos); // 0 <= pos < size
+
+    Value *getBuf() { return buf; }
 };

@@ -16,8 +16,9 @@ Array *Array::alloc(GC *gc, int iniSize) {
     return new (gc->alloc(O_ARRAY, sizeof(Array), true)) Array(iniSize);
 }
 
-Map *Map::alloc(GC *gc, unsigned iniSize) {
-    return new (gc->alloc(O_MAP, sizeof(Map), true)) Map(iniSize);
+Map *Map::alloc(GC *gc, unsigned sizeHint) {
+    (void) sizeHint;
+    return new (gc->alloc(O_MAP, sizeof(Map), true)) Map;
 }
 
 Func *Func::alloc(GC *gc, Proto *proto, Value *contextUps, Value *regs, byte recSlot) {

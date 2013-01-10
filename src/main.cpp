@@ -7,6 +7,7 @@
 #include "Map.h"
 #include "Pepper.h"
 #include "GC.h"
+#include "Index.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -15,6 +16,35 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+
+void testIndex() {
+    Index idx;
+    Value k1 = VAL_NUM(7);
+    Value k2 = VAL_NUM(13);
+    assert(idx.size() == 0);    
+
+    assert(idx.add(k1) == -1);
+    assert(idx.getPos(k1) == 0);
+    assert(idx.getVal(0) == k1);
+    assert(idx.add(k1) == 0);
+    assert(idx.size() == 1);
+
+
+    assert(idx.add(k2) == -1);
+    assert(idx.add(k2) == 1);
+    assert(idx.getPos(k2) == 1);
+    assert(idx.getVal(1) == k2);
+    assert(idx.size() == 2);
+
+    assert(idx.remove(VAL_NUM(1)) == -1);
+    assert(idx.size() == 2);
+    assert(idx.remove(k1) == 0);
+    assert(idx.getPos(k2) == 0);
+    assert(idx.getVal(0) == k2);
+    assert(idx.size() == 1);
+    
+}
+
 
 void printFunc(Func *);
 
@@ -51,6 +81,7 @@ static long long getTimeUsec() {
 }
 
 int main(int argc, char **argv) {
+    testIndex();
     Pepper *pepper = new Pepper();
     GC *gc = pepper->getGC();
 
