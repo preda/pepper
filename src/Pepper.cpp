@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Mihai Preda
+// Copyright (C) 2012 - 2013 Mihai Preda
 
 #include "Pepper.h"
 #include "GC.h"
@@ -11,6 +11,7 @@
 #include "String.h"
 #include "NameValue.h"
 #include "Object.h"
+#include "builtin.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -33,70 +34,11 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
     return vm->run(f, nArg, args);
 }
 
-static Value funcGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
-    assert(op == CFunc::CFUNC_CALL && !data);
-    assert(nCallArg > 0);
-    vm->gcCollect(stack + nCallArg);
-    return VNIL;
-}
-
-static void printVal(const char *prefix, Value v) {
-    if (IS_STRING(v)) {
-        printf("%s'%s'", prefix, GET_CSTR(v)); 
-    } else if (IS_NUM(v)) {
-        double d = GET_NUM(v);
-        if (d == (long long) d) {
-            printf("%s%lld", prefix, (long long) d);
-        } else {
-            printf("%s%f", prefix, d);
-        }
-    } else if (IS_OBJ(v)) {
-        Object *p = GET_OBJ(v);
-        if (IS_ARRAY(v)) {
-            Array *a = (Array *) p;
-            int size = a->size();
-            printf("%s[", prefix);
-            for (int i = 0; i < size; ++i) { 
-                printVal(i?", ":"", a->getI(i)); 
-            }
-            printf("]");
-        } else if (IS_MAP(v)) {
-            Map *m = (Map *) p;
-            int size = m->size();
-            printf("%s{", prefix);
-            Value *keys = m->keyBuf();
-            Value *vals = m->valBuf();
-            for (int i = 0; i < size; ++i) {
-                printVal(i?", ":"", keys[i]);
-                printVal(":", vals[i]);
-            }
-            printf("}");
-        } else {
-            printf("%s%p", prefix, p);
-        }
-    } else if (IS_NIL(v)) {
-        printf("%sNIL", prefix);
-    } else if (IS_CF(v)) {
-        printf("%sCFunc %p", prefix, GET_CF(v));
-    }
-}
-
-static Value funcPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
-    assert(op == CFunc::CFUNC_CALL && !data);
-    assert(nCallArgs > 0);
-    
-    for (int i = 1; i < nCallArgs; ++i) {
-        printVal((i>1)?" ":"", stack[i]);
-    }
-    printf("\n");
-    return VNIL;    
-}
-
 Func *Pepper::parse(const char *text, bool isFunc) {
     NameValue builtin[] = {
-        NameValue("type",  VNIL),
-        NameValue("print", CFunc::value(gc, funcPrint)),
-        NameValue("gc",    CFunc::value(gc, funcGC)),
+        NameValue("type",  CFunc::value(gc, builtinType)),
+        NameValue("print", CFunc::value(gc, builtinPrint)),
+        NameValue("gc",    CFunc::value(gc, builtinGC)),
         // NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
     };
 

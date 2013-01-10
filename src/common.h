@@ -1,3 +1,5 @@
+// Copyright (C) 2012 - 2013 Mihai Preda
+
 #pragma once
 
 typedef unsigned char byte;

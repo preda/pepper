@@ -1,3 +1,5 @@
+// Copyright (C) 2012 - 2013 Mihai Preda
+
 #pragma once
 
 #include "common.h"
@@ -118,6 +120,8 @@ inline bool IS_SHORT_STR_TAG(int t) { return t >= T_STR0 && t <= T_STR5; }
 #define O_TYPE(v) (GET_OBJ(v)->type())
 #define IS_O_TYPE(v,what) (IS_OBJ(v) && O_TYPE(v)==what)
 #define IS_PROTO(v) IS_O_TYPE(v, O_PROTO)
+#define IS_FUNC(v) IS_O_TYPE(v, O_FUNC)
+#define IS_CFUNC(v) (IS_CF(v) || IS_O_TYPE(v, O_CFUNC))
 #define IS_ARRAY(v) IS_O_TYPE(v, O_ARRAY)
 #define IS_MAP(v)   IS_O_TYPE(v, O_MAP)
 #define IS_STRING(v) (IS_SHORT_STR(v) || IS_O_TYPE(v, O_STR))
