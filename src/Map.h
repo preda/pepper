@@ -25,10 +25,13 @@ class Map {
     int size() { return map.size(); }
     void traverse(GC *gc);
 
-    Value get(Value key)            { return map.get(key); }
+    Value get(Value key) { return map.get(key); }
     Value set(Value key, Value val);
         
     Map *copy(GC *gc);
     void add(Value v);
     bool equals(Map *o);
+
+    Value *keyBuf() { return map.keyBuf(); }
+    Value *valBuf() { return map.valBuf(); }
 };

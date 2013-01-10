@@ -238,6 +238,7 @@ T tests[] = {
     T("func foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
 
     T("for i:= 0:10 { builtin.gc(); }; return 13", VAL_NUM(13)),
+    T("builtin.print('hello world', 1.5, 100, {3:9, 4:16, 'foo':\"bar\"}, [5, 4, 3]);", VNIL),
 };
 
     bool verbose = false;

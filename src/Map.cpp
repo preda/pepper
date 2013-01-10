@@ -15,8 +15,8 @@
 
 void Map::traverse(GC *gc) {
     int sz = size();
-    gc->markValVect(map.valBuf(), sz);
-    gc->markValVect(map.keyBuf(), sz);
+    gc->markValVect(valBuf(), sz);
+    gc->markValVect(keyBuf(), sz);
 }
 
 Map::Map() {
@@ -34,18 +34,10 @@ Value Map::value(GC *gc, unsigned n, NameValue *p) {
     return VAL_OBJ(m);
 }
 
-/*
-Map *Map::alloc(GC *gc, Vector<Value> *keys, Vector<Value> *vals) {
-    Map *m = alloc(gc, keys->size());
-    m->set(keys, vals);
-    return m;
-}
-*/
-
 bool Map::equals(Map *o) {
     const int sz = size();
     if (sz != o->size()) { return false; }
-    for (Value *pk = map.keyBuf(), *end=pk+sz, *pv=map.valBuf(); pk < end; ++pk, ++pv) {
+    for (Value *pk = keyBuf(), *end=pk+sz, *pv=valBuf(); pk < end; ++pk, ++pv) {
         if (!::equals(*pv, o->get(*pk))) { return false; }
     }
     return true;
@@ -65,7 +57,7 @@ void Map::set(Value *keys, Value *vals, int size) {
 
 Map *Map::copy(GC *gc) {
     Map *m = alloc(gc, size());
-    m->set(map.keyBuf(), map.valBuf(), size());
+    m->set(keyBuf(), valBuf(), size());
     return m;
 }
 
@@ -76,22 +68,5 @@ Value Map::set(Value key, Value val) {
 void Map::add(Value v) {
     ERR(!(IS_MAP(v)), E_ADD_NOT_COLLECTION);
     Map *m = MAP(v);
-    set(m->map.keyBuf(), m->map.valBuf(), m->size());
+    set(m->keyBuf(), m->valBuf(), m->size());
 }
-
-/*
-void Map::appendArray(Array *a) {
-    for (Value *p = a->buf(), *end = p+a->size(); p < end; ++p) {
-        set(*p, ONE, false);
-    }
-}
-
-void Map::appendChars(char *s, int size) {
-    Value c = String::value(0, 1);
-    char *pc = GET_CSTR(c);
-    for (char *end = s + size; s < end; ++s) {
-        *pc = *s;
-        set(c, ONE, false);
-    }
-}
-*/

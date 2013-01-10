@@ -40,41 +40,44 @@ static Value funcGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
 }
 
-static void printVal(Value v) {
+static void printVal(const char *prefix, Value v) {
     if (IS_STRING(v)) {
-        printf("'%s'", GET_CSTR(v)); 
+        printf("%s'%s'", prefix, GET_CSTR(v)); 
     } else if (IS_NUM(v)) {
         double d = GET_NUM(v);
         if (d == (long long) d) {
-            printf("%lld", (long long) d);
+            printf("%s%lld", prefix, (long long) d);
         } else {
-            printf("%f", d);
+            printf("%s%f", prefix, d);
         }
     } else if (IS_OBJ(v)) {
         Object *p = GET_OBJ(v);
         if (IS_ARRAY(v)) {
             Array *a = (Array *) p;
             int size = a->size();
-            printf("[");
+            printf("%s[", prefix);
             for (int i = 0; i < size; ++i) { 
-                if (i) { printf(", "); }
-                printVal(a->getI(i)); 
+                printVal(i?", ":"", a->getI(i)); 
             }
             printf("]");
         } else if (IS_MAP(v)) {
             Map *m = (Map *) p;
             int size = m->size();
+            printf("%s{", prefix);
+            Value *keys = m->keyBuf();
+            Value *vals = m->valBuf();
             for (int i = 0; i < size; ++i) {
-                if (i) { printf(", "); }                
-                // printVal(m->getI(i));
+                printVal(i?", ":"", keys[i]);
+                printVal(":", vals[i]);
             }
+            printf("}");
         } else {
-            printf("%p ", p);
+            printf("%s%p", prefix, p);
         }
     } else if (IS_NIL(v)) {
-        printf("NIL ");            
+        printf("%sNIL", prefix);
     } else if (IS_CF(v)) {
-        printf("CFunc %p ", GET_CF(v));
+        printf("%sCFunc %p", prefix, GET_CF(v));
     }
 }
 
@@ -83,8 +86,9 @@ static Value funcPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) 
     assert(nCallArgs > 0);
     
     for (int i = 1; i < nCallArgs; ++i) {
-        printVal(stack[i]);
+        printVal((i>1)?" ":"", stack[i]);
     }
+    printf("\n");
     return VNIL;    
 }
 
