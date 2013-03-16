@@ -11,7 +11,7 @@
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
   <application android:label="Pepper" android:icon="@drawable/icon" >
     <!-- android:debuggable="true" android:largeHeap="true" -->
-      <activity android:name="Pepper"
+      <activity android:name="PepperApp"
                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
                 android:label="Pepper"
                 >
