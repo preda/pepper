@@ -35,10 +35,19 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {
+    Value androidBg = CFunc::value(gc, androidBackground);
+    NameValue android[] = {
+        NameValue("bg", androidBg),
+        NameValue("background", androidBg),
+    };
+
+
     NameValue builtin[] = {
-        NameValue("type",  CFunc::value(gc, builtinType)),
-        NameValue("print", CFunc::value(gc, builtinPrint)),
-        NameValue("gc",    CFunc::value(gc, builtinGC)),
+        NameValue("type",   CFunc::value(gc, builtinType)),
+        NameValue("print",  CFunc::value(gc, builtinPrint)),
+        NameValue("gc",     CFunc::value(gc, builtinGC)),
+        NameValue("import", CFunc::value(gc, builtinImport)),
+        NameValue("android", Map::value(gc, ASIZE(android), android)),
         // NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
     };
 

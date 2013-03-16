@@ -80,13 +80,10 @@ Value builtinType(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
         s = "array";
     } else if (IS_MAP(v)) {
         s = "map";
-    } else if (IS_PROTO(v)) {
-        s = "proto";
-    } else if (IS_FUNC(v)) {
+    } else if (IS_FUNC(v) || IS_CFUNC(v)) {
         s = "func";
-    } else if (IS_CFUNC(v)) {
-        s = "cfunc";
     }
+    // else if (IS_PROTO(v)) { s = "proto";
     assert(s); // unexpected type
     return String::value(vm->getGC(), s);
 }
@@ -95,5 +92,21 @@ Value builtinGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArg > 0);
     vm->gcCollect(stack + nCallArg);
+    return VNIL;
+}
+
+Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    assert(op == CFunc::CFUNC_CALL && !data);
+    assert(nCallArg > 0);
+    if (nCallArg >= 2) {
+        Value v = stack[1];
+        if (IS_STRING(v)) {
+            // TODO
+        }
+    }
+    return VNIL;
+}
+
+Value androidBackground(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
 }

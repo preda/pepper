@@ -21,5 +21,5 @@ LOCAL_CFLAGS    := -std=c++11 -Wall
 LOCAL_LDLIBS    := -ldl
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/android-include
 #LOCAL_STATIC_LIBRARIES := ffi
-LOCAL_SRC_FILES := Array.cpp CFunc.cpp Decompile.cpp fnv.cpp Func.cpp GC.cpp Lexer.cpp Map.cpp Object.cpp Parser.cpp Proto.cpp String.cpp SymbolMap.cpp SymbolTable.cpp Value.cpp Vector.cpp VM.cpp error.cpp alloc.cpp main.cpp
+LOCAL_SRC_FILES := Array.cpp CFunc.cpp Decompile.cpp fnv.cpp Func.cpp GC.cpp Lexer.cpp Map.cpp Object.cpp Parser.cpp Proto.cpp String.cpp SymbolTable.cpp Value.cpp Vector.cpp VM.cpp error.cpp alloc.cpp main.cpp
 include $(BUILD_EXECUTABLE)
