@@ -9,7 +9,7 @@
 
   <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="17" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-  <application android:label="Pepper" android:icon="@drawable/icon" >
+  <application android:name="App" android:label="Pepper" android:icon="@drawable/icon" >
     <!-- android:debuggable="true" android:largeHeap="true" -->
       <activity android:name="PepperApp"
                 android:theme="@android:style/Theme.NoTitleBar.Fullscreen"

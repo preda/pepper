@@ -7,10 +7,6 @@ import android.os.*;
 import android.view.*;
 
 public class PepperApp extends Activity {
-    static {
-        System.loadLibrary("pepper");
-    }
-
     public void onCreate(Bundle b) {
         super.onCreate(b);
         setContentView(new CanvasView(this));
