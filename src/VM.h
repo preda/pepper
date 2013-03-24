@@ -1,3 +1,4 @@
+// Copyright (C) 2012 - 2013 Mihai Preda
 #pragma once
 
 #include "Value.h"
@@ -58,12 +59,12 @@ enum {
 bool opcodeHasDest(int opcode);
 
 class Pepper;
+class Stack;
 
 class VM {
     Pepper *pepper;
     GC *gc;
-    Value *stack;
-    unsigned stackSize;
+    Stack *stack;
     Func *activeFunc;
     Vector<RetInfo> retInfo;
     Value stringMethods;

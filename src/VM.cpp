@@ -10,6 +10,7 @@
 #include "Pepper.h"
 #include "GC.h"
 #include "NameValue.h"
+#include "Stack.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -121,13 +122,11 @@ static void setSlice(Value c, Value a1, Value a2, Value b) {
     ARRAY(c)->setSliceV(a1, a2, b);
 }
 
-#define INITIAL_STACK 512
-
-VM::VM(Pepper *pepper) : pepper(pepper), gc(pepper->getGC())
+VM::VM(Pepper *pepper) :
+    pepper(pepper),
+    gc(pepper->getGC()),
+    stack(new Stack())
 {
-    stackSize = INITIAL_STACK;
-    stack = (Value *) calloc(stackSize, sizeof(Value));
-    
     NameValue strMethods[] = {
         NameValue("find", CFunc::value(gc, String::method_find)),
     };
@@ -136,19 +135,8 @@ VM::VM(Pepper *pepper) : pepper(pepper), gc(pepper->getGC())
 }
 
 VM::~VM() {
-    free(stack);
+    delete stack;
     stack     = 0;
-    stackSize = 0;
-}
-
-Value *VM::maybeGrowStack(Value *regs) {
-    if (regs + 256 > stack + stackSize) {
-        int base = regs - stack;
-        stackSize += 512;
-        stack = (Value *) realloc(stack, stackSize * sizeof(Value));
-        return stack + base;
-    }
-    return regs;
 }
 
 bool objEquals(Object *a, Object *b) {
@@ -213,7 +201,8 @@ void VM::traverse() {
 }
 
 void VM::gcCollect(Value *top) {
-    gc->collect(this, stack, top - stack);
+    Value *base = stack->base;
+    gc->collect(this, base, top - base);
 }
 
 extern __thread jmp_buf jumpBuf;
@@ -238,7 +227,7 @@ Value VM::run(Func *func, int nArg, Value *args) {
 
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
  
-    Value *regs  = stack;
+    Value *regs  = stack->maybeGrow(0, 256);
     if (nArg > 0) {
         memcpy(regs, args, nArg * sizeof(Value));
     }
@@ -288,18 +277,16 @@ SETF: setField(*ptrC, A, B);  STEP;
 RET: {
         regs[0] = A;
         activeFunc = 0;
-        gc->maybeCollect(this, stack, regs-stack+1);
+        Value *base = stack->base;
+        gc->maybeCollect(this, base, regs-base+1);
         if (!retInfo.size()) {
-            if (stackSize > INITIAL_STACK) {
-                stackSize = INITIAL_STACK;
-                stack = (Value *) realloc(stack, stackSize * sizeof(Value));
-            }
+            stack->shrink();
             return A;
         }
 
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
-        regs       = stack + ri->base;
+        regs       = stack->base + ri->base;
         activeFunc = ri->func;
         retInfo.pop();
         copyUpvals(activeFunc, regs);
@@ -356,9 +343,9 @@ CALL: {
 
             RetInfo *ret = retInfo.push();
             ret->pc    = pc;
-            ret->base  = regs - stack;
+            ret->base  = regs - stack->base;
             ret->func  = activeFunc;
-            regs = maybeGrowStack(base);
+            regs = stack->maybeGrow(base, 256);
             copyUpvals(f, regs);
             pc   = proto->code.buf();
             activeFunc = f;
