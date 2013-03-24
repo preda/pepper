@@ -331,7 +331,7 @@ Value Parser::mapExpr(int top) {
         if (IS_REG(k) || IS_REG(v)) {
             emit(top+2, SETI, slot, k, v);
         } else {
-            map->set(k, v);
+            map->rawSet(k, v);
         }
         if (TOKEN == '}') { break; }
         consume(',');

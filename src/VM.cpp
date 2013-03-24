@@ -79,9 +79,9 @@ static Value doSHR(Value v, int shift) {
 
 static Value getIndex(Value a, Value b) {
     return 
-        IS_ARRAY(a)  ? ARRAY(a)->getV(b)  :
+        IS_ARRAY(a)  ? ARRAY(a)->getV(b) :
         IS_STRING(a) ? String::get(a, b) :
-        IS_MAP(a)    ? MAP(a)->get(b)    :
+        IS_MAP(a)    ? MAP(a)->rawGet(b) :
         ERROR(E_NOT_INDEXABLE);
 }
 
@@ -98,7 +98,7 @@ static void setIndex(Value c, Value a, Value b) {
     if (IS_ARRAY(c)) {
         ARRAY(c)->setV(a, b);
     } else if (IS_MAP(c)){
-        MAP(c)->set(a, b);
+        MAP(c)->rawSet(a, b);
     } else {
         ERROR(E_NOT_INDEXABLE);
     }

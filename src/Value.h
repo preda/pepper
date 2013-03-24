@@ -45,8 +45,7 @@ union ValueUnion {
         unsigned w2;
     };
     struct {
-        unsigned dummy;
-        short s1;
+        char chars[6];
         short tag;
     };
 };
@@ -108,6 +107,7 @@ inline bool IS_NUM_TAG(int t) { return (unsigned)t <= (unsigned)-16 || t == -8; 
 #define IS_SHORT_STR(v)  (T_STR0 <= TAG(v) && TAG(v) <= T_STR5)
 inline bool IS_SHORT_STR_TAG(int t) { return t >= T_STR0 && t <= T_STR5; }
 #define SHORT_STR_LEN(v) (TAG(v) - T_STR0)
+// #define VAL_SHORT_STR(c, len) ValueUnion{tag:(T_STR0+len)}.v
 
 #define IS_FALSE(v) (v == ZERO || TAG(v) == T_NIL)
 #define IS_TRUE(a) (!IS_REG(a) && !IS_FALSE(a))

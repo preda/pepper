@@ -9,6 +9,7 @@ struct NameValue;
 
 class Map {
     SimpleMap map;
+    bool hasGet, hasSet;
 
     Map();
     void grow();
@@ -25,8 +26,11 @@ class Map {
     int size() { return map.size(); }
     void traverse(GC *gc);
 
-    Value get(Value key) { return map.get(key); }
-    Value set(Value key, Value val);
+    Value rawGet(Value key) { return map.get(key); }
+    Value rawSet(Value key, Value val);
+
+    Value get(Value key, bool *again);
+    Value set(Value key, Value val, bool *again);
         
     Map *copy(GC *gc);
     void add(Value v);

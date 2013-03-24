@@ -8,6 +8,9 @@
 #include <string.h>
 #include <assert.h>
 
+Value String::__SET = String::value(0, "__set");
+Value String::__GET = String::value(0, "__get");
+
 Value String::value(GC *gc, unsigned len) {
     return len <= 5 ? VAL_TAG(T_STR0 + len) : VAL_OBJ(String::alloc(gc, len));
 }

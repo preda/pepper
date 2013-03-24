@@ -19,7 +19,10 @@ void Map::traverse(GC *gc) {
     gc->markValVect(keyBuf(), sz);
 }
 
-Map::Map() {
+Map::Map() :
+    hasGet(false),
+    hasSet(false)
+{
     ((Object *) this)->setType(O_MAP);
 }
 
@@ -29,7 +32,7 @@ Map::~Map() {
 Value Map::value(GC *gc, unsigned n, NameValue *p) {
     Map *m = Map::alloc(gc, n);
     for (NameValue *end = p + n; p < end; ++p) {
-        m->set(String::value(gc, p->name), p->value);
+        m->rawSet(String::value(gc, p->name), p->value);
     }
     return VAL_OBJ(m);
 }
@@ -38,7 +41,7 @@ bool Map::equals(Map *o) {
     const int sz = size();
     if (sz != o->size()) { return false; }
     for (Value *pk = keyBuf(), *end=pk+sz, *pv=valBuf(); pk < end; ++pk, ++pv) {
-        if (!::equals(*pv, o->get(*pk))) { return false; }
+        if (!::equals(*pv, o->rawGet(*pk))) { return false; }
     }
     return true;
 }
@@ -61,8 +64,29 @@ Map *Map::copy(GC *gc) {
     return m;
 }
 
-Value Map::set(Value key, Value val) {
+Value Map::rawSet(Value key, Value val) {
     return IS_NIL(val) ? map.remove(key) : map.set(key, val);
+}
+
+Value Map::set(Value key, Value val, bool *again) {
+    *again = false;
+    if (key == String::__SET) {
+        hasSet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
+        return rawSet(key, val);
+    } else if (!hasSet || map.contains(key)) {
+        if (key == String::__GET) {
+            hasGet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
+        }
+        return rawSet(key, val);
+    } else {
+        *again = true;
+        return rawGet(String::__SET);
+    }
+}
+
+Value Map::get(Value key, bool *again) {
+    *again = hasGet;
+    return rawGet(hasGet ? String::__GET : key);
 }
 
 void Map::add(Value v) {

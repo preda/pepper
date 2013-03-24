@@ -19,4 +19,5 @@ class SimpleMap {
     int size() { return index.size(); }
     Value *keyBuf() { return index.getBuf(); }
     Value *valBuf() { return vals.buf(); }
+    bool contains(Value key) { return index.getPos(key) >= 0; }
 };

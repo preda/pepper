@@ -20,7 +20,7 @@ int SymbolTable::pushContext() {
 }
 
 void SymbolTable::undo(UndoEntry *p) {
-    map->set(p->name, p->prev);
+    map->rawSet(p->name, p->prev);
 }
 
 int SymbolTable::popContext() {
@@ -35,16 +35,16 @@ int SymbolTable::popContext() {
 }
 
 Value SymbolTable::get(Value name) {
-    return map->get(name);
+    return map->rawGet(name);
 }
 
 void SymbolTable::set(Value name, int slot, int level) {
     if (level == -1) { level = this->level; }
-    Value prev = map->get(name);
+    Value prev = map->rawGet(name);
     if (IS_NIL(prev) || ((prev & 0xff) != (unsigned) level)) {
         UndoEntry *u = (undoLog + level)->push();
         u->name = name;
         u->prev = prev;
     }
-    map->set(name, VAL_REG(((slot<<8) | level)));
+    map->rawSet(name, VAL_REG(((slot<<8) | level)));
 }

@@ -23,6 +23,7 @@ class String {
     static Value concat(GC *gc, Value a, Value b);
     static Value get(Value a, Value pos);
     static Value getSlice(GC *gc, Value a, Value pos1, Value pos2);
+    static Value __SET, __GET;
 
     char s[0];
 

@@ -34,7 +34,7 @@ Lexer::Lexer(GC *gc, const char *string) :
     end = string + strlen(string);
     lineNumber = 0;
     for (int i = 0; i < TK_END_KEYWORD; ++i) {
-        keywords->set(String::value(gc, tokens[i]), VAL_REG(i));
+        keywords->rawSet(String::value(gc, tokens[i]), VAL_REG(i));
     }
 }
 
@@ -68,7 +68,7 @@ int Lexer::advanceInt(TokenInfo *info) {
                 }
                 name.push(0);
                 Value str = String::value(gc, name.buf());
-                Value v = keywords->get(str);
+                Value v = keywords->rawGet(str);
                 if (!IS_NIL(v)) {
                     return (int) v;
                 }
