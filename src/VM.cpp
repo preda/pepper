@@ -78,19 +78,34 @@ static Value doSHR(Value v, int shift) {
     return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) >> shift));
 }
 
-static Value getIndex(Value a, Value b) {
+static Value getIndex(Value a, Value key) {
     return 
-        IS_ARRAY(a)  ? ARRAY(a)->getV(b) :
-        IS_STRING(a) ? String::get(a, b) :
-        IS_MAP(a)    ? MAP(a)->rawGet(b) :
+        IS_ARRAY(a)  ? ARRAY(a)->getV(key) :
+        IS_STRING(a) ? String::get(a, key) :
+        IS_MAP(a)    ? MAP(a)->rawGet(key) :
         ERROR(E_NOT_INDEXABLE);
 }
 
-Value VM::getField(Value a, Value b) {
-    if (IS_STRING(a)) {
-        return getField(stringMethods, b);
-    } else {
-        return getIndex(a, b);
+Value VM::getField(Value a, Value key) {
+    while (true) {
+        if (IS_STRING(a)) {
+            a = stringMethods;
+        } else if (IS_MAP(a)) {
+            Map *map = MAP(a);
+            bool again = false;
+            Value v = map->get(key, &again);
+            if (again) {
+                if (IS_FUNC(v) || IS_CFUNC(v)) {
+                    return v;
+                } else { 
+                    a = v;
+                }
+            } else {
+                return v;
+            }
+        } else {
+            return getIndex(a, key);
+        }
     }
 }
 
