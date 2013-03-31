@@ -12,6 +12,7 @@
 #include "NameValue.h"
 #include "Object.h"
 #include "builtin.h"
+#include "Stack.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -31,7 +32,8 @@ Pepper::~Pepper() {
 }
 
 Value Pepper::run(Func *f, int nArg, Value *args) {
-    return vm->run(f, nArg, args);
+    Stack stack;
+    return vm->run(&stack, f, nArg, args);
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {

@@ -91,7 +91,7 @@ Value builtinType(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
 Value builtinGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArg > 0);
-    vm->gcCollect(stack + nCallArg);
+    // vm->gcCollect(stack + nCallArg);
     return VNIL;
 }
 

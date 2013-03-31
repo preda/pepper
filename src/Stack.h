@@ -8,6 +8,7 @@ class Stack {
  public:
     Value *base;
     unsigned size;
+    unsigned top;
 
     Stack();
     ~Stack();

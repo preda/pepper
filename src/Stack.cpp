@@ -4,7 +4,8 @@
 
 Stack::Stack() :
     base((Value *) calloc(512, sizeof(Value))),
-    size(512)
+    size(512),
+    top(0)
 {
 }
 
@@ -14,10 +15,11 @@ Stack::~Stack() {
     }
     base = 0;
     size = 0;
+    top  = 0;
 }
 
 Value *Stack::maybeGrow(Value *regs, unsigned space) {
-    if (!regs) { regs = base; }
+    if (!regs) { regs = base + top; }
     assert(base <= regs && regs < base + size);
     if (regs + space > base + size) {
         int pos = regs - base;

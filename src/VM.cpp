@@ -124,8 +124,7 @@ static void setSlice(Value c, Value a1, Value a2, Value b) {
 
 VM::VM(Pepper *pepper) :
     pepper(pepper),
-    gc(pepper->getGC()),
-    stack(new Stack())
+    gc(pepper->getGC())
 {
     NameValue strMethods[] = {
         NameValue("find", CFunc::value(gc, String::method_find)),
@@ -135,8 +134,6 @@ VM::VM(Pepper *pepper) :
 }
 
 VM::~VM() {
-    delete stack;
-    stack     = 0;
 }
 
 bool objEquals(Object *a, Object *b) {
@@ -200,13 +197,15 @@ void VM::traverse() {
     gc->mark(GET_OBJ(stringMethods));
 }
 
+/*
 void VM::gcCollect(Value *top) {
     Value *base = stack->base;
     gc->collect(this, base, top - base);
 }
+*/
 
 extern __thread jmp_buf jumpBuf;
-Value VM::run(Func *func, int nArg, Value *args) {
+Value VM::run(Stack *stack, Func *func, int nArg, Value *args) {
     unsigned code = 0;
     Value A, B;
     Value *ptrC;
@@ -217,7 +216,6 @@ Value VM::run(Func *func, int nArg, Value *args) {
         printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code); 
         return VNIL;
     }
-
 
     static void *dispatch[] = {
 #define _(name) &&name
