@@ -220,7 +220,7 @@ void VM::gcCollect(Value *top) {
 */
 
 extern __thread jmp_buf jumpBuf;
-Value VM::run(Stack *stack, Func *func, int nArg) {
+Value VM::call(Func *func, int nArg, Stack *stack) {
     unsigned code = 0;
     Value A, B;
     Value *ptrC;

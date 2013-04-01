@@ -74,7 +74,7 @@ class VM {
  public:
     VM(Pepper *pepper);
     ~VM();
-    Value run(Stack *stack, Func *f, int nArg = 0);
+    Value call(Func *f, int nArg, Stack *stack);
 
     void traverse();
     // void gcCollect(Value *stackTop);
