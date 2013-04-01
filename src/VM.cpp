@@ -260,18 +260,21 @@ static int prepareStackForCall(Value *base, int nArgs, int nEffArgs, GC *gc) {
 }
 
 extern __thread jmp_buf jumpBuf;
-Value *VM::call(Value A, int nArg, Value *regs, Stack *stack) {
+Value *VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
+    ERR(!(IS_O_TYPE(A, O_FUNC) || IS_CF(A) || IS_O_TYPE(A, O_CFUNC)), E_CALL_NOT_FUNC);
     // Value *regs  = stack->maybeGrow(regs, 256);
+    int nExpectedArgs = IS_O_TYPE(A, O_FUNC) ? ((Func *)GET_OBJ(A))->proto->nArgs : NARGS_CFUNC;
+    nEffArgs = prepareStackForCall(regs, nExpectedArgs, nEffArgs, gc);
+
     if (IS_CF(A) || IS_O_TYPE(A, O_CFUNC)) {
         if (IS_CF(A)) {
             tfunc f = GET_CF(A);
-            *regs = f(this, CFunc::CFUNC_CALL, 0, regs, nArg);
+            *regs = f(this, CFunc::CFUNC_CALL, 0, regs, nEffArgs);
         } else {
-            ((CFunc *) GET_OBJ(A))->call(this, regs, nArg);
+            ((CFunc *) GET_OBJ(A))->call(this, regs, nEffArgs);
         }
         return regs;
     }
-    ERR(!IS_O_TYPE(A, O_FUNC), E_CALL_NOT_FUNC);
 
     unsigned code = 0;
     Value B;
@@ -359,49 +362,10 @@ CALL: {
         int nEffArgs = OSB(code);
         assert(nEffArgs != 0);
         Value *base = ptrC;
-        int nArgs = IS_O_TYPE(A, O_FUNC) ? ((Func *)GET_OBJ(A))->proto->nArgs : NARGS_CFUNC;
-        nEffArgs = prepareStackForCall(base, nArgs, nEffArgs, gc);
-        /*
-        Array *tail  = 0;
-        int tailSize = 0;
-        if (nEffArgs < 0) { //last arg is *args
-            nEffArgs = -nEffArgs;
-            Value v = base[nEffArgs - 1];
-            ERR(!IS_ARRAY(v), E_ELLIPSIS);
-            tail = ARRAY(v);
-            --nEffArgs;
-            tailSize = tail->size();
-        }
-        */
-
-        if (IS_OBJ(A) && (O_TYPE(A) == O_FUNC)) {
+        if (IS_O_TYPE(A, O_FUNC)) {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
-            /*
-            int nArgs = f->proto->nArgs;
-            bool hasEllipsis = nArgs < 0;
-            if (hasEllipsis) {
-                nArgs = -nArgs - 1;
-            }
-            int nFromTail  = clamp(nArgs - nEffArgs, 0, tailSize);
-            for (int i = 0; i < nFromTail; ++i) {
-                base[nEffArgs + i] = tail->getI(i);
-            }
-            nEffArgs += nFromTail;
-            for (Value *p = base + nEffArgs, *end = base + nArgs; p < end; ++p) {
-                *p = VNIL;
-            }
-            if (hasEllipsis) {
-                Array *a = Array::alloc(gc);
-                for (Value *p = base + nArgs, *end = base + nEffArgs; p < end; ++p) {
-                    a->push(*p);
-                }
-                if (nFromTail < tailSize) {
-                    a->append(tail->buf() + nFromTail, tailSize - nFromTail);
-                }
-                base[nArgs] = VAL_OBJ(a);
-            }
-            */
+            prepareStackForCall(base, proto->nArgs, nEffArgs, gc);
 
             RetInfo *ret = retInfo.push();
             ret->pc    = pc;
@@ -412,13 +376,6 @@ CALL: {
             pc   = proto->code.buf();
             activeFunc = f;
         } else {
-            /*
-            ERR(tailSize > 128, E_ELLIPSIS);
-            for (int i = 0; i < tailSize; ++i) {
-                base[nEffArgs + i] = tail->getI(i);
-            }
-            nEffArgs += tailSize;
-            */
             unsigned regPos = regs - stack->base;
             call(A, nEffArgs, base, stack);
             regs = stack->base + regPos;
