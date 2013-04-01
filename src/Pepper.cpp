@@ -16,6 +16,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 Pepper::Pepper() :
     gc(new GC()),
@@ -33,7 +34,9 @@ Pepper::~Pepper() {
 
 Value Pepper::run(Func *f, int nArg, Value *args) {
     Stack stack;
-    return vm->run(&stack, f, nArg, args);
+    Value *base = stack.maybeGrow(0, nArg);
+    memcpy(base, args, nArg * sizeof(Value));
+    return vm->run(&stack, f, nArg);
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {

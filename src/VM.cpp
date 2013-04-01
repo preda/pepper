@@ -220,7 +220,7 @@ void VM::gcCollect(Value *top) {
 */
 
 extern __thread jmp_buf jumpBuf;
-Value VM::run(Stack *stack, Func *func, int nArg, Value *args) {
+Value VM::run(Stack *stack, Func *func, int nArg) {
     unsigned code = 0;
     Value A, B;
     Value *ptrC;
@@ -241,9 +241,6 @@ Value VM::run(Stack *stack, Func *func, int nArg, Value *args) {
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
  
     Value *regs  = stack->maybeGrow(0, 256);
-    if (nArg > 0) {
-        memcpy(regs, args, nArg * sizeof(Value));
-    }
 
     activeFunc = func;
     copyUpvals(activeFunc, regs);
