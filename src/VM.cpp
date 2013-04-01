@@ -321,7 +321,6 @@ CALL: {
         Value *base = ptrC;
 
         Array *tail  = 0;
-        int tailPos  = 0;
         int tailSize = 0;
         if (nEffArgs < 0) { //last arg is *args
             nEffArgs = -nEffArgs;
@@ -340,14 +339,11 @@ CALL: {
             if (hasEllipsis) {
                 nArgs = -nArgs - 1;
             }
-            if (nEffArgs < nArgs && tailSize) {
-                int newEffArgs = min(nEffArgs + tailSize, nArgs);
-                tailPos = newEffArgs - nEffArgs;
-                for (int i = 0; i < tailPos; ++i) {
-                    base[nEffArgs + i] = tail->getI(i);
-                }
-                nEffArgs = newEffArgs;
+            int nFromTail  = clamp(nArgs - nEffArgs, 0, tailSize);
+            for (int i = 0; i < nFromTail; ++i) {
+                base[nEffArgs + i] = tail->getI(i);
             }
+            nEffArgs += nFromTail;
             for (Value *p = base + nEffArgs, *end = base + nArgs; p < end; ++p) {
                 *p = VNIL;
             }
@@ -356,8 +352,8 @@ CALL: {
                 for (Value *p = base + nArgs, *end = base + nEffArgs; p < end; ++p) {
                     a->push(*p);
                 }
-                if (tailPos < tailSize) {
-                    a->append(tail->buf() + tailPos, tailSize - tailPos);
+                if (nFromTail < tailSize) {
+                    a->append(tail->buf() + nFromTail, tailSize - nFromTail);
                 }
                 base[nArgs] = VAL_OBJ(a);
             }
@@ -381,16 +377,6 @@ CALL: {
             unsigned regPos = regs - stack->base;
             call(A, nEffArgs, base, stack);
             regs = stack->base + regPos;
-
-            /*
-            if (IS_CF(A)) {
-                tfunc f = GET_CF(A);
-                *base = f(this, CFunc::CFUNC_CALL, 0, base, nEffArgs);
-            } else {
-                ERR(!IS_OBJ(A) || O_TYPE(A) != O_CFUNC, E_CALL_NOT_FUNC);
-                ((CFunc *) GET_OBJ(A))->call(this, base, nEffArgs);
-            }
-            */
         }
         STEP;
     }
