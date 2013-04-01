@@ -206,9 +206,11 @@ void VM::traverse() {
     for (RetInfo *p = retInfo.buf(), *end = p + retInfo.size(); p < end; ++p) {
         gc->mark((Object *) p->func);
     }
+    /*
     if (activeFunc) {
         gc->mark((Object *) activeFunc);
     }
+    */
     gc->mark(GET_OBJ(stringMethods));
 }
 
@@ -260,9 +262,9 @@ static int prepareStackForCall(Value *base, int nArgs, int nEffArgs, GC *gc) {
 }
 
 extern __thread jmp_buf jumpBuf;
-Value *VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
+void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     ERR(!(IS_O_TYPE(A, O_FUNC) || IS_CF(A) || IS_O_TYPE(A, O_CFUNC)), E_CALL_NOT_FUNC);
-    // Value *regs  = stack->maybeGrow(regs, 256);
+    regs  = stack->maybeGrow(regs, 256);
     int nExpectedArgs = IS_O_TYPE(A, O_FUNC) ? ((Func *)GET_OBJ(A))->proto->nArgs : NARGS_CFUNC;
     nEffArgs = prepareStackForCall(regs, nExpectedArgs, nEffArgs, gc);
 
@@ -273,19 +275,19 @@ Value *VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
         } else {
             ((CFunc *) GET_OBJ(A))->call(this, regs, nEffArgs);
         }
-        return regs;
+        return; //regs;
     }
 
     unsigned code = 0;
     Value B;
     Value *ptrC;
-    Func *func = (Func *) GET_OBJ(A);
-    unsigned *pc = func->proto->code.buf();
+    Func *activeFunc = (Func *) GET_OBJ(A);
+    unsigned *pc = activeFunc->proto->code.buf();
 
     if (int err = setjmp(jumpBuf)) {
         (void) err;
         printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code); 
-        return 0;
+        return; // 0;
     }
 
     static void *dispatch[] = {
@@ -296,7 +298,6 @@ Value *VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
 
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
 
-    activeFunc = func;
     copyUpvals(activeFunc, regs);
 
     STEP;
@@ -332,22 +333,25 @@ GETI: *ptrC = getIndex(A, B); STEP;
 SETI: setIndex(*ptrC, A, B);  STEP;
 
     // field, A.B
-GETF: *ptrC = getField(A, B); STEP;
-SETF: setField(*ptrC, A, B);  STEP;
+ GETF: *ptrC = getField(A, B); STEP;
+ SETF: setField(*ptrC, A, B);  STEP;
 
  GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); STEP;
  SETS: setSlice(*ptrC, A, regs[OA(code)+1], B);  STEP;
 
-RET: {
+#define FAST_FUNC false
+
+ RET: {
         regs[0] = A;
-        activeFunc = 0;
-        Value *base = stack->base;
-        gc->maybeCollect(this, base, regs-base+1);
+        Value *root = stack->base;
+        // gc->maybeCollect(this, root, regs - root + 1);
+        if (!FAST_FUNC) {
+            return;
+        }
         if (!retInfo.size()) {
             stack->shrink();
-            return regs;
+            return; //regs;
         }
-
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
         regs       = stack->base + ri->base;
@@ -362,7 +366,7 @@ CALL: {
         int nEffArgs = OSB(code);
         assert(nEffArgs != 0);
         Value *base = ptrC;
-        if (IS_O_TYPE(A, O_FUNC)) {
+        if (FAST_FUNC && IS_O_TYPE(A, O_FUNC)) {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
             prepareStackForCall(base, proto->nArgs, nEffArgs, gc);
@@ -379,6 +383,7 @@ CALL: {
             unsigned regPos = regs - stack->base;
             call(A, nEffArgs, base, stack);
             regs = stack->base + regPos;
+            copyUpvals(activeFunc, regs);
         }
         STEP;
     }
@@ -421,7 +426,7 @@ CALL: {
  LT:  *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
  LE:  *ptrC = (equals(A, B) || lessThan(A, B)) ? TRUE : FALSE; STEP;
 
-    return 0;
+    return; //0
 }
 
 bool opcodeHasDest(int op) {

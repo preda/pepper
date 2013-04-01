@@ -64,7 +64,7 @@ class Stack;
 class VM {
     Pepper *pepper;
     GC *gc;
-    Func *activeFunc;
+    // Func *activeFunc;
     Vector<RetInfo> retInfo;
     Value stringMethods;
 
@@ -74,7 +74,7 @@ class VM {
  public:
     VM(Pepper *pepper);
     ~VM();
-    Value *call(Value fval, int nArg, Value *regs, Stack *stack);
+    void call(Value fval, int nArg, Value *regs, Stack *stack);
 
     void traverse();
     // void gcCollect(Value *stackTop);

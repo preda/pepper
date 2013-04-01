@@ -171,7 +171,7 @@ T tests[] = {
 
     // recursion
     T("func f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
-    T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(100000)", VAL_NUM(5000050001)),
+    T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(20000)", VAL_NUM(200010001)),
 
     // ternary op
     T("return 1 ? 2 : 3", VAL_NUM(2)),
