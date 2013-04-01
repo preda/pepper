@@ -220,16 +220,29 @@ void VM::gcCollect(Value *top) {
 */
 
 extern __thread jmp_buf jumpBuf;
-Value VM::call(Func *func, int nArg, Stack *stack) {
+Value *VM::call(Value A, int nArg, Value *regs, Stack *stack) {
+    // Value *regs  = stack->maybeGrow(regs, 256);
+    if (IS_CF(A) || IS_O_TYPE(A, O_CFUNC)) {
+        if (IS_CF(A)) {
+            tfunc f = GET_CF(A);
+            *regs = f(this, CFunc::CFUNC_CALL, 0, regs, nArg);
+        } else {
+            ((CFunc *) GET_OBJ(A))->call(this, regs, nArg);
+        }
+        return regs;
+    }
+    ERR(!IS_O_TYPE(A, O_FUNC), E_CALL_NOT_FUNC);
+
     unsigned code = 0;
-    Value A, B;
+    Value B;
     Value *ptrC;
+    Func *func = (Func *) GET_OBJ(A);
     unsigned *pc = func->proto->code.buf();
 
     if (int err = setjmp(jumpBuf)) {
         (void) err;
         printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code); 
-        return VNIL;
+        return 0;
     }
 
     static void *dispatch[] = {
@@ -239,8 +252,6 @@ Value VM::call(Func *func, int nArg, Stack *stack) {
     };
 
     assert(sizeof(dispatch)/sizeof(dispatch[0]) == N_OPCODES);
- 
-    Value *regs  = stack->maybeGrow(0, 256);
 
     activeFunc = func;
     copyUpvals(activeFunc, regs);
@@ -291,7 +302,7 @@ RET: {
         gc->maybeCollect(this, base, regs-base+1);
         if (!retInfo.size()) {
             stack->shrink();
-            return A;
+            return regs;
         }
 
         RetInfo *ri = retInfo.top();
@@ -366,6 +377,12 @@ CALL: {
             }
             nEffArgs += tailSize;
 
+            // stack->top = regs;
+            unsigned regPos = regs - stack->base;
+            call(A, nEffArgs, base, stack);
+            regs = stack->base + regPos;
+
+            /*
             if (IS_CF(A)) {
                 tfunc f = GET_CF(A);
                 *base = f(this, CFunc::CFUNC_CALL, 0, base, nEffArgs);
@@ -373,6 +390,7 @@ CALL: {
                 ERR(!IS_OBJ(A) || O_TYPE(A) != O_CFUNC, E_CALL_NOT_FUNC);
                 ((CFunc *) GET_OBJ(A))->call(this, base, nEffArgs);
             }
+            */
         }
         STEP;
     }

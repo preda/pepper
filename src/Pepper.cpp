@@ -36,7 +36,8 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
     Stack stack;
     Value *base = stack.maybeGrow(0, nArg);
     memcpy(base, args, nArg * sizeof(Value));
-    return vm->call(f, nArg, &stack);
+    base = vm->call(VAL_OBJ(f), nArg, base, &stack);
+    return base[0];
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {
