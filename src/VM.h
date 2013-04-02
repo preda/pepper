@@ -64,19 +64,20 @@ class Stack;
 class VM {
     Pepper *pepper;
     GC *gc;
-    // Func *activeFunc;
     Vector<RetInfo> retInfo;
     Value stringMethods;
 
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
+    void call(Value fval, int nArg, Value *regs, Stack *stack);
     
  public:
     VM(Pepper *pepper);
     ~VM();
-    void call(Value fval, int nArg, Value *regs, Stack *stack);
 
-    void traverse();
+    Value run(Func *f, int nArg, Value *args);
+
+    // void traverse();
     // void gcCollect(Value *stackTop);
     GC *getGC() { return gc; }
 };

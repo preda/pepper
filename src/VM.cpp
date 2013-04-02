@@ -201,18 +201,18 @@ static void copyUpvals(Func *f, Value *regs) {
     // memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
 }
 
+/*
 void VM::traverse() {
     GC *gc = this->gc;
     for (RetInfo *p = retInfo.buf(), *end = p + retInfo.size(); p < end; ++p) {
         gc->mark((Object *) p->func);
     }
-    /*
     if (activeFunc) {
         gc->mark((Object *) activeFunc);
     }
-    */
     gc->mark(GET_OBJ(stringMethods));
 }
+*/
 
 /*
 void VM::gcCollect(Value *top) {
@@ -220,6 +220,17 @@ void VM::gcCollect(Value *top) {
     gc->collect(this, base, top - base);
 }
 */
+
+Value VM::run(Func *f, int nArg, Value *args) {
+    static const int nExtra = 2;
+    Stack stack;
+    Value *base = stack.maybeGrow(0, nArg + nExtra);
+    base[0] = VAL_OBJ(f);
+    base[1] = stringMethods;
+    memcpy(base+1, args, nArg * sizeof(Value));
+    call(VAL_OBJ(f), nArg, base + nExtra, &stack);
+    return stack.base[nExtra];
+}
 
 #define NARGS_CFUNC 128
 static int prepareStackForCall(Value *base, int nArgs, int nEffArgs, GC *gc) {

@@ -126,7 +126,7 @@ void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
     {
         Vector<Object*> stack;
         grayStack = &stack;
-        vm->traverse();
+        // vm->traverse();
         markValVect(vmStack, vmStackSize);
         while (stack.size()) {
             traverse(stack.pop());

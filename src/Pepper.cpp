@@ -33,12 +33,7 @@ Pepper::~Pepper() {
 }
 
 Value Pepper::run(Func *f, int nArg, Value *args) {
-    Stack stack;
-    Value *base = stack.maybeGrow(0, nArg + 1);
-    *base = VAL_OBJ(f);
-    memcpy(base+1, args, nArg * sizeof(Value));
-    vm->call(VAL_OBJ(f), nArg, base+1, &stack);
-    return stack.base[1];
+    return vm->run(f, nArg, args);
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {
