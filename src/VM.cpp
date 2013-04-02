@@ -344,12 +344,12 @@ SETI: setIndex(*ptrC, A, B);  STEP;
  RET: {
         regs[0] = A;
         Value *root = stack->base;
-        // gc->maybeCollect(this, root, regs - root + 1);
+        gc->maybeCollect(this, root, regs - root + 1);
         if (!FAST_FUNC) {
             return;
         }
         if (!retInfo.size()) {
-            stack->shrink();
+            // stack->shrink();
             return; //regs;
         }
         RetInfo *ri = retInfo.top();
@@ -380,9 +380,11 @@ CALL: {
             pc   = proto->code.buf();
             activeFunc = f;
         } else {
+            // fprintf(stderr, "before %p\n", GET_OBJ(A));
             unsigned regPos = regs - stack->base;
             call(A, nEffArgs, base, stack);
             regs = stack->base + regPos;
+            // fprintf(stderr, "active %p\n", activeFunc);
             copyUpvals(activeFunc, regs);
         }
         STEP;

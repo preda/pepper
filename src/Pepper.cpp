@@ -34,10 +34,11 @@ Pepper::~Pepper() {
 
 Value Pepper::run(Func *f, int nArg, Value *args) {
     Stack stack;
-    Value *base = stack.maybeGrow(0, nArg);
-    memcpy(base, args, nArg * sizeof(Value));
-    vm->call(VAL_OBJ(f), nArg, base, &stack);
-    return stack.base[0];
+    Value *base = stack.maybeGrow(0, nArg + 1);
+    *base = VAL_OBJ(f);
+    memcpy(base+1, args, nArg * sizeof(Value));
+    vm->call(VAL_OBJ(f), nArg, base+1, &stack);
+    return stack.base[1];
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {

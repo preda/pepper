@@ -50,6 +50,7 @@ void GC::add(long v) {
 }
 
 void GC::mark(Object *o) {
+    // fprintf(stderr, "mark %p\n", o);
     if (o) {
         const unsigned mask = size - 1;
         long p = (long) o;
@@ -120,6 +121,7 @@ static void release(long p) {
 
 void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
     // printf("GC before %d %d\n", n, size);
+    // fprintf(stderr, "collect %d %p\n", vmStackSize, GET_OBJ(vmStack[0]));
     int nInitial = n;
     {
         Vector<Object*> stack;
