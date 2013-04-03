@@ -201,26 +201,6 @@ static void copyUpvals(Func *f, Value *regs) {
     // memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
 }
 
-/*
-void VM::traverse() {
-    GC *gc = this->gc;
-    for (RetInfo *p = retInfo.buf(), *end = p + retInfo.size(); p < end; ++p) {
-        gc->mark((Object *) p->func);
-    }
-    if (activeFunc) {
-        gc->mark((Object *) activeFunc);
-    }
-    gc->mark(GET_OBJ(stringMethods));
-}
-*/
-
-/*
-void VM::gcCollect(Value *top) {
-    Value *base = stack->base;
-    gc->collect(this, base, top - base);
-}
-*/
-
 Value VM::run(Func *f, int nArg, Value *args) {
     static const int nExtra = 2;
     Stack stack;
@@ -350,18 +330,13 @@ SETI: setIndex(*ptrC, A, B);  STEP;
  GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); STEP;
  SETS: setSlice(*ptrC, A, regs[OA(code)+1], B);  STEP;
 
-#define FAST_FUNC false
-
  RET: {
         regs[0] = A;
         Value *root = stack->base;
         gc->maybeCollect(this, root, regs - root + 1);
-        if (!FAST_FUNC) {
-            return;
-        }
+#if FAST_CALL
         if (!retInfo.size()) {
-            // stack->shrink();
-            return; //regs;
+            return;
         }
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
@@ -370,6 +345,9 @@ SETI: setIndex(*ptrC, A, B);  STEP;
         retInfo.pop();
         copyUpvals(activeFunc, regs);
         STEP;
+#else
+        return;
+#endif
     }
 
 CALL: { 
@@ -377,11 +355,11 @@ CALL: {
         int nEffArgs = OSB(code);
         assert(nEffArgs != 0);
         Value *base = ptrC;
-        if (FAST_FUNC && IS_O_TYPE(A, O_FUNC)) {
+#if FAST_CALL
+        if (IS_O_TYPE(A, O_FUNC)) {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
             prepareStackForCall(base, proto->nArgs, nEffArgs, gc);
-
             RetInfo *ret = retInfo.push();
             ret->pc    = pc;
             ret->base  = regs - stack->base;
@@ -391,13 +369,14 @@ CALL: {
             pc   = proto->code.buf();
             activeFunc = f;
         } else {
-            // fprintf(stderr, "before %p\n", GET_OBJ(A));
+#endif
             unsigned regPos = regs - stack->base;
             call(A, nEffArgs, base, stack);
             regs = stack->base + regPos;
-            // fprintf(stderr, "active %p\n", activeFunc);
             copyUpvals(activeFunc, regs);
+#if FAST_CALL
         }
+#endif
         STEP;
     }
     

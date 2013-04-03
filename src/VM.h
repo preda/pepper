@@ -1,6 +1,8 @@
 // Copyright (C) 2012 - 2013 Mihai Preda
 #pragma once
 
+#define FAST_CALL 0
+
 #include "Value.h"
 #include "Vector.h"
 #include "RetInfo.h"
@@ -64,8 +66,11 @@ class Stack;
 class VM {
     Pepper *pepper;
     GC *gc;
-    Vector<RetInfo> retInfo;
     Value stringMethods;
+
+#if FAST_CALL
+    Vector<RetInfo> retInfo;
+#endif
 
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
@@ -76,8 +81,5 @@ class VM {
     ~VM();
 
     Value run(Func *f, int nArg, Value *args);
-
-    // void traverse();
-    // void gcCollect(Value *stackTop);
     GC *getGC() { return gc; }
 };
