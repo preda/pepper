@@ -1,8 +1,6 @@
 // Copyright (C) 2012 - 2013 Mihai Preda
 #pragma once
 
-#define FAST_CALL 1
-
 #include "Value.h"
 #include "Func.h"
 
@@ -68,7 +66,7 @@ class VM {
 
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
-    void call(Value fval, int nArg, Value *regs, Stack *stack);
+    void call(Value fval, int nArg, Value *base, Stack *stack);
     
  public:
     VM(Pepper *pepper);

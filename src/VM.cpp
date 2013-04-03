@@ -20,6 +20,15 @@
 #include <math.h>
 #include <stdio.h>
 
+#define FAST_CALL 0
+
+#define DO_CALL(f, n, regs, base, stack) {\
+  unsigned p1 = regs - (stack)->base, p2 = base - (stack)->base;\
+  call(f, n, base, stack);\
+  regs = (stack)->base + p1; base = (stack)->base + p2;\
+  copyUpvals(activeFunc, regs);\
+}
+
 #define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)];
 
 #define INT(x) VAL_INT((signed char)x)
@@ -90,12 +99,10 @@ static Value getIndex(Value a, Value key) {
 static bool acceptsIndex(Value v) {
     return IS_MAP(v) || IS_ARRAY(v) || IS_STRING(v);
 }
-
-Value VM::getField(Value a, Value key) {
+/*
+static Value getField(Value a, Value key, bool *again) {
     while (true) {
-        if (IS_STRING(a)) {
-            a = stringMethods;
-        } else if (IS_MAP(a)) {
+        if (IS_MAP(a)) {
             Map *map = MAP(a);
             bool again = false;
             Value v = map->get(key, &again);
@@ -115,13 +122,15 @@ Value VM::getField(Value a, Value key) {
         }
     }
 }
+*/
 
 static void setIndex(Value c, Value a, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);
     if (IS_ARRAY(c)) {
         ARRAY(c)->setV(a, b);
-    } else if (IS_MAP(c)){
-        MAP(c)->rawSet(a, b);
+    } else if (IS_MAP(c)) {
+        bool again = false;
+        MAP(c)->set(a, b, &again);
     } else {
         ERROR(E_NOT_INDEXABLE);
     }
@@ -211,12 +220,16 @@ static void copyUpvals(Func *f, Value *regs) {
 Value VM::run(Func *f, int nArg, Value *args) {
     static const int nExtra = 2;
     Stack stack;
-    Value *base = stack.maybeGrow(0, nArg + nExtra);
-    base[0] = VAL_OBJ(f);
-    base[1] = stringMethods;
+    Value *regs = stack.maybeGrow(0, nArg + nExtra + 1);
+    regs[0] = VAL_OBJ(f);
+    regs[1] = stringMethods;
+    Value *base = regs + nExtra;
+    base[0] = VNIL;
     memcpy(base+1, args, nArg * sizeof(Value));
-    call(VAL_OBJ(f), nArg, base + nExtra, &stack);
-    return stack.base[nExtra];
+    Value fv = VAL_OBJ(f);
+    Func *activeFunc = f;
+    DO_CALL(fv, nArg, regs, base, &stack);
+    return base[0];
 }
 
 #define NARGS_CFUNC 128
@@ -333,7 +346,35 @@ GETI: *ptrC = getIndex(A, B); STEP;
 SETI: setIndex(*ptrC, A, B);  STEP;
 
     // field, A.B
- GETF: *ptrC = getField(A, B); STEP;
+ GETF: while (true) {
+        if (IS_STRING(A)) {
+            A = stringMethods;
+        }
+        if (!IS_MAP(A)) {
+            *ptrC = getIndex(A, B);
+            break;
+        } else {
+            Map *map = MAP(A);
+            bool recurse = false;
+            Value v = map->get(B, &recurse);
+            if (!recurse) {
+                *ptrC = v;
+                break;
+            } else if (acceptsIndex(v)) {
+                A = v;
+            } else {
+                Value *base = regs + activeFunc->proto->localsTop;
+                base[0] = A;
+                base[1] = B;
+                int cPos = ptrC - regs;
+                DO_CALL(v, 2, regs, base, stack);
+                regs[cPos] = base[0];
+                break;
+            }
+        }
+    }
+    STEP;
+
  SETF: setField(*ptrC, A, B);  STEP;
 
  GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); STEP;
@@ -379,10 +420,13 @@ CALL: {
             activeFunc = f;
         } else {
 #endif
+            DO_CALL(A, nEffArgs, regs, base, stack);
+            /*
             unsigned regPos = regs - stack->base;
             call(A, nEffArgs, base, stack);
             regs = stack->base + regPos;
             copyUpvals(activeFunc, regs);
+            */
 #if FAST_CALL
         }
 #endif

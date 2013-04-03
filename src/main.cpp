@@ -243,7 +243,10 @@ T tests[] = {
 
     // builtin.type()
     T("return #(builtin.type(builtin))", VAL_NUM(3)), 
-    T("t:=builtin.type; return t('')=='string' && t(0)=='number'", TRUE),    
+    T("t:=builtin.type; return t('')=='string' && t(0)=='number'", TRUE),
+
+    // GETF
+    T("m:={'a':7, '__get':{'c':8}}; return m.c", VAL_NUM(8)),
 };
 
     bool verbose = false;
