@@ -8,6 +8,7 @@
 #include "Value.h"
 #include "Object.h"
 #include "Pepper.h"
+#include "RetInfo.h"
 #include "GC.h"
 #include "NameValue.h"
 #include "Stack.h"
@@ -86,6 +87,10 @@ static Value getIndex(Value a, Value key) {
         ERROR(E_NOT_INDEXABLE);
 }
 
+static bool acceptsIndex(Value v) {
+    return IS_MAP(v) || IS_ARRAY(v) || IS_STRING(v);
+}
+
 Value VM::getField(Value a, Value key) {
     while (true) {
         if (IS_STRING(a)) {
@@ -95,10 +100,12 @@ Value VM::getField(Value a, Value key) {
             bool again = false;
             Value v = map->get(key, &again);
             if (again) {
-                if (IS_FUNC(v) || IS_CFUNC(v)) {
-                    return v;
-                } else { 
+                if (acceptsIndex(v)) {
                     a = v;
+                } else {
+                    return v;
+                    // Value args[2] = {a, key};
+                    // call(v, 2, args, stack);
                 }
             } else {
                 return v;
@@ -254,6 +261,8 @@ static int prepareStackForCall(Value *base, int nArgs, int nEffArgs, GC *gc) {
 
 extern __thread jmp_buf jumpBuf;
 void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
+    Vector<RetInfo> retInfo; // only used if FAST_CALL
+
     ERR(!(IS_O_TYPE(A, O_FUNC) || IS_CF(A) || IS_O_TYPE(A, O_CFUNC)), E_CALL_NOT_FUNC);
     regs  = stack->maybeGrow(regs, 256);
     int nExpectedArgs = IS_O_TYPE(A, O_FUNC) ? ((Func *)GET_OBJ(A))->proto->nArgs : NARGS_CFUNC;

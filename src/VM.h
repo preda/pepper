@@ -1,11 +1,9 @@
 // Copyright (C) 2012 - 2013 Mihai Preda
 #pragma once
 
-#define FAST_CALL 0
+#define FAST_CALL 1
 
 #include "Value.h"
-#include "Vector.h"
-#include "RetInfo.h"
 #include "Func.h"
 
 Value doAdd(GC *gc, Value a, Value b);
@@ -67,10 +65,6 @@ class VM {
     Pepper *pepper;
     GC *gc;
     Value stringMethods;
-
-#if FAST_CALL
-    Vector<RetInfo> retInfo;
-#endif
 
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
