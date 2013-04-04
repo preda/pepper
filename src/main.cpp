@@ -247,6 +247,13 @@ T tests[] = {
 
     // GETF
     T("m:={'a':7, '__get':{'c':8}}; return m.c", VAL_NUM(8)),
+    T("m:={__get={'c':3}, a=4}; return m.c", VAL_NUM(3)),
+    T("m:={__get=func(x){ return #x }, bar=2}; return m.foofoo", VAL_NUM(6)),
+    T("m:={__get=func(x){ return #x }, bar=2}; return m['foofoo']", VNIL),
+    T("m:={2:3, __get=func(x){ return #x }, bar=4}; return m.bar", VAL_NUM(4)),
+    T("m:={2:3, __get={a=7, __get=func(x){return 1+#x}}, bar=4}; return m.a", VAL_NUM(7)),
+    T("m:={2:3, __get={a=7, __get=func(x){return 1+#x}}, bar=4}; return m.ab", VAL_NUM(3)),
+
 };
 
     bool verbose = false;

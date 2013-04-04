@@ -84,9 +84,11 @@ Value Map::set(Value key, Value val, bool *again) {
     }
 }
 
-Value Map::get(Value key, bool *again) {
-    *again = hasGet;
-    return rawGet(hasGet ? String::__GET : key);
+Value Map::get(Value key, bool *recurse) {
+    Value v = rawGet(key);
+    const bool rec = IS_NIL(v) && hasGet;
+    *recurse = rec;
+    return rec ? rawGet(String::__GET) : v;
 }
 
 void Map::add(Value v) {
