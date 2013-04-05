@@ -38,5 +38,6 @@ public class State {
 
     native long init();
     native void deinit(long handle);
-    native void draw(long handle);   
+    native void draw(long handle);
+    native int run(String program);
 }

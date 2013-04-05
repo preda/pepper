@@ -3,6 +3,7 @@
 #include <jni.h>
 #include <android/log.h>
 #include "common.h"
+#include "Pepper.h"
 
 #define printf(fmt, args...) __android_log_print(3, "Pepper", fmt, ##args);
 #define JNI extern "C"
@@ -66,6 +67,14 @@ JNI void JNINAME(draw)(JNIEnv *env, jobject jobj, long jlink) {
     link->draw(env, jobj);
 }
 
+JNI int JNINAME(run)(JNIEnv *env, jobject jobj, jstring jtxt) {
+    const char *txt = env->GetStringUTFChars(jtxt, 0);
+    Pepper pepper;
+    Func *f = pepper.parseStatList(txt);
+    env->ReleaseStringUTFChars(jtxt, txt);
+    Value v = pepper.run(f, 0, 0);
+    return IS_NUM(v) ? (int) GET_NUM(v) : -1;
+}
 
 
 //  __attribute__ ((visibility ("default")))
