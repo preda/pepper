@@ -20,7 +20,7 @@
 
 Pepper::Pepper() :
     gc(new GC()),
-    vm(new VM(this))
+    vm(new VM(gc))
 {
     assert(sizeof(Array) == 2 * sizeof(long));
 }
@@ -37,12 +37,10 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {
-    Value androidBg = CFunc::value(gc, androidBackground);
-    NameValue android[] = {
-        NameValue("bg", androidBg),
-        NameValue("background", androidBg),
+    NameValue android[] = {};
+    NameValue java[] = {
+        NameValue("class", CFunc::value(gc, javaClass)),
     };
-
 
     NameValue builtin[] = {
         NameValue("type",   CFunc::value(gc, builtinType)),
@@ -50,6 +48,7 @@ Func *Pepper::parse(const char *text, bool isFunc) {
         NameValue("gc",     CFunc::value(gc, builtinGC)),
         NameValue("import", CFunc::value(gc, builtinImport)),
         NameValue("android", Map::value(gc, ASIZE(android), android)),
+        NameValue("java", Map::value(gc, ASIZE(java), java)),
         // NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
     };
 

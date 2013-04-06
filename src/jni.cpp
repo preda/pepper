@@ -76,6 +76,5 @@ JNI int JNINAME(run)(JNIEnv *env, jobject jobj, jstring jtxt) {
     return IS_NUM(v) ? (int) GET_NUM(v) : -1;
 }
 
-
 //  __attribute__ ((visibility ("default")))
 // #define JNI(ret, method, tail...) extern "C" __attribute__ ((visibility ("default"))) ret Java_pepper_app_##method(JNIEnv *env, jobject jobj, tail)

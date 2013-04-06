@@ -56,11 +56,9 @@ enum {
 
 bool opcodeHasDest(int opcode);
 
-class Pepper;
 class Stack;
 
 class VM {
-    Pepper *pepper;
     GC *gc;
     Value stringMethods;
 
@@ -69,7 +67,7 @@ class VM {
     void call(Value fval, int nArg, Value *base, Stack *stack);
     
  public:
-    VM(Pepper *pepper);
+    VM(GC *gc);
     ~VM();
 
     Value run(Func *f, int nArg, Value *args);

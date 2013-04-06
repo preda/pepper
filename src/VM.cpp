@@ -7,7 +7,6 @@
 #include "Proto.h"
 #include "Value.h"
 #include "Object.h"
-#include "Pepper.h"
 #include "RetInfo.h"
 #include "GC.h"
 #include "NameValue.h"
@@ -153,9 +152,8 @@ static void setSlice(Value c, Value a1, Value a2, Value b) {
     ARRAY(c)->setSliceV(a1, a2, b);
 }
 
-VM::VM(Pepper *pepper) :
-    pepper(pepper),
-    gc(pepper->getGC())
+VM::VM(GC *gc) :
+    gc(gc)
 {
     NameValue strMethods[] = {
         NameValue("find", CFunc::value(gc, String::method_find)),

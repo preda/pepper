@@ -107,6 +107,9 @@ Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
 }
 
-Value androidBackground(VM *vm, int op, void *data, Value *stack, int nCallArg) {
-    return VNIL;
+Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    if (op != CFunc::CFUNC_CALL) { return VNIL; }
+    if (nCallArg < 2) { return VNIL; }
+    const char *name = GET_CSTR(stack[1]);
+    return String::value(vm->getGC(), name);
 }
