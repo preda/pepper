@@ -16,7 +16,7 @@ class Pepper {
     Func *parse(const char *text, bool isFunc);
         
  public:
-    Pepper();
+    Pepper(void *context);
     ~Pepper();
 
     Func *parseFunc(const char *text);

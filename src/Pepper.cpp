@@ -18,9 +18,9 @@
 #include <stdio.h>
 #include <string.h>
 
-Pepper::Pepper() :
+Pepper::Pepper(void *context) :
     gc(new GC()),
-    vm(new VM(gc))
+    vm(new VM(gc, context))
 {
     assert(sizeof(Array) == 2 * sizeof(long));
 }

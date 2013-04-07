@@ -8,6 +8,7 @@
 #include "String.h"
 #include "VM.h"
 #include "CFunc.h"
+#include "JavaLink.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -110,6 +111,12 @@ Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
 Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     if (op != CFunc::CFUNC_CALL) { return VNIL; }
     if (nCallArg < 2) { return VNIL; }
-    const char *name = GET_CSTR(stack[1]);
+    Value v = stack[1];
+    if (!IS_STRING(v)) { return VNIL; }
+    const char *name = GET_CSTR(v);
+    JavaLink *java = (JavaLink *)(vm->getContext());
+    
+
+
     return String::value(vm->getGC(), name);
 }
