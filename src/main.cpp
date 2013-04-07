@@ -82,7 +82,7 @@ static long long getTimeUsec() {
 
 int main(int argc, char **argv) {
     testIndex();
-    Pepper *pepper = new Pepper();
+    Pepper *pepper = new Pepper(0);
     GC *gc = pepper->getGC();
 
 T tests[] = {

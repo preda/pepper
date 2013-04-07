@@ -60,6 +60,7 @@ class Stack;
 
 class VM {
     GC *gc;
+    void *context;
     Value stringMethods;
 
     Value *maybeGrowStack(Value *regs);
@@ -67,9 +68,10 @@ class VM {
     void call(Value fval, int nArg, Value *base, Stack *stack);
     
  public:
-    VM(GC *gc);
+    VM(GC *gc, void *context);
     ~VM();
 
     Value run(Func *f, int nArg, Value *args);
     GC *getGC() { return gc; }
+    void *getContext() { return context; }
 };

@@ -152,8 +152,9 @@ static void setSlice(Value c, Value a1, Value a2, Value b) {
     ARRAY(c)->setSliceV(a1, a2, b);
 }
 
-VM::VM(GC *gc) :
-    gc(gc)
+VM::VM(GC *gc, void *context) :
+    gc(gc),
+    context(context)
 {
     NameValue strMethods[] = {
         NameValue("find", CFunc::value(gc, String::method_find)),

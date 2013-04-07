@@ -15,6 +15,7 @@ enum {
     T_OBJ = -2,
     T_REG = -3, // used during compilation only, to indicate register position
     T_CF  = -4, // plain C function with no data
+    T_CP  = -5, // C void pointer
 
     T_STR0 = -14,
     T_STR1,
@@ -81,8 +82,10 @@ inline void *GET_PTR(Value v) {
 
 inline Value VAL_OBJ(void *obj) { return VAL_PTR(T_OBJ, obj); }
 inline Value VAL_CF(tfunc f)    { return VAL_PTR(T_CF, (void *) f); }
+inline Value VAL_CP(void *p)    { return VAL_PTR(T_CP, p); }
 inline Object *GET_OBJ(Value v) { return (Object *) GET_PTR(v); }
 inline tfunc   GET_CF(Value v)  { return (tfunc) GET_PTR(v); }
+inline void *GET_CP(Value v)    { return GET_PTR(v); }
 
 #define STRING(v) ((String *) GET_OBJ(v))
 #define ARRAY(v) ((Array *) GET_OBJ(v))

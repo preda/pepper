@@ -2,31 +2,13 @@
 
 #include <jni.h>
 #include <android/log.h>
+#include "JavaLink.h"
 #include "common.h"
 #include "Pepper.h"
 
 #define printf(fmt, args...) __android_log_print(3, "Pepper", fmt, ##args);
 #define JNI extern "C"
 #define JNINAME(method) Java_pepper_app_State_##method
-
-class JavaLink {
-    jclass cls;
-    jmethodID midBackground;
-
-public:
-    JavaLink(JNIEnv *env, jobject jobj);
-    ~JavaLink();
-    void deinit(JNIEnv *env);
-    
-    jmethodID getMethod(JNIEnv *env, const char *name, const char *sign);
-
-    void draw(JNIEnv *env, jobject jobj);
-
-    void background(JNIEnv *env, jobject jobj, int r, int g, int b) {
-        env->CallVoidMethod(jobj, midBackground, r, g, b);
-    }
-
-};
 
 void JavaLink::draw(JNIEnv *env, jobject jobj) {
     background(env, jobj, 50, 100, 150);
@@ -68,8 +50,9 @@ JNI void JNINAME(draw)(JNIEnv *env, jobject jobj, long jlink) {
 }
 
 JNI int JNINAME(run)(JNIEnv *env, jobject jobj, jstring jtxt) {
+    JavaLink context(env, jobj);
     const char *txt = env->GetStringUTFChars(jtxt, 0);
-    Pepper pepper;
+    Pepper pepper(&context);
     Func *f = pepper.parseStatList(txt);
     env->ReleaseStringUTFChars(jtxt, txt);
     Value v = pepper.run(f, 0, 0);
