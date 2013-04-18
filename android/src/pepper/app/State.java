@@ -25,12 +25,14 @@ public class State {
         Class cls = c.getClass();
         Method[] methods = cls.getMethods();
         Field[] fields   = cls.getFields();
+        /*
         for (Method m : methods) {
             Log.d("Pepper", "method " + m.getName() + "; " + m);
         }
         for (Field f : fields) {
             Log.d("Pepper", "field " + f.getName());
         }
+        */
     }
 
     void deinit() { deinit(handle); }

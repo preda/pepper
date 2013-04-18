@@ -37,23 +37,15 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
 }
 
 Func *Pepper::parse(const char *text, bool isFunc) {
-    NameValue android[] = {};
-    NameValue java[] = {
-        NameValue("class", CFunc::value(gc, javaClass)),
-    };
-
-    NameValue builtin[] = {
-        NameValue("type",   CFunc::value(gc, builtinType)),
-        NameValue("print",  CFunc::value(gc, builtinPrint)),
-        NameValue("gc",     CFunc::value(gc, builtinGC)),
-        NameValue("import", CFunc::value(gc, builtinImport)),
-        NameValue("android", Map::value(gc, ASIZE(android), android)),
-        NameValue("java", Map::value(gc, ASIZE(java), java)),
-        // NameValue("ffi",   CFunc::value(gc, ffiConstruct)),
-    };
-
     Value ups[] = {
-        Map::value(gc, ASIZE(builtin), builtin),
+        Map::makeMap(gc,
+                     "type", CFunc::value(gc, builtinType),
+                     "print",  CFunc::value(gc, builtinPrint),
+                     "gc",     CFunc::value(gc, builtinGC),
+                     "import", CFunc::value(gc, builtinImport),
+                     "android", Map::makeMap(gc, NULL),
+                     "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
+                     NULL),
         VAL_OBJ(Map::alloc(gc)), VAL_OBJ(Array::alloc(gc)), EMPTY_STRING,
         VAL_NUM(-1), ONE, ZERO,
         VNIL,

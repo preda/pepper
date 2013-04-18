@@ -18,6 +18,6 @@ u64 error(const char *file, int line, int err) {
     } else {
         fprintf(stderr, "ERROR %d %s at %s:%d\n", err, errorMes[err], file, line);
     }
-    __builtin_abort();
+    // __builtin_abort();
     longjmp(jumpBuf, err); 
 }

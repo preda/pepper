@@ -19,7 +19,7 @@ class Map {
 
  public:
     static Map *alloc(GC *gc, unsigned sizeHint = 0);
-    static Value value(GC *gc, unsigned n, NameValue *entries);
+    static Value makeMap(GC *gc, ...);
 
     ~Map();
 

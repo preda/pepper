@@ -156,11 +156,7 @@ VM::VM(GC *gc, void *context) :
     gc(gc),
     context(context)
 {
-    NameValue strMethods[] = {
-        NameValue("find", CFunc::value(gc, String::method_find)),
-    };
-
-    stringMethods = Map::value(gc, ASIZE(strMethods), strMethods);
+    stringMethods = Map::makeMap(gc, "find", CFunc::value(gc, String::method_find), NULL);
 }
 
 VM::~VM() {

@@ -8,7 +8,6 @@
 #include "String.h"
 #include "VM.h"
 #include "CFunc.h"
-#include "JavaLink.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -108,15 +107,26 @@ Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
 }
 
+#ifdef __ANDROID__
+#include "JavaLink.h"
 Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     if (op != CFunc::CFUNC_CALL) { return VNIL; }
     if (nCallArg < 2) { return VNIL; }
     Value v = stack[1];
     if (!IS_STRING(v)) { return VNIL; }
     const char *name = GET_CSTR(v);
+    if (!name) { return VNIL; }
     JavaLink *java = (JavaLink *)(vm->getContext());
-    
-
-
-    return String::value(vm->getGC(), name);
+    if (!java) { return VNIL; }
+    JNIEnv *env = java->env;
+    if (!env) { return VNIL; }
+    // return VNIL;
+    jclass cls = env->FindClass("java/lang/String");
+    return Map::makeMap(vm->getGC(), "_class", VAL_CP(cls), 0); 
+    // return String::value(vm->getGC(), name);
 }
+#else
+Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    return VNIL;
+}
+#endif

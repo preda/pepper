@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <stdarg.h>
 
 void Map::traverse(GC *gc) {
     int sz = size();
@@ -29,11 +30,18 @@ Map::Map() :
 Map::~Map() {
 }
 
-Value Map::value(GC *gc, unsigned n, NameValue *p) {
-    Map *m = Map::alloc(gc, n);
-    for (NameValue *end = p + n; p < end; ++p) {
-        m->rawSet(String::value(gc, p->name), p->value);
+Value Map::makeMap(GC *gc, ...) {
+    va_list ap;
+    va_start(ap, gc);
+    Map *m = Map::alloc(gc);
+    while (true) {
+        char *name = va_arg(ap, char*);
+        if (!name) { break; }
+        fprintf(stderr, "%s\n", name);
+        Value v = va_arg(ap, Value);
+        m->rawSet(String::value(gc, name), v);
     }
+    va_end(ap);
     return VAL_OBJ(m);
 }
 

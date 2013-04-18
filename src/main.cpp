@@ -253,7 +253,9 @@ T tests[] = {
     T("m:={2:3, __get=func(x){ return #x }, bar=4}; return m.bar", VAL_NUM(4)),
     T("m:={2:3, __get={a=7, __get=func(x){return 1+#x}}, bar=4}; return m.a", VAL_NUM(7)),
     T("m:={2:3, __get={a=7, __get=func(x){return 1+#x}}, bar=4}; return m.ab", VAL_NUM(3)),
-
+    
+    // T("a:=java; return 42", VAL_NUM(42)),
+    T("javaString := builtin.java.class('java/lang/String'); return 42", VAL_NUM(42)),
 };
 
     bool verbose = false;
