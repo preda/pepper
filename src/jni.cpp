@@ -10,6 +10,25 @@
 #define JNI extern "C"
 #define JNINAME(method) Java_pepper_app_State_##method
 
+<<<<<<< HEAD
+=======
+void JavaLink::draw(JNIEnv *env, jobject jobj) {
+    background(env, jobj, 50, 100, 150);
+}
+
+JavaLink::JavaLink(JNIEnv *env, jobject jobj) {
+    cls           = (jclass) env->NewGlobalRef(env->GetObjectClass(jobj));
+    midBackground = getMethod(env, "background", "(III)V");
+}
+
+void JavaLink::deinit(JNIEnv *env) {
+    env->DeleteGlobalRef(cls);
+}
+
+JavaLink::~JavaLink() {
+}
+
+>>>>>>> c89de160155495315eed277e3d38c86286b2afab
 jmethodID JavaLink::getMethod(JNIEnv *env, const char *name, const char *sign) {
     jmethodID ret = env->GetMethodID(cls, name, sign);
     if (!ret) { printf("getMethod '%s' '%s'", name, sign); }
@@ -35,7 +54,10 @@ JNI void JNINAME(draw)(JNIEnv *env, jobject jobj, long jlink) {
 
 JNI int JNINAME(run)(JNIEnv *env, jobject jobj, jstring jtxt) {
     JavaLink context(env, jobj);
+<<<<<<< HEAD
     // env->FindClass("java/lang/String");
+=======
+>>>>>>> c89de160155495315eed277e3d38c86286b2afab
     const char *txt = env->GetStringUTFChars(jtxt, 0);
     Pepper pepper(&context);
     Func *f = pepper.parseStatList(txt);

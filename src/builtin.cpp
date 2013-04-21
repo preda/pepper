@@ -8,6 +8,7 @@
 #include "String.h"
 #include "VM.h"
 #include "CFunc.h"
+#include "JavaLink.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -115,6 +116,7 @@ Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     Value v = stack[1];
     if (!IS_STRING(v)) { return VNIL; }
     const char *name = GET_CSTR(v);
+<<<<<<< HEAD
     if (!name) { return VNIL; }
     JavaLink *java = (JavaLink *)(vm->getContext());
     if (!java) { return VNIL; }
@@ -128,5 +130,12 @@ Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
 #else
 Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
+=======
+    JavaLink *java = (JavaLink *)(vm->getContext());
+    
+
+
+    return String::value(vm->getGC(), name);
+>>>>>>> c89de160155495315eed277e3d38c86286b2afab
 }
 #endif
