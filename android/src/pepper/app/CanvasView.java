@@ -17,8 +17,6 @@ class CanvasView extends View {
 
     protected void onDraw(Canvas canvas) {
         state.canvas = canvas;
-        state.draw();
-        // canvas.drawColor(0xff00ff00);
         state.canvas = null;
     }
 

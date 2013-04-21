@@ -15,7 +15,6 @@ public:
     JNIEnv *env;
 
     jmethodID getMethod(JNIEnv *env, const char *name, const char *sign);
-    void draw(JNIEnv *env, jobject jobj);
     void background(JNIEnv *env, jobject jobj, int r, int g, int b) {
         env->CallVoidMethod(jobj, midBackground, r, g, b);
     }

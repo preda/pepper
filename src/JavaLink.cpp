@@ -2,10 +2,6 @@
 
 #include "JavaLink.h"
 
-void JavaLink::draw(JNIEnv *env, jobject jobj) {
-    background(env, jobj, 50, 100, 150);
-}
-
 JavaLink::JavaLink(JNIEnv *env, jobject jobj) :
     env(env)
 {
