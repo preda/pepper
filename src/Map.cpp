@@ -37,7 +37,7 @@ Value Map::makeMap(GC *gc, ...) {
     while (true) {
         char *name = va_arg(ap, char*);
         if (!name) { break; }
-        fprintf(stderr, "%s\n", name);
+        // fprintf(stderr, "%s\n", name);
         Value v = va_arg(ap, Value);
         m->rawSet(String::value(gc, name), v);
     }

@@ -11,54 +11,137 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-static void printVal(const char *prefix, Value v) {
+class StringBuilder {
+public:
+    char *buf;
+    int size, allocSize;
+
+    StringBuilder();
+    ~StringBuilder();
+
+    void reserve(int space);
+    void clear() { size = 0; }
+    char *cstr();
+
+    void append(const char *s);
+    void append(const char *s, int len);
+    void append(char c);
+    void append(double d);
+    void append(Value v);
+};
+
+StringBuilder::StringBuilder() :
+    buf(0),
+    size(0),
+    allocSize(0)
+    {}
+
+StringBuilder::~StringBuilder() {
+    if (buf) {
+        delete buf;
+    }
+    buf = 0;
+    size = allocSize = 0;
+}
+
+char *StringBuilder::cstr() {
+    reserve(1);
+    buf[size] = 0;
+    return buf;
+}
+
+void StringBuilder::reserve(int space) {
+    while (size + space >= allocSize) {
+        allocSize += allocSize ? allocSize : 32;
+        buf = (char *) realloc(buf, allocSize);
+    }
+}
+
+void StringBuilder::append(const char *s) {
+    append(s, strlen(s));
+}
+
+void StringBuilder::append(const char *s, int len) {
+    reserve(len);
+    memcpy(buf + size, s, len);
+    size += len;
+}
+
+void StringBuilder::append(char c) {
+    reserve(2);
+    buf[size] = c;
+    buf[size + 1] = 0;
+    size += 1;    
+}
+
+void StringBuilder::append(double d) {
+    char tmp[32];
+    if (d == (long long) d) {
+        snprintf(tmp, sizeof(tmp), "%lld", (long long) d);
+    } else {
+        snprintf(tmp, sizeof(tmp), "%f", d);
+    }
+    append(tmp);
+}
+
+void StringBuilder::append(Value v) {
     if (IS_STRING(v)) {
-        printf("%s'%s'", prefix, GET_CSTR(v)); 
+        append(GET_CSTR(v), len(v));
     } else if (IS_NUM(v)) {
-        double d = GET_NUM(v);
-        if (d == (long long) d) {
-            printf("%s%lld", prefix, (long long) d);
-        } else {
-            printf("%s%f", prefix, d);
-        }
+        append(GET_NUM(v));
     } else if (IS_OBJ(v)) {
         Object *p = GET_OBJ(v);
         if (IS_ARRAY(v)) {
             Array *a = (Array *) p;
             int size = a->size();
-            printf("%s[", prefix);
-            for (int i = 0; i < size; ++i) { 
-                printVal(i?", ":"", a->getI(i)); 
+            append('[');
+            for (int i = 0; i < size; ++i) {
+                append(i ? ", " : "");
+                append(a->getI(i));
             }
-            printf("]");
+            append(']');
         } else if (IS_MAP(v)) {
             Map *m = (Map *) p;
             int size = m->size();
-            printf("%s{", prefix);
+            append('{');
             Value *keys = m->keyBuf();
             Value *vals = m->valBuf();
             for (int i = 0; i < size; ++i) {
-                printVal(i?", ":"", keys[i]);
-                printVal(":", vals[i]);
+                append(i ? ", " : "");
+                append(keys[i]);
+                append(':');
+                append(vals[i]);
             }
-            printf("}");
+            append('}');
         } else {
-            printf("%s%p", prefix, p);
+            char tmp[32];
+            snprintf(tmp, sizeof(tmp), "%p", p);
+            append(tmp);
         }
     } else if (IS_NIL(v)) {
-        printf("%sNIL", prefix);
+        append("NIL");
     } else if (IS_CF(v)) {
-        printf("%sCFunc %p", prefix, GET_CF(v));
+        char tmp[32];
+        snprintf(tmp, sizeof(tmp), "CF %p", GET_CF(v));
+        append(tmp);
+    } else if (IS_CP(v)) {
+        char tmp[32];
+        snprintf(tmp, sizeof(tmp), "CP %p", GET_CF(v));
+        append(tmp);
     }
 }
 
 Value builtinPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArgs > 0);
-    
+    StringBuilder buf;    
     for (int i = 1; i < nCallArgs; ++i) {
-        printVal((i>1)?" ":"", stack[i]);
+        buf.clear();
+        buf.append(stack[i]);
+        printf("%s ", buf.cstr());
     }
     printf("\n");
     return VNIL;    

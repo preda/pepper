@@ -101,6 +101,7 @@ inline Value VAL_TAG(short tag) { return ValueUnion{tag:tag}.v; }
 #define IS_REG(v) (TAG(v) == T_REG)
 #define IS_OBJ(v) (TAG(v) == T_OBJ)
 #define IS_CF(v)  (TAG(v) == T_CF)
+#define IS_CP(v)  (TAG(v) == T_CP)
 inline bool IS_NUM_TAG(int t) { return (unsigned)t <= (unsigned)-16 || t == -8; }
 #define IS_NUM(v) IS_NUM_TAG(TAG(v))
 
