@@ -1,17 +1,16 @@
+// Copyright (C) 2012 - 2013 Mihai Preda
+
 #include "Decompile.h"
 #include "Value.h"
 #include "VM.h"
 #include "Proto.h"
 #include "Object.h"
 #include "String.h"
+#include "StringBuilder.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
-static const char *objTypeName[] = {
-    0, "ARRAY", "MAP", "FUNC", "CFUNC", "PROTO", "O_STR",
-};
 
 #define _(n) #n
 static const char *opNames[] = {
@@ -19,39 +18,11 @@ static const char *opNames[] = {
 };
 #undef _
 
-/*
-static const char *typeNames[] = {
-    "NIL", "[]", "{}", 0,
-    0, 0, 0, 0,
-    "\"\"",
-};
-*/
-
-static void printValue(char *buf, int bufSize, Value a) {
-    if (IS_NUM(a)) {
-        snprintf(buf, bufSize, "%f", GET_NUM(a));
-    } else if (IS_NIL(a)) {
-        snprintf(buf, bufSize, "NIL");
-    } else if (IS_STRING(a)) {
-        snprintf(buf, bufSize, "\"%s\"", GET_CSTR(a));
-    } else if (IS_OBJ(a)) {
-        int type = O_TYPE(a);
-        snprintf(buf, bufSize, "%5s %p", objTypeName[type], GET_OBJ(a));
-        if (type == O_PROTO) {
-        }
-    } else if (IS_REG(a)) {
-        snprintf(buf, bufSize, "register %d", (int)a);
-    } else {
-        snprintf(buf, bufSize, "<?%d>", TAG(a));
-    }
+void printValue(char *buf, int bufSize, Value a) {
+    StringBuilder sb;
+    sb.append(a);
+    snprintf(buf, bufSize, "%s\n", sb.cstr());
 }
-
-    /* else if (IS_SHORT_STR(a)) {
-        int sz = TAG(a) - T_STR;
-        char tmp[8] = {0};
-        memcpy(tmp, (char *)&a, sz);
-        snprintf(buf, bufSize, "\"%s\"", tmp);
-        } */
 
 void printValue(Value a) {
     char buf[256];

@@ -15,7 +15,8 @@ public class PepperApp extends Activity {
         // int ret = state.run("func f(x) { return x*x; }; return f(9);");
         // Log.d("**** Pepper", "ret " + ret);
         String program =
-            "javaString := builtin.java.class('java/lang/String'); " +
+            "javaString := builtin.java.class('java/lang/String');" +
+            "" +
             "return 42;";
         int ret = state.run(program);
         Log.d("Pepper", "ret " + ret);

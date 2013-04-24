@@ -8,30 +8,12 @@
 #include "String.h"
 #include "VM.h"
 #include "CFunc.h"
+#include "StringBuilder.h"
 
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-class StringBuilder {
-public:
-    char *buf;
-    int size, allocSize;
-
-    StringBuilder();
-    ~StringBuilder();
-
-    void reserve(int space);
-    void clear() { size = 0; }
-    char *cstr();
-
-    void append(const char *s);
-    void append(const char *s, int len);
-    void append(char c);
-    void append(double d);
-    void append(Value v);
-};
 
 StringBuilder::StringBuilder() :
     buf(0),
@@ -88,7 +70,7 @@ void StringBuilder::append(double d) {
 }
 
 static const char *typeStr(Value v) {
-    const char *s = "type";
+    const char *s = "?";
     if (IS_NIL(v)) {
         s = "nil";
     } else if (IS_NUM(v)) {
@@ -99,12 +81,18 @@ static const char *typeStr(Value v) {
         s = "array";
     } else if (IS_MAP(v)) {
         s = "map";
-    } else if (IS_FUNC(v) || IS_CFUNC(v)) {
+    } else if (IS_FUNC(v)) {
         s = "func";
+    } else if (IS_CFUNC(v)) {
+        s = "cfunc";
     } else if (IS_CF(v)) {
         s = "cf";
     } else if (IS_CP(v)) {
         s = "cp";
+    } else if (IS_PROTO(v)) {
+        s = "proto";
+    } else if (IS_REG(v)) {
+        s = "reg";
     }
     return s;
 }
