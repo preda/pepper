@@ -295,7 +295,8 @@ T tests[] = {
             assert(argc > 2);
             int n = atoi(argv[2]);
             text = tests[n].source;
-            // eval(pepper, text);
+            Value ret = eval(pepper, text);
+            // printValue(ret);
             compileDecompile(pepper, text);
             ++argv;
             --argc;
@@ -313,7 +314,7 @@ T tests[] = {
         } else {
             text = argv[1];
         }
-
+        /*
         long long t1 = getTimeUsec();
         Func *f = pepper->parseFunc(text);
         if (verbose) {
@@ -333,5 +334,6 @@ T tests[] = {
         long long t3 = getTimeUsec();
         printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
         printValue(ret);
+        */
     }
 }

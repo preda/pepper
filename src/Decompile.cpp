@@ -28,7 +28,9 @@ static void printOperand(char *buf, int bufSize, int v) {
     snprintf(buf, bufSize, "%d", v);
 }
 
-void printBytecode(unsigned *start, int size) {
+void printProto(Proto *proto, int indent);
+
+static void printBytecode(unsigned *start, int size, int indent) {
     assert(sizeof(opNames) / sizeof(opNames[0]) == N_OPCODES);
     char sa[32], sb[32], sc[32];
     char buf[256];
@@ -39,7 +41,7 @@ void printBytecode(unsigned *start, int size) {
         printOperand(sa, sizeof(sa), a);
         printOperand(sb, sizeof(sb), b);
         printOperand(sc, sizeof(sc), c);
-        printf("%2d: %02x%02x%02x%02x   %-6s ", i, op, c, a, b, opNames[op]);
+        printf("%*s%2d: %02x%02x%02x%02x   %-6s ", indent, "", i, op, c, a, b, opNames[op]);
         switch (op) {
         case JMP:    printf("%3d\n", i + OD(code) + 1); break;
 
@@ -64,7 +66,7 @@ void printBytecode(unsigned *start, int size) {
             
             if (IS_PROTO(v)) {
                 printf("\n");
-                printProto((Proto *) GET_OBJ(v));
+                printProto((Proto *) GET_OBJ(v), 20);
                 printf("\n");
             }
 
@@ -94,7 +96,7 @@ void printBytecode(unsigned *start, int size) {
     }
 }
 
-void printProto(Proto *proto) {
+void printProto(Proto *proto, int indent) {
     /*
     printf("UpVals: ");
     int i = 0;
@@ -104,9 +106,9 @@ void printProto(Proto *proto) {
     }
     printf("\n\nCode:\n");
     */
-    printBytecode(proto->code.buf(), proto->code.size());
+    printBytecode(proto->code.buf(), proto->code.size(), indent);
 }
 
 void printFunc(Func *func) {
-    printProto(func->proto);
+    printProto(func->proto, 10);
 }
