@@ -87,49 +87,65 @@ void StringBuilder::append(double d) {
     append(tmp);
 }
 
+static const char *typeStr(Value v) {
+    const char *s = "type";
+    if (IS_NIL(v)) {
+        s = "nil";
+    } else if (IS_NUM(v)) {
+        s = "number";
+    } else if (IS_STRING(v)) {
+        s = "string";
+    } else if (IS_ARRAY(v)) {
+        s = "array";
+    } else if (IS_MAP(v)) {
+        s = "map";
+    } else if (IS_FUNC(v) || IS_CFUNC(v)) {
+        s = "func";
+    } else if (IS_CF(v)) {
+        s = "cf";
+    } else if (IS_CP(v)) {
+        s = "cp";
+    }
+    return s;
+}
+
 void StringBuilder::append(Value v) {
+    void *ptr = GET_PTR(v);
     if (IS_STRING(v)) {
+        append('"');
         append(GET_CSTR(v), len(v));
+        append('"');
     } else if (IS_NUM(v)) {
         append(GET_NUM(v));
-    } else if (IS_OBJ(v)) {
-        Object *p = GET_OBJ(v);
-        if (IS_ARRAY(v)) {
-            Array *a = (Array *) p;
-            int size = a->size();
-            append('[');
-            for (int i = 0; i < size; ++i) {
-                append(i ? ", " : "");
-                append(a->getI(i));
-            }
-            append(']');
-        } else if (IS_MAP(v)) {
-            Map *m = (Map *) p;
-            int size = m->size();
-            append('{');
-            Value *keys = m->keyBuf();
-            Value *vals = m->valBuf();
-            for (int i = 0; i < size; ++i) {
-                append(i ? ", " : "");
-                append(keys[i]);
-                append(':');
-                append(vals[i]);
-            }
-            append('}');
-        } else {
-            char tmp[32];
-            snprintf(tmp, sizeof(tmp), "%p", p);
-            append(tmp);
+        return;
+    } else if (IS_ARRAY(v)) {
+        Array *a = (Array *) ptr;
+        int size = a->size();
+        append('[');
+        for (int i = 0; i < size; ++i) {
+            append(i ? ", " : "");
+            append(a->getI(i));
         }
-    } else if (IS_NIL(v)) {
-        append("NIL");
-    } else if (IS_CF(v)) {
+        append(']');
+    } else if (IS_MAP(v)) {
+        Map *m = (Map *) ptr;
+        int size = m->size();
+        append('{');
+        Value *keys = m->keyBuf();
+        Value *vals = m->valBuf();
+        for (int i = 0; i < size; ++i) {
+            append(i ? ", " : "");
+            append(keys[i]);
+            append(':');
+            append(vals[i]);
+        }
+        append('}');
+    } else {
+        append('<');
+        append(typeStr(v));
+        append('>');
         char tmp[32];
-        snprintf(tmp, sizeof(tmp), "CF %p", GET_CF(v));
-        append(tmp);
-    } else if (IS_CP(v)) {
-        char tmp[32];
-        snprintf(tmp, sizeof(tmp), "CP %p", GET_CF(v));
+        snprintf(tmp, sizeof(tmp), "%p", ptr);
         append(tmp);
     }
 }
@@ -151,24 +167,7 @@ Value builtinType(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArgs > 0);
     if (nCallArgs < 2) { return VNIL; }
-    Value v = stack[1];
-    const char *s = 0;
-    if (IS_NIL(v)) {
-        s = "nil";
-    } else if (IS_NUM(v)) {
-        s = "number";
-    } else if (IS_STRING(v)) {
-        s = "string";
-    } else if (IS_ARRAY(v)) {
-        s = "array";
-    } else if (IS_MAP(v)) {
-        s = "map";
-    } else if (IS_FUNC(v) || IS_CFUNC(v)) {
-        s = "func";
-    }
-    // else if (IS_PROTO(v)) { s = "proto";
-    assert(s); // unexpected type
-    return String::value(vm->getGC(), s);
+    return String::value(vm->getGC(), typeStr(stack[1]));
 }
 
 Value builtinGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {

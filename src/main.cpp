@@ -239,7 +239,7 @@ T tests[] = {
 
     T("for i:= 0:10 { builtin.gc(); }; return 13", VAL_NUM(13)),
 
-    T("builtin.print('hello world', 1.5, 100, {3:9, 4:16, 'foo':\"bar\"}, [5, 4, 3]);", VNIL),
+    T("builtin.print(nil, 'hello world', 1.5, 100, {3:9, 4:16, 'foo':\"bar\"}, [5, 4, 3]);", VNIL),
 
     // builtin.type()
     T("return #(builtin.type(builtin))", VAL_NUM(3)), 
@@ -256,6 +256,8 @@ T tests[] = {
     
     // T("a:=java; return 42", VAL_NUM(42)),
     T("javaString := builtin.java.class('java/lang/String'); return 42", VAL_NUM(42)),
+    T("f:=func(x) { return this}; builtin.print(f); return 1", VAL_NUM(1)),
+    T("d:={__get=func(x){ return func(x){ return this}}}; builtin.print(d.bar); return 5", VAL_NUM(5)),
 };
 
     bool verbose = false;
