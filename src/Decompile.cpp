@@ -24,19 +24,11 @@ void printValue(char *buf, int bufSize, Value a) {
     snprintf(buf, bufSize, "%s\n", sb.cstr());
 }
 
-void printValue(Value a) {
-    char buf[256];
-    printValue(buf, sizeof(buf), a);
-    fprintf(stderr, "%s\n", buf);
-}
-
 static void printOperand(char *buf, int bufSize, int v) {
     snprintf(buf, bufSize, "%d", v);
 }
 
 void printBytecode(unsigned *start, int size) {
-    // static bool inited = init();
-    // (void) inited;
     assert(sizeof(opNames) / sizeof(opNames[0]) == N_OPCODES);
     char sa[32], sb[32], sc[32];
     char buf[256];

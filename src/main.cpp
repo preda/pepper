@@ -8,6 +8,7 @@
 #include "Pepper.h"
 #include "GC.h"
 #include "Index.h"
+#include "StringBuilder.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -45,6 +46,11 @@ void testIndex() {
     
 }
 
+static void printValue(Value a) {
+    StringBuilder sb;
+    sb.append(a);
+    fprintf(stderr, "%s\n", sb.cstr());
+}
 
 void printFunc(Func *);
 
