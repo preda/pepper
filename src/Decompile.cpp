@@ -21,7 +21,7 @@ static const char *opNames[] = {
 void printValue(char *buf, int bufSize, Value a) {
     StringBuilder sb;
     sb.append(a);
-    snprintf(buf, bufSize, "%s\n", sb.cstr());
+    snprintf(buf, bufSize, "%s", sb.cstr());
 }
 
 static void printOperand(char *buf, int bufSize, int v) {
@@ -65,9 +65,7 @@ static void printBytecode(unsigned *start, int size, int indent) {
             p += 2;
             
             if (IS_PROTO(v)) {
-                printf("\n");
-                printProto((Proto *) GET_OBJ(v), 20);
-                printf("\n");
+                printProto((Proto *) GET_OBJ(v), indent + 4);
             }
 
             break;
@@ -110,5 +108,5 @@ void printProto(Proto *proto, int indent) {
 }
 
 void printFunc(Func *func) {
-    printProto(func->proto, 10);
+    printProto(func->proto, 0);
 }

@@ -263,7 +263,8 @@ T tests[] = {
     // T("a:=java; return 42", VAL_NUM(42)),
     T("javaString := builtin.java.class('java/lang/String'); return 42", VAL_NUM(42)),
     T("f:=func(x) { return this}; builtin.print(f); return 1", VAL_NUM(1)),
-    T("d:={__get=func(x){ return func(x){ return this}}}; builtin.print(d.bar); return 5", VAL_NUM(5)),
+    T("d:={a=2}; builtin.print(d.x)", VNIL),
+    T("d:={__get=func(x){ return func(x){ return this}}}; builtin.print(d.x)", VNIL),
 };
 
     bool verbose = false;
@@ -286,6 +287,7 @@ T tests[] = {
                 ++nFail;
             } else {
                 fprintf(stderr, "%2d OK '%s'\n", i, t.source);
+                printValue(ret);
             }
         }
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);

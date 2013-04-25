@@ -46,16 +46,24 @@ Func *Pepper::parse(const char *text, bool isFunc) {
                      "android", Map::makeMap(gc, NULL),
                      "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
                      NULL),
-        VAL_OBJ(Map::alloc(gc)), VAL_OBJ(Array::alloc(gc)), EMPTY_STRING,
-        VAL_NUM(-1), ONE, ZERO,
+        VAL_OBJ(Map::alloc(gc)),
+        VAL_OBJ(Array::alloc(gc)),
+        EMPTY_STRING,
+        VAL_NUM(-1),
+        ONE, 
+        ZERO,
         VNIL,
     };
 
     const char *upNames[] = {
-        "builtin",
-        0, 0, 0,
-        0, 0, 0,
-        "nil",
+        "builtin", //, 248
+        0, // {}, 249
+        0, // [], 250
+        0, // "", 251
+        0, // -1, 252
+        0, //  1, 253
+        0, //  0, 254
+        "nil", // nil, 255
     };
     const int nUps = ASIZE(ups);
     assert(nUps == ASIZE(upNames));
