@@ -41,7 +41,7 @@ static void printBytecode(unsigned *start, int size, int indent) {
         printOperand(sa, sizeof(sa), a);
         printOperand(sb, sizeof(sb), b);
         printOperand(sc, sizeof(sc), c);
-        printf("%*s%2d: %02x%02x%02x%02x   %-6s ", indent, "", i, op, c, a, b, opNames[op]);
+        printf("%*s%02d: %02x%02x%02x%02x   %-6s ", indent, "", i, op, c, a, b, opNames[op]);
         switch (op) {
         case JMP:    printf("%3d\n", i + OD(code) + 1); break;
 
@@ -95,15 +95,13 @@ static void printBytecode(unsigned *start, int size, int indent) {
 }
 
 void printProto(Proto *proto, int indent) {
-    /*
-    printf("UpVals: ");
-    int i = 0;
-    // char buf[64];
-    for (short *p = proto->ups.buf+i, *end = p-i + proto->ups.size; p < end; ++p, ++i) {
-        printf("%3d, ", (int)*p);
+    StringBuilder buf;
+    int n = proto->ups.size();
+    for (int i = 0; i < n; ++i) {
+        buf.append((double) proto->ups.get(i));
+        buf.append(' ');
     }
-    printf("\n\nCode:\n");
-    */
+    printf("%*sProto %s\n", indent, "", buf.cstr());
     printBytecode(proto->code.buf(), proto->code.size(), indent);
 }
 

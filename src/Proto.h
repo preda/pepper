@@ -10,9 +10,9 @@ class GC;
 class Proto {
     byte type;
     Proto(Proto *up);
-    Vector<short> ups;
 
  public:
+    Vector<short> ups;
     signed char nArgs; // negative if hasEllipsis
     byte level;
     byte localsTop;

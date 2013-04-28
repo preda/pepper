@@ -143,11 +143,10 @@ Value builtinPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(nCallArgs > 0);
     StringBuilder buf;    
     for (int i = 1; i < nCallArgs; ++i) {
-        buf.clear();
         buf.append(stack[i]);
-        printf("%s ", buf.cstr());
+        buf.append(' ');
     }
-    printf("\n");
+    printf("%s\n", buf.cstr());
     return VNIL;    
 }
 

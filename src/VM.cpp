@@ -98,30 +98,6 @@ static Value getIndex(Value a, Value key) {
 static bool acceptsIndex(Value v) {
     return IS_MAP(v) || IS_ARRAY(v) || IS_STRING(v);
 }
-/*
-static Value getField(Value a, Value key, bool *again) {
-    while (true) {
-        if (IS_MAP(a)) {
-            Map *map = MAP(a);
-            bool again = false;
-            Value v = map->get(key, &again);
-            if (again) {
-                if (acceptsIndex(v)) {
-                    a = v;
-                } else {
-                    return v;
-                    // Value args[2] = {a, key};
-                    // call(v, 2, args, stack);
-                }
-            } else {
-                return v;
-            }
-        } else {
-            return getIndex(a, key);
-        }
-    }
-}
-*/
 
 static void setIndex(Value c, Value a, Value b) {
     ERR(IS_STRING(c), E_STRING_WRITE);

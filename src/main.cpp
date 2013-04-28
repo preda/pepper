@@ -264,7 +264,8 @@ T tests[] = {
     T("javaString := builtin.java.class('java/lang/String'); return 42", VAL_NUM(42)),
     T("f:=func(x) { return this}; builtin.print(f); return 1", VAL_NUM(1)),
     T("d:={a=2}; builtin.print(d.x)", VNIL),
-    T("d:={__get=func(x){ return func(x){ return this}}}; builtin.print(d.x)", VNIL),
+    T("p:=builtin.print; d:={__get=func(x){ return func(x){ p('**', this, x); return this}}}; builtin.print(d.x)", VNIL),
+    T("p:=builtin.print; p('foo'); pp:=builtin.print; pp('pp'); builtin.print('bar'); p(p, pp, builtin.print)", VNIL),
 };
 
     bool verbose = false;

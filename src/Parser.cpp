@@ -267,6 +267,7 @@ int Parser::createUpval(Proto *proto, Value name, int level, int slot) {
     }
     // assert(level == proto->level - 1);
     proto->addUp(slot);
+    syms->set(name, -proto->nUp(), proto->level);
     // return syms->set(proto->level, name, -proto->nUp());
     return -proto->nUp();
 }
@@ -298,8 +299,9 @@ int Parser::lookupName(Value name) {
     */
 }
 
-int Parser::lookupSlot(Value name) {
+int Parser::lookupSlot(Value name) {    
     int slot = lookupName(name);
+    // fprintf(stderr, "slot %d\n", slot);
     ERR(slot == 256, E_NAME_NOT_FOUND);
     return slot;
 }
