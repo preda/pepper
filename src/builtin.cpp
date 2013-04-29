@@ -100,9 +100,9 @@ static const char *typeStr(Value v) {
 void StringBuilder::append(Value v) {
     void *ptr = GET_PTR(v);
     if (IS_STRING(v)) {
-        append('"');
+        append('\'');
         append(GET_CSTR(v), len(v));
-        append('"');
+        append('\'');
     } else if (IS_NUM(v)) {
         append(GET_NUM(v));
         return;
