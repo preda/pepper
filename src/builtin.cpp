@@ -53,6 +53,10 @@ Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
 }
 
+Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    return VNIL;
+}
+
 #ifdef __ANDROID__
 #include "JavaLink.h"
 Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {

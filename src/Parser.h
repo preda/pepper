@@ -14,12 +14,11 @@ class Parser {
     Proto *proto;
     SymbolTable *syms;
     Lexer *lexer;
-    Pepper *context;
     GC *gc;
     Value EMPTY_ARRAY, EMPTY_MAP;
 
 
-    Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer);
+    Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();
     
     int createUpval(Proto *proto, Value name, int level, int slot);
@@ -66,9 +65,9 @@ class Parser {
     static Func  *makeFunc(GC *gc, Proto *proto, Value *upsTop, int recSlot);
 
 public:
-    static Func *parseFunc(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text);
-    static Func *parseStatList(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text);
+    static Func *parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *text);
+    static Func *parseStatList(GC *gc, SymbolTable *syms, Value *upsTop, const char *text);
 
-    static int parseStatList(Pepper *context, Proto *proto, SymbolTable *symbols, const char *text);
+    static int parseStatList(GC *gc, Proto *proto, SymbolTable *symbols, const char *text);
     static void close(Proto *proto);
 };

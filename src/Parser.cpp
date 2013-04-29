@@ -20,12 +20,12 @@
 #define UNUSED VAL_REG(0)
 #define TOKEN (lexer->token)
 
-Parser::Parser(Pepper *context, Proto *proto, SymbolTable *syms, Lexer *lexer) {
-    this->proto = proto;
-    this->syms  = syms;
-    this->lexer = lexer;
-    this->context = context;
-    this->gc = context->getGC();
+Parser::Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer) :
+    proto(proto),
+    syms(syms),
+    lexer(lexer),
+    gc(gc)
+{
     EMPTY_ARRAY = VAL_OBJ(Array::alloc(gc));
     EMPTY_MAP   = VAL_OBJ(Map::alloc(gc));
     lexer->advance();
@@ -48,8 +48,7 @@ void Parser::consume(int t) {
 
 extern __thread jmp_buf jumpBuf;
 
-Func *Parser::parseFunc(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text) {
-    GC *gc = context->getGC();
+Func *Parser::parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *text) {
     Lexer lexer(gc, text);
 
     if (int err = setjmp(jumpBuf)) {
@@ -58,16 +57,15 @@ Func *Parser::parseFunc(Pepper *context, SymbolTable *syms, Value *upsTop, const
     }
 
     Proto *proto = Proto::alloc(gc, 0);
-    Parser parser(context, proto, syms, &lexer);
+    Parser parser(gc, proto, syms, &lexer);
     int slot;
     Proto *funcProto = parser.parseProto(&slot);
     return makeFunc(gc, funcProto, upsTop, slot);
 }
 
-Func *Parser::parseStatList(Pepper *context, SymbolTable *syms, Value *upsTop, const char *text) {
-    GC *gc = context->getGC();
+Func *Parser::parseStatList(GC *gc, SymbolTable *syms, Value *upsTop, const char *text) {
     Proto *proto = Proto::alloc(gc, 0);
-    if (Parser::parseStatList(context, proto, syms, text)) { return 0; }
+    if (Parser::parseStatList(gc, proto, syms, text)) { return 0; }
     close(proto);
     return makeFunc(gc, proto, upsTop, -1);
 }
@@ -77,13 +75,13 @@ Func *Parser::makeFunc(GC *gc, Proto *proto, Value *upsTop, int slot) {
     return Func::alloc(gc, proto, upsTop, &dummyRegs, slot);
 }
 
-int Parser::parseStatList(Pepper *context, Proto *proto, SymbolTable *syms, const char *text) {
-    Lexer lexer(context->getGC(), text);
+int Parser::parseStatList(GC *gc, Proto *proto, SymbolTable *syms, const char *text) {
+    Lexer lexer(gc, text);
     if (int err = setjmp(jumpBuf)) {
         printf("at line %d, '%s'\n", lexer.lineNumber, lexer.p);
         return err;
     }
-    Parser parser(context, proto, syms, &lexer);
+    Parser parser(gc, proto, syms, &lexer);
     parser.statList();
     return 0;
 }

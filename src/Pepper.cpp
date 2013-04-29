@@ -76,8 +76,8 @@ Func *Pepper::parse(const char *text, bool isFunc) {
     }
     syms.pushContext();
     Func *f = isFunc ? 
-        Parser::parseFunc(this, &syms, ups + nUps, text) :
-        Parser::parseStatList(this, &syms, ups + nUps, text);
+        Parser::parseFunc(gc, &syms, ups + nUps, text) :
+        Parser::parseStatList(gc, &syms, ups + nUps, text);
     syms.popContext();
     return f;
 }
