@@ -334,7 +334,12 @@ SETI: setIndex(*ptrC, A, B);  STEP;
             } else if (acceptsIndex(v)) {
                 A = v;
             } else {
-                Value *base = regs + activeFunc->proto->localsTop;
+                const int oa = OA(code);
+                const int ob = OB(code);
+                int top = max(oa, ob) + 1;
+                top = max(top, activeFunc->proto->localsTop);
+                Value *base = regs + top;
+                printf("top %d\n", top);
                 base[0] = A;
                 base[1] = B;
                 int cPos = ptrC - regs;

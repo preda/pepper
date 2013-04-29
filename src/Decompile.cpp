@@ -61,7 +61,7 @@ static void printBytecode(unsigned *start, int size, int indent) {
         case MOVE_C: {
             Value v = *(p+1) | ((u64)*(p+2) << 32);
             printValue(buf, sizeof(buf), v);
-            printf("%3d, #%s\n", c, buf);            
+            printf("%3d, %s\n", c, buf);            
             p += 2;
             
             if (IS_PROTO(v)) {
