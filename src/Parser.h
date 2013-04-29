@@ -48,9 +48,13 @@ class Parser {
     Value callExpr(int top, Value func, Value self);
 
     void parList();
-    void block();
-    void statList();
-    void statement();
+    
+    // returns true if last statement was "return".
+    bool block();
+    bool statList();
+
+    // returns true if statement was "return".
+    bool statement();
 
     void varStat();
     void ifStat();

@@ -88,19 +88,23 @@ int Parser::parseStatList(Pepper *context, Proto *proto, SymbolTable *syms, cons
     return 0;
 }
 
-void Parser::block() {
+bool Parser::block() {
     consume('{');
-    statList();
+    bool ret = statList();
     consume('}');
+    return ret;
 }
 
-void Parser::statList() {
+bool Parser::statList() {
+    bool endsWithReturn = false;
     while (lexer->token != '}' && lexer->token != TK_END) {
-        statement();
+        endsWithReturn = statement();
     }
+    return endsWithReturn;
 }
 
-void Parser::statement() {
+bool Parser::statement() {
+    bool isReturn = false;
     switch (lexer->token) {
     case TK_VAR:   advance(); varStat(); break;
     case TK_IF:    ifStat(); break;
@@ -124,11 +128,14 @@ void Parser::statement() {
     case TK_RETURN:
         advance();
         emit(proto->localsTop, RET, 0, TOKEN == ';' ? VNIL : expr(proto->localsTop), UNUSED);
+        isReturn = true;
         break;        
 
     default: exprOrAssignStat(); break;
     }
+    
     while (TOKEN == ';') { advance(); }
+    return isReturn;
 }
 
 static int topAbove(Value a, int top) {
@@ -286,17 +293,6 @@ int Parser::lookupName(Value name) {
     }
     assert(slot < proto->localsTop);
     return slot;
-    
-    /*
-    if (s.kind != KIND_EMPTY) {
-        assert(s.level <= proto->level);
-        if (s.level < proto->level) {
-            s = createUpval(proto, name, s);
-        }
-    }
-    assert(s.slot < proto->localsTop);
-    return s;
-    */
 }
 
 int Parser::lookupSlot(Value name) {    
@@ -489,7 +485,7 @@ Value Parser::suffixedExpr(int top) {
             if (IS_REG(a) && (int)a == top) {
                 ++top;
             }
-            emit(top+1, GETF, top, a, lexer->info.name);
+            emit(top, GETF, top, a, lexer->info.name);
             advance();
             a = TOKEN == '(' ? callExpr(top+1, VAL_REG(top), a) : VAL_REG(top);
             ++top;
@@ -524,8 +520,9 @@ Proto *Parser::parseProto(int *outSlot) {
     proto = Proto::alloc(gc, proto);
     syms->pushContext();
     parList();
-    block();
-    emit(0, RET, 0, VNIL, UNUSED);
+    if (!block()) {
+        emit(0, RET, 0, VNIL, UNUSED);
+    }
     proto->freeze();
     Proto *funcProto = proto;
     syms->popContext();
