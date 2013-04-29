@@ -30,7 +30,7 @@ static void printOperand(char *buf, int bufSize, int v) {
 
 void printProto(Proto *proto, int indent);
 
-static void printBytecode(unsigned *start, int size, int indent) {
+static void printBytecode(unsigned *start, int size, int indent, bool dump) {
     assert(sizeof(opNames) / sizeof(opNames[0]) == N_OPCODES);
     char sa[32], sb[32], sc[32];
     char buf[256];
@@ -41,7 +41,11 @@ static void printBytecode(unsigned *start, int size, int indent) {
         printOperand(sa, sizeof(sa), a);
         printOperand(sb, sizeof(sb), b);
         printOperand(sc, sizeof(sc), c);
-        printf("%*s%02d: %02x%02x%02x%02x   %-6s ", indent, "", i, op, c, a, b, opNames[op]);
+        if (dump) {
+            printf("%*s%02d: %02x%02x%02x%02x   %-6s ", indent, "", i, op, c, a, b, opNames[op]);
+        } else {
+            printf("%*s%02d: %-6s ", indent, "", i, opNames[op]);
+        }
         switch (op) {
         case JMP:    printf("%3d\n", i + OD(code) + 1); break;
 
@@ -102,7 +106,7 @@ void printProto(Proto *proto, int indent) {
         buf.append(' ');
     }
     printf("%*sProto %s\n", indent, "", buf.cstr());
-    printBytecode(proto->code.buf(), proto->code.size(), indent);
+    printBytecode(proto->code.buf(), proto->code.size(), indent, false);
 }
 
 void printFunc(Func *func) {

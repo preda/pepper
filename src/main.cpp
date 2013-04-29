@@ -266,6 +266,7 @@ T tests[] = {
     T("d:={a=2}; builtin.print(d.x)", VNIL),
     T("p:=builtin.print; d:={__get=func(x){ p('**', this, x); return this}}; builtin.print(d.x)", VNIL),
     T("p:=builtin.print; p('foo'); pp:=builtin.print; pp('pp'); builtin.print('bar'); p(p, pp, builtin.print)", VNIL),
+    T("d:={f=func(){return this}}; p:=builtin.print; p((d).f(), (d.f)())", VNIL),
 };
 
     bool verbose = false;
