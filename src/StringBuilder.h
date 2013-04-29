@@ -1,5 +1,7 @@
 // Copyright (C) 2013 Mihai Preda
 
+#include "Value.h"
+
 class StringBuilder {
 public:
     char *buf;
