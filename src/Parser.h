@@ -70,4 +70,6 @@ public:
 
     static int parseStatList(GC *gc, Proto *proto, SymbolTable *symbols, const char *text);
     static void close(Proto *proto);
+
+    static Func *parseInEnv(GC *gc, const char *text, bool isFunc);
 };

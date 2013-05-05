@@ -10,6 +10,7 @@
 #include "SymbolTable.h"
 #include "CFunc.h"
 #include "Pepper.h"
+#include "builtin.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -47,6 +48,52 @@ void Parser::consume(int t) {
 }
 
 extern __thread jmp_buf jumpBuf;
+
+Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
+    Value ups[] = {
+        Map::makeMap(gc,
+                     "type", CFunc::value(gc, builtinType),
+                     "print",  CFunc::value(gc, builtinPrint),
+                     "gc",     CFunc::value(gc, builtinGC),
+                     "import", CFunc::value(gc, builtinImport),
+                     "android", Map::makeMap(gc, NULL),
+                     "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
+                     NULL),
+        VAL_OBJ(Map::alloc(gc)),
+        VAL_OBJ(Array::alloc(gc)),
+        EMPTY_STRING,
+        VAL_NUM(-1),
+        ONE, 
+        ZERO,
+        VNIL,
+    };
+
+    const char *upNames[] = {
+        "builtin", //, 248
+        0, // {}, 249
+        0, // [], 250
+        0, // "", 251
+        0, // -1, 252
+        0, //  1, 253
+        0, //  0, 254
+        "nil", // nil, 255
+    };
+    const int nUps = ASIZE(ups);
+    assert(nUps == ASIZE(upNames));
+
+    SymbolTable syms(gc);
+    for (int i = 0; i < nUps; ++i) {
+        if (upNames[i]) {
+            syms.set(String::value(gc, upNames[i]), i - nUps);
+        }
+    }
+    syms.pushContext();
+    Func *f = isFunc ? 
+        parseFunc(gc, &syms, ups + nUps, text) :
+        parseStatList(gc, &syms, ups + nUps, text);
+    syms.popContext();
+    return f;
+}
 
 Func *Parser::parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *text) {
     Lexer lexer(gc, text);
