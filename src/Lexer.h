@@ -4,28 +4,11 @@
 #include "common.h"
 
 enum TOKENS {
-    TK_BREAK,
-    TK_CONTINUE,
-    TK_ELSE,
-    TK_FOR,
-    TK_WHILE,
-    TK_FUNC,
-    TK_GOTO,
-    TK_IF,
-    TK_NIL,
-    TK_RETURN,
-    TK_VAR,
 
-    TK_LOG_AND,
-    TK_LOG_OR,
-    TK_BIT_XOR,
+#define _(tok) TK_##tok
+#include "tokens.inc"
+#undef _
 
-    TK_END_KEYWORD,
-
-    TK_SHIFT_L, TK_SHIFT_R,
-    TK_IS, TK_NOT_IS,
-   
-    TK_INTEGER, TK_DOUBLE, TK_NAME, TK_STRING, TK_END,
     TK_EQUAL = 257,
 };
 
