@@ -54,14 +54,22 @@ Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     return VNIL;
 }
 
-Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+static Value builtinParse(GC *gc, int op, void *data, Value *stack, int nCallArg, bool isFunc) {
     if (op != CFunc::CFUNC_CALL) { return VNIL; }
     if (nCallArg < 2) { return VNIL; }
     Value v = stack[1];
     if (!IS_STRING(v)) { return VNIL; }
     const char *text = GET_CSTR(v);
-    Func *f = Parser::parseInEnv(vm->getGC(), text, true);
+    Func *f = Parser::parseInEnv(gc, text, isFunc);
     return f ? VAL_OBJ(f) : VNIL;
+}
+
+Value builtinParseFunc(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    return builtinParse(vm->getGC(), op, data, stack, nCallArg, true);
+}
+
+Value builtinParseBlock(VM *vm, int op, void *data, Value *stack, int nCallArg) {
+    return builtinParse(vm->getGC(), op, data, stack, nCallArg, false);
 }
 
 #ifdef __ANDROID__

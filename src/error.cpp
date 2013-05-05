@@ -22,7 +22,7 @@ const char *tokenToString(char *buf, int size, int token) {
     const char *tail = token >= TK_EQUAL ? "=" : "";
     if (token >= TK_EQUAL) { token -= TK_EQUAL; }
     if (token >= 32) {
-        snprintf(buf, size, "%c%s", (char)token, tail);
+        snprintf(buf, size, "'%c'%s", (char)token, tail);
     } else {
         snprintf(buf, size, "%s%s", tokenString[token], tail);
     }
