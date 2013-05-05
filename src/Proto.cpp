@@ -2,18 +2,6 @@
 #include "Object.h"
 #include "GC.h"
 
-/*
-enum {
-    UP_NIL  = -1,
-    UP_ZERO = -2,
-    UP_ONE  = -3,
-    UP_NEG_ONE = -4,
-    UP_EMPTY_STRING = -5,
-    UP_EMPTY_ARRAY  = -6,
-    UP_EMPTY_MAP    = -7,
-};
-*/
-
 void Proto::traverse(GC *gc) {
     gc->mark((Object*) up);
     gc->markObjVect(consts.buf(), consts.size());

@@ -169,18 +169,6 @@ bool lessThan(Value a, Value b) {
     return (IS_NUM(a) && IS_NUM(b)) ? GET_NUM(a) < GET_NUM(b) : lessThanNonNum(a, b);
 }
 
-/*
-static Value constUps[N_CONST_UPS] = {
-    VAL_OBJ(Map::alloc()),
-    VAL_OBJ(Array::alloc()), 
-    EMPTY_STRING,
-    VAL_NUM(-1),
-    ONE,
-    ZERO,
-    NIL,
-};
-*/
-
 static void copyUpvals(Func *f, Value *regs) {
     unsigned nUp = f->proto->nUp();
     // unsigned nOwnUp = nUp - N_CONST_UPS;

@@ -33,9 +33,9 @@ static const char *operand(char *buf, int bufSize, int v) {
     case 251: return "''";
     case 250: return "[]";
     case 249: return "{}";
-    case 248: return "builtin";
+    // case 248: return "builtin"; -- doesn't have a stable slot
     }
-    snprintf(buf, bufSize, "%d", v);
+    snprintf(buf, bufSize, "%d", (int)(signed char)v);
     return buf;
 }
 
@@ -90,7 +90,7 @@ static void printBytecode(unsigned *start, int size, int indent, bool dump) {
         case JLT:
         case JNIS: printf("%s %d, %d %d\n", opNames[op], i + OSC(code) + 1, a, b); break;
 
-        case RET: printf("RET %d\n", a); break;
+        case RET: printf("RET %s\n", a==255 ? "" : sa); break;
         case MOVE_I: printf("%d = #%d\n", c, (int)OD(code)); break;
         case MOVE_C: {
             Value v = *(p+1) | ((u64)*(p+2) << 32);
