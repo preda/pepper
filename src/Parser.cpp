@@ -58,6 +58,7 @@ Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
                      "import", CFunc::value(gc, builtinImport),
                      "android", Map::makeMap(gc, NULL),
                      "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
+                     "parse", CFunc::value(gc, builtinParse),
                      NULL),
         VAL_OBJ(Map::alloc(gc)),
         VAL_OBJ(Array::alloc(gc)),

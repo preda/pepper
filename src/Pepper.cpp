@@ -7,19 +7,6 @@
 #include "Array.h"
 #include <assert.h>
 
-/*
-#include "Map.h"
-#include "SymbolTable.h"
-#include "CFunc.h"
-#include "String.h"
-#include "NameValue.h"
-#include "Object.h"
-#include "builtin.h"
-#include "Stack.h"
-#include <stdio.h>
-#include <string.h>
-*/
-
 Pepper::Pepper(void *context) :
     gc(new GC()),
     vm(new VM(gc, context))

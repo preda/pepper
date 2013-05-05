@@ -9,6 +9,7 @@
 #include "VM.h"
 #include "CFunc.h"
 #include "StringBuilder.h"
+#include "Parser.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -59,7 +60,7 @@ Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     Value v = stack[1];
     if (!IS_STRING(v)) { return VNIL; }
     const char *text = GET_CSTR(v);
-    Func *f = 0; // Parser::parseFunc(vm->getGC(), 0, 0, text);
+    Func *f = Parser::parseInEnv(vm->getGC(), text, true);
     return VAL_OBJ(f);
 }
 
