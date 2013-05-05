@@ -3,6 +3,7 @@
 #pragma once
 
 #include "common.h"
+#include <assert.h>
 
 typedef u64 Value;
 class Object;
@@ -65,6 +66,7 @@ inline Value VAL_NUM(double dbl) { return ValueUnion{dbl: dbl}.v; }
 inline double GET_NUM(Value val) { return ValueUnion{v: val}.dbl; }
 
 inline Value VAL_PTR(int tag, void *ptr) {
+    assert(ptr); // "VAL_PTR with NULL pointer"
     ValueUnion u{ptr:ptr};
     u.tag = tag;
     return u.v;

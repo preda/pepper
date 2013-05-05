@@ -268,6 +268,7 @@ T tests[] = {
     T("p:=builtin.print; p('foo'); pp:=builtin.print; pp('pp'); builtin.print('bar'); p(p, pp, builtin.print)", VNIL),
     T("d:={f=func(){return this}}; p:=builtin.print; p((d).f(), (d.f)())", VNIL),
     T("func a(x) { b:=func(y) { c:=y+x; d:=func(a) { p:=builtin.print; p(a)} d(c) } b(x+1)} a(3)", VNIL),
+    T("f:=builtin.parse('return nil'); return f()", VNIL),
 };
 
     bool verbose = false;
@@ -281,7 +282,9 @@ T tests[] = {
         int nFail = 0;
         for (int i = 0; i < n; ++i) {
             T &t = tests[i];
-            Value ret = eval(pepper, t.source);
+            const char *txt = t.source;
+            Value ret = eval(pepper, txt);
+            char buf[512];
             if (!equals(ret, t.result)) {
                 fprintf(stderr, "\n%2d FAIL '%s'\n", i, t.source);
                 printValue(ret);
@@ -292,6 +295,14 @@ T tests[] = {
                 fprintf(stderr, "%2d OK '%s'\n", i, t.source);
                 printValue(ret);
             }
+            /*
+            snprintf(buf, sizeof(buf), "f:=builtin.parse(\"%s\"); return f()", txt);
+            Value ret2 = eval(pepper, buf);
+            if (!equals(ret, ret2)) {
+                fprintf(stderr, "parse %d '%s'\n", i, txt);
+                ++nFail;
+            }
+            */
         }
         printf("\nPassed %d tests out of %d\n", (n-nFail), n);
     } else {

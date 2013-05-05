@@ -61,7 +61,7 @@ Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     if (!IS_STRING(v)) { return VNIL; }
     const char *text = GET_CSTR(v);
     Func *f = Parser::parseInEnv(vm->getGC(), text, true);
-    return VAL_OBJ(f);
+    return f ? VAL_OBJ(f) : VNIL;
 }
 
 #ifdef __ANDROID__
