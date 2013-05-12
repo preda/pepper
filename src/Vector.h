@@ -33,7 +33,7 @@ class Vector {
     void setSize(unsigned newSize);
     void clear() { setSize(0); }
 
-    void append(T *v, unsigned size);
+    void append(const T *v, unsigned size);
     void append(Vector<T> *v) { append(v->buf(), v->size()); }
 
 

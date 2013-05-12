@@ -92,6 +92,10 @@ int main(int argc, char **argv) {
     GC *gc = pepper->getGC();
 
 T tests[] = {
+    T("a := '[foo]' return a == 'foo'", TRUE),
+    T("foobarbar := '====[tralala\"']====' return foobarbar == 'tralala\"\\''", TRUE),
+    T("f := builtin.parse.block('return 3') return f()", VAL_NUM(3)),
+    T("f := builtin.parse.block('=[return 3]=') return f()", VAL_NUM(3)),
     T("return nil", VNIL),
     T("return -1", VAL_NUM(-1)),
     T("return 0", VAL_NUM(0)),
@@ -291,18 +295,20 @@ T tests[] = {
                 printValue(t.result);
                 fprintf(stderr, "\n");
                 ++nFail;
+                break;
             } else {
                 fprintf(stderr, "%2d OK '%s'\n", i, t.source);
                 printValue(ret);
             }
-            snprintf(buf, sizeof(buf), "f:=builtin.parse.block(\"%s\"); return f()", txt);
+            snprintf(buf, sizeof(buf), "f:=builtin.parse.block('===[%s]==='); return f()", txt);
             Value ret2 = eval(pepper, buf);
             if (!equals(ret, ret2)) {
                 fprintf(stderr, "parse %d '%s'\n", i, txt);
                 ++nFail;
+                break;
             }
         }
-        printf("\nPassed %d tests out of %d\n", (n-nFail), n);
+        printf("\nFailed %d out of %d\n", nFail, n);
     } else {
         const char *text;        
         if (!strcmp(argv[1], "-t")) {

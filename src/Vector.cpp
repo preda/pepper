@@ -71,7 +71,7 @@ void Vector<T>::setSize(unsigned newSize) {
 }
 
 template<typename T>
-void Vector<T>::append(T *v, unsigned vSize) {
+void Vector<T>::append(const T *v, unsigned vSize) {
     unsigned oldSize = size();
     setSize(oldSize + vSize);
     memcpy(buf() + oldSize, v, vSize * sizeof(T));

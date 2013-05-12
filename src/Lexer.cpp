@@ -28,8 +28,6 @@ Lexer::Lexer(GC *gc, const char *string) :
     gc(gc),
     keywords(Map::alloc(gc))
 {
-    // this->string = (char *) string;
-    // this->gc = gc;
     p   = string;
     end = string + strlen(string);
     lineNumber = 0;
@@ -140,26 +138,54 @@ int Lexer::advanceInt(TokenInfo *info) {
     return TK_END; // error
 }
 
-Value Lexer::readString(char endChar) {
-    char c;
-    Vector<char> s;
-    while (p < end && (c=*p) != endChar) {
-        ++p;
-        if (c == '\\') {
-            c = *p++;
-            switch(c) {
-            case 'a': c = '\a'; break;
-            case 'b': c = '\b'; break;
-            case 'f': c = '\f'; break;
-            case 'n': c = '\n'; break;
-            case 'r': c = '\r'; break;
-            case 't': c = '\t'; break;
-            case 'v': c = '\v'; break;                    
-            }
+Value Lexer::readString(char startChar) {
+    int markLen = -1;
+    if (startChar == '\'') {
+        markLen = 0;
+        const char *pp = p;
+        while (pp < end && *pp == '=') {
+            ++pp;
+            ++markLen;
         }
-        s.push(c);
+        if (pp >= end || *pp != '[') {
+            markLen = -1;
+        }
     }
-    ERR(p >= end, E_OPEN_STRING);
-    ++p;
+    Vector<char> s;
+    if (markLen >= 0 && markLen < 128) {
+        p += markLen + 1;
+        char endMark[130];
+        endMark[0] = ']';
+        memset(endMark + 1, '=', markLen);
+        endMark[markLen+1] = '\'';
+        endMark[markLen+2] = 0;
+        char *mark = (char *) memmem(p, end - p, endMark, markLen + 2);
+        ERR(!mark, E_OPEN_STRING);
+        s.append(p, mark - p);
+        p = mark + (markLen + 2);
+        // fprintf(stderr, "******* %s", p);
+    } else {
+        char c;
+        while (p < end && (c=*p) != startChar) {
+            ++p;
+            if (c == '\\') {
+                c = *p++;
+                switch(c) {
+                case 'a': c = '\a'; break;
+                case 'b': c = '\b'; break;
+                case 'f': c = '\f'; break;
+                case 'n': c = '\n'; break;
+                case 'r': c = '\r'; break;
+                case 't': c = '\t'; break;
+                case 'v': c = '\v'; break;  
+                case '"': c = '"';  break;
+                case '\'': c = '\''; break;
+                }
+            }
+            s.push(c);
+        }
+        ERR(p >= end, E_OPEN_STRING);
+        ++p;
+    }
     return String::value(gc, s.buf(), s.size());
 }
