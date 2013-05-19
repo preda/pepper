@@ -109,12 +109,12 @@ T tests[] = {
     T("f:=func(x,y) { if x { return y } else { return 0 } }; return 1+f(1, -1)", ZERO),
 
     T("return 13", VAL_NUM(13)),
-    T("var a = 10; var b=-2 var c = a+ b; return c", VAL_NUM(8)),
+    T("a := 10; b :=-2 c:=a+ b; return c", VAL_NUM(8)),
     T("a:=3; b:=a; return a", VAL_NUM(3)),
     T("a:=2; a=3; b:=a; return a", VAL_NUM(3)),
 
     // strings
-    T("var a = \"foo\" var b = \"bar\" return a + b == 'foobar'", TRUE),
+    T("a := \"foo\" b := \"bar\" return a + b == 'foobar'", TRUE),
 
     // comparison
     T("return \"foo\" < \"bar\"", FALSE),
@@ -123,7 +123,7 @@ T tests[] = {
     T("return [] < [1] && [1] < [2]", TRUE),
 
     // bool ops
-    T("var a=2 var b=3 var c=nil return a+1 && b+2 || c+3", VAL_NUM(5)),
+    T("a:=2 b:=3 c:=nil return a+1 && b+2 || c+3", VAL_NUM(5)),
     T("return 1 && nil && 13", VNIL),
     T("return 13 || 14", VAL_NUM(13)),
     T("a:=0 b:=3 c:=4 return a || b || c", VAL_NUM(3)),
@@ -133,18 +133,18 @@ T tests[] = {
     T("a:=0 b:=3 c:=4 return a || c && b", VAL_NUM(3)),
     T("a:=0 b:=3 c:=4 return (b || a) && (a || c)", VAL_NUM(4)),
     
-    T("var a=[]; a[1]=2; var b=[]; return b[1]", VNIL),
+    T("a:=[]; a[1]=2; b:=[]; return b[1]", VNIL),
     
     // len
     T("return #\"foo\"==3", TRUE),
-    T("var tralala=\"tralala\" return #tralala", VAL_NUM(7)),
+    T("tralala:=\"tralala\" return #tralala", VAL_NUM(7)),
     T("return #[]", ZERO),
     T("a:={} return #a-1", VAL_NUM(-1)),
     T("a:=[4, 5]; return #a", VAL_NUM(2)),
     T("foofoo:={a=4, barbar=5, \"1\":\"2\"}; return 2*#foofoo", VAL_NUM(6)),
 
 
-    T("var s6=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_NUM(7)),
+    T("s6:=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_NUM(7)),
 
     // ffi
     // T("var strlen=builtin.ffi(\"strlen\", \"int (char *)\", \"c\"); return strlen(\"bar hello foo\")", VAL_NUM(13)),
@@ -152,7 +152,7 @@ T tests[] = {
 
     // assign
     T("a:=3; return a", VAL_NUM(3)),
-    T("var a=2.5 b:=2*a return b+1", VAL_NUM(6)),
+    T("a:=2.5 b:=2*a return b+1", VAL_NUM(6)),
 
     // while
     T("i:=0; s:=0 while i < 4 { i = i + 1; s = s + i + 1 } return s", VAL_NUM(14)),
@@ -199,9 +199,9 @@ T tests[] = {
     T("return 13 !== 13", FALSE),
 
     // array
-    T("var a = [3, 4, 5]; return a[2]", VAL_NUM(5)),
-    T("var foobar = [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
-    T("var tralala = [13, 14] tralala[3]=\"tralala\"; return tralala[3]=='tralala'", TRUE),
+    T("a := [3, 4, 5]; return a[2]", VAL_NUM(5)),
+    T("foobar := [3, 4, 5] return [3, 4, 5] == foobar", TRUE),
+    T("tralala := [13, 14] tralala[3]=\"tralala\"; return tralala[3]=='tralala'", TRUE),
 
     // map
     T("a:={} b:={} a[1]=13 return b[1]", VNIL),
@@ -217,8 +217,8 @@ T tests[] = {
     T("a:={} a.foofoobar=5; return a[\"foofoobar\"]", VAL_NUM(5)),
     
     // slice array
-    T("var a = [3, 4, 5]; return a[2:3] == [5]", TRUE),
-    T("var a = [3, 4, 5]; return a[0:-1] == [3, 4]", TRUE),
+    T("a := [3, 4, 5]; return a[2:3] == [5]", TRUE),
+    T("a := [3, 4, 5]; return a[0:-1] == [3, 4]", TRUE),
     T("return #([3, 4, 5][1:10])", VAL_NUM(2)),
     T("return [3, 4, 5][-3:-2] == [3]", TRUE),
 

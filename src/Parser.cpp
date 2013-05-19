@@ -156,24 +156,26 @@ bool Parser::statList() {
 bool Parser::statement() {
     bool isReturn = false;
     switch (lexer->token) {
-    case TK_VAR:   advance(); varStat(); break;
+        // case TK_VAR:   advance(); varStat(); break;
     case TK_IF:    ifStat(); break;
     case TK_WHILE: whileStat(); break;
     case TK_FOR:   forStat(); break;
 
-    case TK_NAME: 
-        if (lexer->lookahead() == '=') {
+    case TK_NAME: {
+        int lookahead = lexer->lookahead();
+        if (lookahead == '=') {
             int slot = lookupSlot(lexer->info.name);
             advance();
             consume('=');
             patchOrEmitMove(proto->localsTop+1, slot, expr(proto->localsTop));
             proto->patchPos = -1;
-        } else if (lexer->lookahead() == ':'+TK_EQUAL) { 
+        } else if (lookahead == ':'+TK_EQUAL) { 
             varStat();
         } else {
             exprOrAssignStat();
         }
         break;
+    }
 
     case TK_RETURN:
         advance();
@@ -294,7 +296,8 @@ void Parser::varStat() {
         if (!IS_NIL(s) && level == proto->level && slot >= 0) {
             aSlot = slot; // reuse existing local with same name
         }
-    } else {
+    }
+    /* else {
         Value s = lookupName(name);
         if (!IS_NIL(s)) {
             int slot = s >> 8;
@@ -305,6 +308,7 @@ void Parser::varStat() {
             }
         }
     }
+    */
     if (aSlot < 0) {
         aSlot = proto->localsTop++;
         syms->set(name, aSlot);
