@@ -103,10 +103,10 @@ T tests[] = {
     T("return #[]", VAL_NUM(0)),
     T("return #{}", VAL_NUM(0)),
 
-    T("f:=func() { return 1 } return f()", ONE),
-    T("f:=func(x) { return -1 } return f(5)", VAL_NUM(-1)),
-    T("f:=func(x,y) { if x { return y } else { return 0 } }; return 1+f(0, 2)", ONE),
-    T("f:=func(x,y) { if x { return y } else { return 0 } }; return 1+f(1, -1)", ZERO),
+    T("f:=fn() { return 1 } return f()", ONE),
+    T("f:=fn(x) { return -1 } return f(5)", VAL_NUM(-1)),
+    T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(0, 2)", ONE),
+    T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(1, -1)", ZERO),
 
     T("return 13", VAL_NUM(13)),
     T("a := 10; b :=-2 c:=a+ b; return c", VAL_NUM(8)),
@@ -180,13 +180,13 @@ T tests[] = {
     T("a:=~0 b:=2^32-1 return a==b && ~(b-1)==1", TRUE),
 
     // recursion
-    T("func f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
-    T("func f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(20000)", VAL_NUM(200010001)),
+    T("fn f(n) { if n <= 0 {return 1} else {return n*f(n-1)}}; return f(10)", VAL_NUM(3628800)),
+    T("fn f(n) { if n <= 0 {return 1} else {return n + f(n-1)}}; return f(20000)", VAL_NUM(200010001)),
 
     // ternary op
     T("return 1 ? 2 : 3", VAL_NUM(2)),
     T("a:=0 b:=10 c:=20 return a ? b+1 : c+2", VAL_NUM(22)),
-    T("func f(x) { return x + 10; } func g(x, y) { return x * y } return g(3, 0) ? f(5) : g(f(0), f(1))", VAL_NUM(110)),
+    T("fn f(x) { return x + 10; } fn g(x, y) { return x * y } return g(3, 0) ? f(5) : g(f(0), f(1))", VAL_NUM(110)),
     T("return 0 ? 1 : 2 ? 3 : 4", VAL_NUM(3)),
     T("a:=2 return 0 ? 1 : a ? 3 : 4", VAL_NUM(3)),
     
@@ -210,7 +210,7 @@ T tests[] = {
     T("a := {}; a[2]=4; a[3]=9; return a[2]", VAL_NUM(4)),
     T("a := {}; a[2]=4; a[3]=9; return a ==  {2:4, 3:9}", TRUE),
     T("a := {}; a[2]=4; a[3]=9; return a === {2:4, 3:9}", FALSE),
-    T("a := {}; b := func(x){ a[x-1]=x+1 }; b(0); b(5); return a[4]-a[-1]", VAL_NUM(5)),
+    T("a := {}; b := fn(x){ a[x-1]=x+1 }; b(0); b(5); return a[4]-a[-1]", VAL_NUM(5)),
     T("return {a = 7}[\"a\"]", VAL_NUM(7)),
     T("a:={foo=5, bar=7, 9:13} return a == {\"foo\":5, \"bar\":7, 9:13}", TRUE),
     T("a:={foo=7}; return a.foo", VAL_NUM(7)),
@@ -228,10 +228,10 @@ T tests[] = {
     T("a:=\"foobarrar\" b:=3 c:=a[b:-b] d:= c + c; return 'barbar'==d", TRUE),
     
     // this call
-    T("func f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
-    T("return ({f=func() { return this ? 3 : 4 }}.f)()", VAL_NUM(4)),
-    T("return {f=func() { return this ? this.bar+1 : 4 }, bar=5}.f()", VAL_NUM(6)),
-    T("return ({f=func() { return this ? 2*this.barbar : 4 }, barbar=5}).f()", VAL_NUM(10)),
+    T("fn f(x) { return this.n + x } a:={n=5, foo=f}; return a.foo(3)", VAL_NUM(8)),
+    T("return ({f=fn() { return this ? 3 : 4 }}.f)()", VAL_NUM(4)),
+    T("return {f=fn() { return this ? this.bar+1 : 4 }, bar=5}.f()", VAL_NUM(6)),
+    T("return ({f=fn() { return this ? 2*this.barbar : 4 }, barbar=5}).f()", VAL_NUM(10)),
     
     // string
     T("f:=''.find; return f(\"hayneedfoo\", \"need\")", VAL_NUM(3)),
@@ -241,11 +241,11 @@ T tests[] = {
     T("return 'foo' == \"foo\"", TRUE),
     
     // vararg
-    T("return func(*args) { return #args }([13, 15])", VAL_NUM(1)),
-    T("func foobar(*args) { return args[-1] } return foobar(13, 15)", VAL_NUM(15)),
-    T("func sum(*args) { s:=0; for i := 0:#args { s = s + args[i] }; return s }; return sum(3, 5, 7)", VAL_NUM(3+5+7)),
-    T("func sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)", VAL_NUM(11)),
-    T("func foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
+    T("return fn(*args) { return #args }([13, 15])", VAL_NUM(1)),
+    T("fn foobar(*args) { return args[-1] } return foobar(13, 15)", VAL_NUM(15)),
+    T("fn sum(*args) { s:=0; for i := 0:#args { s = s + args[i] }; return s }; return sum(3, 5, 7)", VAL_NUM(3+5+7)),
+    T("fn sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)", VAL_NUM(11)),
+    T("fn foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
 
     T("for i:= 0:10 { builtin.gc(); }; return 13", VAL_NUM(13)),
 
@@ -258,20 +258,20 @@ T tests[] = {
     // GETF
     T("m:={'a':7, '__get':{'c':8}}; return m.c", VAL_NUM(8)),
     T("m:={__get={'c':3}, a=4}; return m.c", VAL_NUM(3)),
-    T("m:={__get=func(x){ return #x }, bar=2}; return m.foofoo", VAL_NUM(6)),
-    T("m:={__get=func(x){ return #x }, bar=2}; return m['foofoo']", VNIL),
-    T("m:={2:3, __get=func(x){ return #x }, bar=4}; return m.bar", VAL_NUM(4)),
-    T("m:={2:3, __get={a=7, __get=func(x){return 1+#x}}, bar=4}; return m.a", VAL_NUM(7)),
-    T("m:={2:3, __get={a=7, __get=func(x){return 1+#x}}, bar=4}; return m.ab", VAL_NUM(3)),
+    T("m:={__get=fn(x){ return #x }, bar=2}; return m.foofoo", VAL_NUM(6)),
+    T("m:={__get=fn(x){ return #x }, bar=2}; return m['foofoo']", VNIL),
+    T("m:={2:3, __get=fn(x){ return #x }, bar=4}; return m.bar", VAL_NUM(4)),
+    T("m:={2:3, __get={a=7, __get=fn(x){return 1+#x}}, bar=4}; return m.a", VAL_NUM(7)),
+    T("m:={2:3, __get={a=7, __get=fn(x){return 1+#x}}, bar=4}; return m.ab", VAL_NUM(3)),
     
     // T("a:=java; return 42", VAL_NUM(42)),
     T("javaString := builtin.java.class('java/lang/String'); return 42", VAL_NUM(42)),
-    T("f:=func(x) { return this}; builtin.print(f); return 1", VAL_NUM(1)),
+    T("f:=fn(x) { return this}; builtin.print(f); return 1", VAL_NUM(1)),
     T("d:={a=2}; builtin.print(d.x)", VNIL),
-    T("p:=builtin.print; d:={__get=func(x){ p('**', this, x); return this}}; builtin.print(d.x)", VNIL),
+    T("p:=builtin.print; d:={__get=fn(x){ p('**', this, x); return this}}; builtin.print(d.x)", VNIL),
     T("p:=builtin.print; p('foo'); pp:=builtin.print; pp('pp'); builtin.print('bar'); p(p, pp, builtin.print)", VNIL),
-    T("d:={f=func(){return this}}; p:=builtin.print; p((d).f(), (d.f)())", VNIL),
-    T("func a(x) { b:=func(y) { c:=y+x; d:=func(a) { p:=builtin.print; p(a)} d(c) } b(x+1)} a(3)", VNIL),
+    T("d:={f=fn(){return this}}; p:=builtin.print; p((d).f(), (d.f)())", VNIL),
+    T("fn a(x) { b:=fn(y) { c:=y+x; d:=fn(a) { p:=builtin.print; p(a)} d(c) } b(x+1)} a(3)", VNIL),
     T("f:=builtin.parse.block('return nil'); return f()", VNIL),
 };
 
@@ -336,7 +336,7 @@ T tests[] = {
         }
         /*
         long long t1 = getTimeUsec();
-        Func *f = pepper->parseFunc(text);
+        Fn *f = pepper->parseFunc(text);
         if (verbose) {
             printFunc(f);
         }

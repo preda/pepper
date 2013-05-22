@@ -14,11 +14,10 @@ static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
 
 static const char *tokens[] = {
     "break", "continue", 
-    "else", "for", "while", "func", "goto",
+    "else", "for", "while", "fn", "goto",
     "if", "nil", "return",
     "and", "or", "xor",
     "<end-keyword>",
-
     "<integer>", "<double>", "<name>", "<string>", "<end>",
 };
 //    "is",
@@ -116,8 +115,8 @@ int Lexer::advanceInt(TokenInfo *info) {
                 return c;
             }
 
-        case '&': return *p == '&' ? ++p, TK_LOG_AND : c;
-        case '|': return *p == '|' ? ++p, TK_LOG_OR  : c;
+        case '&': return *p == '&' ? ++p, TK_AND : c;
+        case '|': return *p == '|' ? ++p, TK_OR  : c;
 
         case '=': 
         case '!':

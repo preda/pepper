@@ -3,14 +3,14 @@ _(CONTINUE),
 _(ELSE),
 _(FOR),
 _(WHILE),
-_(FUNC),
+_(FN),
 _(GOTO),
 _(IF),
 _(NIL),
 _(RETURN),
-_(LOG_AND),
-_(LOG_OR),
-_(BIT_XOR),
+_(AND), // logical
+_(OR),  // logical
+_(XOR), // bit
 _(END_KEYWORD),
 _(SHIFT_L),
 _(SHIFT_R),

@@ -504,7 +504,7 @@ Value Parser::suffixedExpr(int top) {
     case '[': a = arrayExpr(top); indexOnly = true; break;
     case '{': a = mapExpr(top);   indexOnly = true; break;
 
-    case TK_FUNC: a = funcExpr(top); callOnly = true; break;
+    case TK_FN: a = funcExpr(top); callOnly = true; break;
 
     default: ERR(true, E_SYNTAX);
     }
@@ -553,7 +553,7 @@ Value Parser::suffixedExpr(int top) {
 }
 
 Proto *Parser::parseProto(int *outSlot) {
-    consume(TK_FUNC);
+    consume(TK_FN);
     int slot = -1;
     if (TOKEN == TK_NAME) {
         syms->set(lexer->info.name, slot=proto->localsTop++);
@@ -668,7 +668,7 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
     case '&': opcode = AND; break;
     case '|': opcode = OR;  break;
 
-    case TK_BIT_XOR: opcode = XOR; break;
+    case TK_XOR: opcode = XOR; break;
     case TK_SHIFT_L: opcode = SHL; break;
     case TK_SHIFT_R: opcode = SHR; break;
 
@@ -684,10 +684,10 @@ Value Parser::codeBinary(int top, int op, Value a, Value b) {
     case TK_IS: opcode = IS; break;
     case TK_NOT_IS: opcode = NIS; break;
 
-    case TK_LOG_AND:
+    case TK_AND:
         break;
 
-    case TK_LOG_OR:
+    case TK_OR:
         break;
 
     default: assert(false);
@@ -708,7 +708,7 @@ static int binaryPriorityLeft(int token) {
 
 
     case '&': return 7;
-    case TK_BIT_XOR:
+    case TK_XOR:
     case '|': return 6;
 
     case '='+TK_EQUAL: case '!'+TK_EQUAL:
@@ -717,8 +717,8 @@ static int binaryPriorityLeft(int token) {
     case TK_IS: case TK_NOT_IS:
         return 5;
 
-    case TK_LOG_AND: return 4;
-    case TK_LOG_OR: return 2;
+    case TK_AND: return 4;
+    case TK_OR: return 2;
 
     default : return -1;
     }
@@ -737,13 +737,13 @@ Value Parser::subExpr(int top, int limit) {
     int prio;
     while ((prio = binaryPriorityLeft(op = TOKEN)) > limit) {
         advance();
-        const int rightPrio = op == '^' || op == TK_LOG_AND || op == TK_LOG_OR ? prio-1 : prio;
-        if (op == TK_LOG_AND || op == TK_LOG_OR) {
+        const int rightPrio = op == '^' || op == TK_AND || op == TK_OR ? prio-1 : prio;
+        if (op == TK_AND || op == TK_OR) {
             if (!IS_REG(a)) {
                 int saveCodeSize = proto->code.size();
                 Value b = subExpr(top, rightPrio);
-                if ((op==TK_LOG_AND && IS_FALSE(a)) ||
-                    (op==TK_LOG_OR  && !IS_FALSE(a))) {
+                if ((op==TK_AND && IS_FALSE(a)) ||
+                    (op==TK_OR  && !IS_FALSE(a))) {
                     // drop b
                     proto->code.setSize(saveCodeSize);
                 } else {
@@ -759,7 +759,7 @@ Value Parser::subExpr(int top, int limit) {
                 int pos1 = emitHole();
                 Value b = subExpr(aSlot, rightPrio);
                 patchOrEmitMove(aSlot, aSlot, b);
-                if (op == TK_LOG_AND) {
+                if (op == TK_AND) {
                     emitJump(pos1, JF, a, HERE);
                 } else {
                     emitJump(pos1, JT, a, HERE);
