@@ -4,13 +4,13 @@
 #include "common.h"
 
 enum TOKENS {
-
 #define _(tok) TK_##tok
 #include "tokens.inc"
 #undef _
-
     TK_EQUAL = 257,
 };
+
+extern const char *tokenStrings[];
 
 struct TokenInfo {
     union {

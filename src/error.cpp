@@ -12,19 +12,13 @@ static const char *errorMes[32] = {
 #undef _
 };
 
-static const char *tokenString[] = {
-#define _(tok) #tok
-#include "tokens.inc"
-#undef _
-};
-
 const char *tokenToString(char *buf, int size, int token) {
     const char *tail = token >= TK_EQUAL ? "=" : "";
     if (token >= TK_EQUAL) { token -= TK_EQUAL; }
     if (token >= 32) {
         snprintf(buf, size, "'%c'%s", (char)token, tail);
     } else {
-        snprintf(buf, size, "%s%s", tokenString[token], tail);
+        snprintf(buf, size, "%s%s", tokenStrings[token], tail);
     }
     return buf;
 }

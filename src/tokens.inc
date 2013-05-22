@@ -1,16 +1,16 @@
-_(BREAK),
-_(CONTINUE),
-_(ELSE),
-_(FOR),
-_(WHILE),
-_(FN),
-_(GOTO),
-_(IF),
-_(NIL),
-_(RETURN),
-_(AND), // logical
-_(OR),  // logical
-_(XOR), // bit
+_(break),
+_(continue),
+_(else),
+_(for),
+_(while),
+_(fn),
+_(goto),
+_(if),
+_(nil),
+_(return),
+_(and), // logical
+_(or),  // logical
+_(xor), // bit
 _(END_KEYWORD),
 _(SHIFT_L),
 _(SHIFT_R),

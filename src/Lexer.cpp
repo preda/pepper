@@ -12,15 +12,11 @@ static bool isAlpha(char c)    { return ('a' <= (c|32) && (c|32) <= 'z') || c ==
 static bool isDigit(char c)    { return '0' <= c && c <= '9'; }
 static bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
 
-static const char *tokens[] = {
-    "break", "continue", 
-    "else", "for", "while", "fn", "goto",
-    "if", "nil", "return",
-    "and", "or", "xor",
-    "<end-keyword>",
-    "<integer>", "<double>", "<name>", "<string>", "<end>",
+const char *tokenStrings[] = {
+#define _(x) #x
+#include "tokens.inc"
+#undef _
 };
-//    "is",
 
 Lexer::Lexer(GC *gc, const char *string) :
     string(string),
@@ -31,7 +27,7 @@ Lexer::Lexer(GC *gc, const char *string) :
     end = string + strlen(string);
     lineNumber = 0;
     for (int i = 0; i < TK_END_KEYWORD; ++i) {
-        keywords->rawSet(String::value(gc, tokens[i]), VAL_REG(i));
+        keywords->rawSet(String::value(gc, tokenStrings[i]), VAL_REG(i));
     }
 }
 
@@ -115,8 +111,8 @@ int Lexer::advanceInt(TokenInfo *info) {
                 return c;
             }
 
-        case '&': return *p == '&' ? ++p, TK_AND : c;
-        case '|': return *p == '|' ? ++p, TK_OR  : c;
+        case '&': return *p == '&' ? ++p, TK_and : c;
+        case '|': return *p == '|' ? ++p, TK_or  : c;
 
         case '=': 
         case '!':
