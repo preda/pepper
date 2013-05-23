@@ -153,6 +153,14 @@ bool Parser::statList() {
     return endsWithReturn;
 }
 
+// e.g. fn(x) => x+1
+bool Parser::lambdaBody() {
+    consume('=');
+    consume('>');
+    emit(proto->localsTop, RET, 0, expr(proto->localsTop), UNUSED);
+    return true;
+}
+
 bool Parser::statement() {
     bool isReturn = false;
     switch (lexer->token) {
@@ -574,7 +582,8 @@ Proto *Parser::parseProto(int *outSlot) {
     proto = Proto::alloc(gc, proto);
     syms->pushContext();
     parList();
-    if (!block()) {
+    bool hasReturn = TOKEN == '=' ? lambdaBody() : block();
+    if (!hasReturn) {
         emit(0, RET, 0, VNIL, UNUSED);
     }
     proto->freeze();

@@ -103,7 +103,9 @@ T tests[] = {
     T("return #[]", VAL_NUM(0)),
     T("return #{}", VAL_NUM(0)),
 
-    T("f:=fn() { return 1 } return f()", ONE),
+    T("f:=fn() => 1 return f()", ONE),
+    T("f:=fn(x) => x+1; return f(-1)", ZERO),
+
     T("f:=fn(x) { return -1 } return f(5)", VAL_NUM(-1)),
     T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(0, 2)", ONE),
     T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(1, -1)", ZERO),
