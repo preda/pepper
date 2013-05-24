@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "Lexer.h"
+#include "StringBuilder.h"
 #include "common.h"
 #include <setjmp.h>
 #include <stdio.h>
@@ -23,7 +24,7 @@ const char *tokenToString(char *buf, int size, int token) {
     return buf;
 }
 
-u64 error(const char *file, int line, int err) {
+u64 error(const char *file, int line, int err, Value val, Lexer *lexer) {
     if (err >= E_EXPECTED) {
         int token = err - E_EXPECTED;
         char buf[32];        
@@ -31,6 +32,14 @@ u64 error(const char *file, int line, int err) {
                 tokenToString(buf, sizeof(buf), token), token, file, line);
     } else {
         fprintf(stderr, "ERROR %d %s at %s:%d\n", err, errorMes[err], file, line);
+    }
+    if (!IS_NIL(val)) {
+        StringBuilder builder;
+        builder.append(val);
+        fprintf(stderr, "%s\n", builder.cstr());
+    }
+    if (lexer) {
+        lexer->printLocation();
     }
     __builtin_abort();
     longjmp(jumpBuf, err); 

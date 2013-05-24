@@ -36,12 +36,12 @@ class Lexer {
     const char *p;
     const char *pLine;
     int lineNumber;
+    int token;
+    TokenInfo info;
 
     Lexer(GC *gc, const char *string);
 
     int advance();
     int lookahead();
-
-    int token;
-    TokenInfo info;
+    void printLocation();
 };

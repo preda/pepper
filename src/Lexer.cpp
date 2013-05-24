@@ -188,3 +188,13 @@ Value Lexer::readString(char startChar) {
     }
     return String::value(gc, s.buf(), s.size());
 }
+
+void Lexer::printLocation() {
+    const char *eol = strchr(pLine, '\n');
+    if (!eol) { eol = p; }
+    int lineSize = eol - pLine;
+    char buf[lineSize + 1];
+    strncpy(buf, pLine, lineSize);
+    buf[lineSize] = 0;
+    fprintf(stderr, "Line #%d : %d '%s'\n", lineNumber+1, (int)(p - pLine), buf);
+}

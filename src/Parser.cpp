@@ -43,7 +43,7 @@ void Parser::consume(int t) {
     if (t == lexer->token) {
         lexer->advance();
     } else {
-        ERR(true, E_EXPECTED + t);
+        CERR(true, E_EXPECTED + t, VNIL);
     }
 }
 
@@ -206,11 +206,11 @@ void Parser::exprOrAssignStat() {
     Value lhs = expr(proto->localsTop);
     if (TOKEN == '=') {
         consume('=');
-        ERR(!IS_REG(lhs), E_ASSIGN_TO_CONST);
-        ERR(proto->patchPos < 0, E_ASSIGN_RHS);        
+        CERR(!IS_REG(lhs), E_ASSIGN_TO_CONST, lhs);
+        CERR(proto->patchPos < 0, E_ASSIGN_RHS, lhs);
         unsigned code = proto->code.pop();
         int op = OP(code);
-        ERR(op != GETI && op != GETF, E_ASSIGN_RHS); // (lhs & FLAG_DONT_PATCH)
+        CERR(op != GETI && op != GETF, E_ASSIGN_RHS, lhs); // (lhs & FLAG_DONT_PATCH)
         assert((int)lhs == OC(code));
         emit(proto->localsTop+3, op+1, OA(code), VAL_REG(OB(code)), expr(proto->localsTop+2));
     }    
@@ -220,7 +220,7 @@ void Parser::exprOrAssignStat() {
 
 void Parser::forStat() {
     consume(TK_for);
-    ERR(TOKEN != TK_NAME, E_FOR_NAME);
+    CERR(TOKEN != TK_NAME, E_FOR_NAME, VNIL);
     Value name = lexer->info.name;
     int slot = proto->localsTop++;
     advance();
@@ -289,7 +289,7 @@ void Parser::ifStat() {
 }
 
 void Parser::varStat() {
-    ERR(TOKEN != TK_NAME, E_VAR_NAME);
+    CERR(TOKEN != TK_NAME, E_VAR_NAME, VNIL);
     Value name = lexer->info.name;
     advance();
     int top = proto->localsTop;
@@ -359,20 +359,14 @@ int Parser::lookupName(Value name) {
 
 int Parser::lookupSlot(Value name) {    
     int slot = lookupName(name);
-    // fprintf(stderr, "slot %d\n", slot);
+    /*
     if (slot == 256) {
         const char *nameStr = GET_CSTR(name);
-        const char *line = lexer->pLine;
-        const char *eol = strchr(line, '\n');
-        if (!eol) { eol = lexer->p; }
-        int lineSize = eol - line;
-        char buf[lineSize + 1];
-        strncpy(buf, line, lineSize);
-        buf[lineSize] = 0;
-        fprintf(stderr, "Undefined '%s'\nLine #%d '%s' char %d\n",
-                nameStr, lexer->lineNumber + 1, buf, (int)(lexer->p - line));
+        fprintf(stderr, "Undefined '%s'\nLine #%d : %d '%s'\n",
+                nameStr, lexer->lineNumber + 1, (int)(lexer->p - line), buf);
     }
-    ERR(slot == 256, E_NAME_NOT_FOUND);
+    */
+    CERR(slot == 256, E_NAME_NOT_FOUND, name);
     return slot;
 }
 
@@ -449,7 +443,7 @@ void Parser::parList() {
                  advance();
                  hasEllipsis = true;
              }
-             ERR(TOKEN != TK_NAME, E_SYNTAX);
+             CERR(TOKEN != TK_NAME, E_SYNTAX, VNIL);
              ++proto->nArgs;
              syms->set(lexer->info.name, proto->localsTop++);
              advance();
@@ -464,7 +458,7 @@ void Parser::parList() {
 Value Parser::callExpr(int top, Value a, Value self) {
     consume('(');
     int base = top;
-    ERR(!IS_REG(a), E_CALL_NOT_FUNC);
+    CERR(!IS_REG(a), E_CALL_NOT_FUNC, a);
     if (IS_REG(a) && (int)a == base) { ++base; }
     emit(base, MOVE, base, self, UNUSED);
     // patchOrEmitMove(base, base, self);
@@ -472,7 +466,7 @@ Value Parser::callExpr(int top, Value a, Value self) {
     int starPos = 0;
     ARG_LIST(
              if (TOKEN == '*') {                 
-                 ERR(starPos, E_ELLIPSIS);
+                 CERR(starPos, E_ELLIPSIS, VNIL);
                  advance();
                  starPos = nArg;
              }
@@ -481,7 +475,7 @@ Value Parser::callExpr(int top, Value a, Value self) {
              ++nArg;
              );
     consume(')');
-    ERR(starPos && starPos != nArg - 1, E_ELLIPSIS);
+    CERR(starPos && starPos != nArg - 1, E_ELLIPSIS, VNIL);
     if (starPos) {
         nArg = -nArg;
     }
@@ -526,7 +520,7 @@ Value Parser::suffixedExpr(int top) {
 
     case TK_fn: a = funcExpr(top); callOnly = true; break;
 
-    default: ERR(true, E_SYNTAX);
+    default: CERR(true, E_SYNTAX, VNIL);
     }
 
     while (true) {
@@ -555,7 +549,7 @@ Value Parser::suffixedExpr(int top) {
 
         case '.':
             advance();
-            ERR(TOKEN != TK_NAME, E_SYNTAX);
+            CERR(TOKEN != TK_NAME, E_SYNTAX, VNIL);
             if (IS_REG(a) && (int)a == top) {
                 ++top;
             }
