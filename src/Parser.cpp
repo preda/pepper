@@ -360,6 +360,18 @@ int Parser::lookupName(Value name) {
 int Parser::lookupSlot(Value name) {    
     int slot = lookupName(name);
     // fprintf(stderr, "slot %d\n", slot);
+    if (slot == 256) {
+        const char *nameStr = GET_CSTR(name);
+        const char *line = lexer->pLine;
+        const char *eol = strchr(line, '\n');
+        if (!eol) { eol = lexer->p; }
+        int lineSize = eol - line;
+        char buf[lineSize + 1];
+        strncpy(buf, line, lineSize);
+        buf[lineSize] = 0;
+        fprintf(stderr, "Undefined '%s'\nLine #%d '%s' char %d\n",
+                nameStr, lexer->lineNumber + 1, buf, (int)(lexer->p - line));
+    }
     ERR(slot == 256, E_NAME_NOT_FOUND);
     return slot;
 }

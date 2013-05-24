@@ -336,9 +336,9 @@ T tests[] = {
         } else {
             text = argv[1];
         }
-        /*
+
         long long t1 = getTimeUsec();
-        Fn *f = pepper->parseFunc(text);
+        Func *f = pepper->parseStatList(text);
         if (verbose) {
             printFunc(f);
         }
@@ -356,6 +356,5 @@ T tests[] = {
         long long t3 = getTimeUsec();
         printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
         printValue(ret);
-        */
     }
 }

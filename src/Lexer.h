@@ -34,6 +34,7 @@ class Lexer {
 
  public:
     const char *p;
+    const char *pLine;
     int lineNumber;
 
     Lexer(GC *gc, const char *string);

@@ -24,6 +24,7 @@ Lexer::Lexer(GC *gc, const char *string) :
     keywords(Map::alloc(gc))
 {
     p   = string;
+    pLine = p;
     end = string + strlen(string);
     lineNumber = 0;
     for (int i = 0; i < TK_END_KEYWORD; ++i) {
@@ -33,10 +34,12 @@ Lexer::Lexer(GC *gc, const char *string) :
 
 int Lexer::lookahead() {
     const char *savep = p;
+    const char *savepLine = pLine;
     int saveLineNumber = lineNumber;
     TokenInfo dummy;
     int nextToken = advanceInt(&dummy);
     p = savep;
+    pLine = savepLine;
     lineNumber = saveLineNumber;
     return nextToken;
 }
@@ -86,6 +89,7 @@ int Lexer::advanceInt(TokenInfo *info) {
             
         case '\n': // newline
             ++lineNumber;
+            pLine = p;
             break;
             
         case ' ': case '\f': case '\t': case '\v': // whitespace
