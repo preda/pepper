@@ -18,5 +18,5 @@ public:
     void append(const char *s, int len);
     void append(char c);
     void append(double d);
-    void append(Value v);
+    void append(Value v, bool raw = false);
 };

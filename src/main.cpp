@@ -52,8 +52,6 @@ static void printValue(Value a) {
     fprintf(stderr, "%s\n", sb.cstr());
 }
 
-void printFunc(Func *);
-
 struct T {
     T(const char *s, Value v) : source(s), result(v) {}
 

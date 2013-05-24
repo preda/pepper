@@ -11,6 +11,7 @@
 #include "GC.h"
 #include "NameValue.h"
 #include "Stack.h"
+#include "Decompile.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -176,17 +177,16 @@ static void copyUpvals(Func *f, Value *regs) {
     // memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
 }
 
-Value VM::run(Func *f, int nArg, Value *args) {
+Value VM::run(Func *activeFunc, int nArg, Value *args) {
     static const int nExtra = 2;
     Stack stack;
     Value *regs = stack.maybeGrow(0, nArg + nExtra + 1);
-    regs[0] = VAL_OBJ(f);
+    regs[0] = VAL_OBJ(activeFunc);
     regs[1] = stringMethods;
     Value *base = regs + nExtra;
     base[0] = VNIL;
     memcpy(base+1, args, nArg * sizeof(Value));
-    Value fv = VAL_OBJ(f);
-    Func *activeFunc = f;
+    Value fv = VAL_OBJ(activeFunc);
     DO_CALL(fv, nArg, regs, base, &stack);
     return base[0];
 }
@@ -258,8 +258,10 @@ void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
 
     if (int err = setjmp(jumpBuf)) {
         (void) err;
-        printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code); 
-        return; // 0;
+        printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code);
+        printFunc(activeFunc);
+        __builtin_abort();
+        return;
     }
 
     static void *dispatch[] = {

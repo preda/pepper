@@ -19,7 +19,7 @@ Value builtinPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(nCallArgs > 0);
     StringBuilder buf;    
     for (int i = 1; i < nCallArgs; ++i) {
-        buf.append(stack[i]);
+        buf.append(stack[i], true);
         buf.append(' ');
     }
     printf("%s\n", buf.cstr());

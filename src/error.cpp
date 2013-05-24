@@ -41,6 +41,6 @@ u64 error(const char *file, int line, int err, Value val, Lexer *lexer) {
     if (lexer) {
         lexer->printLocation();
     }
-    __builtin_abort();
+    // __builtin_abort();
     longjmp(jumpBuf, err); 
 }

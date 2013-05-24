@@ -420,7 +420,7 @@ Value Parser::arrayExpr(int top) {
         if (TOKEN == ']') { break; }
         Value elem = expr(top);
         if (IS_REG(elem)) {
-            emit(slot, SETF, slot, VAL_NUM(pos), elem);
+            emit(top, SETF, slot, VAL_NUM(pos), elem);
         } else {
             array->push(elem);
         }
