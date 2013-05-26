@@ -65,7 +65,7 @@ class VM {
 
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
-    void call(Value fval, int nArg, Value *base, Stack *stack);
+    int call(Value fval, int nArg, Value *base, Stack *stack); // returns non-zero on error
     
  public:
     VM(GC *gc, void *context);

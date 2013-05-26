@@ -1,3 +1,4 @@
+_(NONE),
 _(VAR_NAME),
 _(NAME_NOT_FOUND),
 _(TODO),

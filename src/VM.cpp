@@ -22,111 +22,111 @@
 
 #define FAST_CALL 0
 
-#define DO_CALL(f, n, regs, base, stack) {\
-  unsigned p1 = regs - (stack)->base, p2 = base - (stack)->base;\
-  call(f, n, base, stack);\
+#define DO_CALL(f, n, regs, base, stack) ({                             \
+  const unsigned p1 = regs - (stack)->base, p2 = base - (stack)->base;\
+  int ret = call(f, n, base, stack);\
   regs = (stack)->base + p1; base = (stack)->base + p2;\
   copyUpvals(activeFunc, regs);\
-}
+  if (ret > 0 && IS_O_TYPE(f, O_FUNC)) {\
+  fprintf(stderr, "Error at bytecode #%d\n", ret-1);\
+  printFunc((Func *) GET_OBJ(f));\
+  } else if (ret) { fprintf(stderr, "Error %d\n", ret); }   \
+  ret; })
 
 #define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)];
 
 #define INT(x) VAL_INT((signed char)x)
 
-static Value arrayAdd(GC *gc, Value a, Value b) {
-    assert(IS_ARRAY(a));
-    ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
-    Array *array = Array::alloc(gc);
-    array->add(a);
-    array->add(b);
-    return VAL_OBJ(array);
-}
-
-static Value mapAdd(GC *gc, Value a, Value b) {
-    assert(IS_MAP(a));
-    ERR(!(IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b)), E_WRONG_TYPE);
-    Map *map = MAP(a)->copy(gc);
-    map->add(b);
-    return VAL_OBJ(map);
-}
-
-Value doAdd(GC *gc, Value a, Value b) {
+inline Value doAdd(GC *gc, Value a, Value b) {
     int ta = TAG(a);
     if (IS_NUM_TAG(ta) && IS_NUM(b)) {
         return VAL_NUM(GET_NUM(a) + GET_NUM(b));
-    }
-    if (IS_STRING(a)) {
+    } else if (IS_STRING(a)) {
         return String::concat(gc, a, b);
+    } else {
+        if (ta != T_OBJ) { return E_WRONG_TYPE; }
+        int type = O_TYPE(a);
+        if (type == O_ARRAY && (IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b))) {
+            Array *array = Array::alloc(gc);
+            array->add(a);
+            array->add(b);
+            return VAL_OBJ(array);
+        } else if (type == O_MAP && (IS_ARRAY(b) || IS_MAP(b) || IS_STRING(b))) {
+            Map *map = MAP(a)->copy(gc);
+            map->add(b);
+            return VAL_OBJ(map);
+        } else {
+            return VERR;
+        }
     }
-    ERR(ta != T_OBJ, E_WRONG_TYPE);
-    int type = O_TYPE(a);
-    ERR(type != O_ARRAY && type != O_MAP, E_WRONG_TYPE);
-    return type == O_ARRAY ? arrayAdd(gc, a, b) : mapAdd(gc, a, b);
 }
 
 Value doMod(Value a, Value b) {
-    ERR(!IS_NUM(a) || !IS_NUM(b), E_WRONG_TYPE);
+    if (!IS_NUM(a) || !IS_NUM(b)) { return VERR; }
     double da = GET_NUM(a);
     double db = GET_NUM(b);
     return VAL_NUM(da - floor(da / db) * db);
 }
 
 Value doPow(Value a, Value b) {
-    ERR(!IS_NUM(a) || !IS_NUM(b), E_WRONG_TYPE);
+    if(!IS_NUM(a) || !IS_NUM(b)) { return VERR; }
     return VAL_NUM(pow(GET_NUM(a), GET_NUM(b)));
 }
 
 static Value doSHL(Value v, int shift) {
-    ERR(!IS_NUM(v), E_WRONG_TYPE);
+    if (!IS_NUM(v)) { return VERR; }
     if (shift < 0) { shift = 0; }
     return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) << shift));
 }
 
 static Value doSHR(Value v, int shift) {
-    ERR(!IS_NUM(v), E_WRONG_TYPE);
+    if (!IS_NUM(v)) { return VERR; }
     if (shift < 0) { shift = 0; }
     return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) >> shift));
 }
 
 static Value getIndex(Value a, Value key) {
-    return 
-        IS_ARRAY(a)  ? ARRAY(a)->getV(key) :
+    return IS_ARRAY(a)  ? ARRAY(a)->getV(key) :
         IS_STRING(a) ? String::get(a, key) :
         IS_MAP(a)    ? MAP(a)->rawGet(key) :
-        ERROR(E_NOT_INDEXABLE);
+        VERR;
+    // E_NOT_INDEXABLE);
 }
 
 static bool acceptsIndex(Value v) {
     return IS_MAP(v) || IS_ARRAY(v) || IS_STRING(v);
 }
 
-static void setIndex(Value c, Value a, Value b) {
-    ERR(IS_STRING(c), E_STRING_WRITE);
+static int setIndex(Value c, Value a, Value b) {
     if (IS_ARRAY(c)) {
         ARRAY(c)->setV(a, b);
     } else if (IS_MAP(c)) {
         bool again = false;
         MAP(c)->set(a, b, &again);
     } else {
-        ERROR(E_NOT_INDEXABLE);
+        return IS_STRING(c) ? E_STRING_WRITE : E_NOT_INDEXABLE;
     }
+    return 0;
 }
 
-static void setField(Value c, Value a, Value b) {
-    setIndex(c, a, b);
+static int setField(Value c, Value a, Value b) {
+    return setIndex(c, a, b);
 }
 
 static Value getSlice(GC *gc, Value a, Value b1, Value b2) {
     return 
         IS_ARRAY(a)  ? ARRAY(a)->getSliceV(gc, b1, b2) :
         IS_STRING(a) ? String::getSlice(gc, a, b1, b2) :
-        ERROR(E_NOT_SLICEABLE);
+        VERR;
 }
 
-static void setSlice(Value c, Value a1, Value a2, Value b) {
-    ERR(IS_STRING(c), E_STRING_WRITE);
-    ERR(!IS_ARRAY(c), E_NOT_SLICEABLE);
-    ARRAY(c)->setSliceV(a1, a2, b);
+static int setSlice(Value c, Value a1, Value a2, Value b) {
+    if (IS_ARRAY(c)) {
+        ARRAY(c)->setSliceV(a1, a2, b);
+        return 0;
+    } else {
+        return E_NOT_SLICEABLE;
+    }
 }
 
 VM::VM(GC *gc, void *context) :
@@ -187,8 +187,8 @@ Value VM::run(Func *activeFunc, int nArg, Value *args) {
     base[0] = VNIL;
     memcpy(base+1, args, nArg * sizeof(Value));
     Value fv = VAL_OBJ(activeFunc);
-    DO_CALL(fv, nArg, regs, base, &stack);
-    return base[0];
+    int err = DO_CALL(fv, nArg, regs, base, &stack);    
+    return !err ? base[0] : VNIL;
 }
 
 #define NARGS_CFUNC 128
@@ -198,7 +198,10 @@ static int prepareStackForCall(Value *base, int nArgs, int nEffArgs, GC *gc) {
     if (nEffArgs < 0) { //last arg is *args
         nEffArgs = -nEffArgs;
         Value v = base[nEffArgs - 1];
-        ERR(!IS_ARRAY(v), E_ELLIPSIS);
+        if (!IS_ARRAY(v)) {
+            fprintf(stderr, "*args in call is not Array");
+            __builtin_abort();
+        }
         tail = ARRAY(v);
         --nEffArgs;
         tailSize = tail->size();
@@ -231,11 +234,11 @@ static int prepareStackForCall(Value *base, int nArgs, int nEffArgs, GC *gc) {
     return nEffArgs;
 }
 
-extern __thread jmp_buf jumpBuf;
-void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
+// extern __thread jmp_buf jumpBuf;
+int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     Vector<RetInfo> retInfo; // only used if FAST_CALL
 
-    ERR(!(IS_O_TYPE(A, O_FUNC) || IS_CF(A) || IS_O_TYPE(A, O_CFUNC)), E_CALL_NOT_FUNC);
+    if (!(IS_O_TYPE(A, O_FUNC) || IS_CF(A) || IS_O_TYPE(A, O_CFUNC))) { return -1; }
     regs  = stack->maybeGrow(regs, 256);
     int nExpectedArgs = IS_O_TYPE(A, O_FUNC) ? ((Func *)GET_OBJ(A))->proto->nArgs : NARGS_CFUNC;
     nEffArgs = prepareStackForCall(regs, nExpectedArgs, nEffArgs, gc);
@@ -247,7 +250,7 @@ void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
         } else {
             ((CFunc *) GET_OBJ(A))->call(this, regs, nEffArgs);
         }
-        return; //regs;
+        return 0;
     }
 
     unsigned code = 0;
@@ -256,6 +259,7 @@ void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     Func *activeFunc = (Func *) GET_OBJ(A);
     unsigned *pc = activeFunc->proto->code.buf();
 
+    /*
     if (int err = setjmp(jumpBuf)) {
         (void) err;
         printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code);
@@ -263,6 +267,7 @@ void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
         __builtin_abort();
         return;
     }
+    */
 
     static void *dispatch[] = {
 #define _(name) &&name
@@ -285,7 +290,7 @@ void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
  FOR: 
     A = *(ptrC + 1);
     B = *(ptrC + 2);
-    ERR(!IS_NUM(A) || !IS_NUM(B), E_FOR_NOT_NUMBER);
+    if (!IS_NUM(A) || !IS_NUM(B)) { goto error; } // E_FOR_NOT_NUMBER
     *ptrC = B;
     if (!(GET_NUM(B) < GET_NUM(A))) { pc += OD(code); }
     STEP;
@@ -297,14 +302,14 @@ void VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
         STEP;
     }
 
-FUNC:
+ FUNC:
     assert(IS_PROTO(A));
     *ptrC = VAL_OBJ(Func::alloc(gc, PROTO(A), regs + 256, regs, OB(code)));
     STEP;
 
     // index, A[B]
-GETI: *ptrC = getIndex(A, B); STEP;
-SETI: setIndex(*ptrC, A, B);  STEP;
+ GETI: *ptrC = getIndex(A, B); if (*ptrC == VERR) { goto error; } STEP;
+ SETI: if (setIndex(*ptrC, A, B)) { goto error; } STEP;
 
     // field, A.B
  GETF: while (true) {
@@ -339,12 +344,13 @@ SETI: setIndex(*ptrC, A, B);  STEP;
             }
         }
     }
+    if (*ptrC == VERR) { goto error; }
     STEP;
 
- SETF: setField(*ptrC, A, B);  STEP;
+ SETF: if (setField(*ptrC, A, B)) { goto error; } STEP;
 
- GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); STEP;
- SETS: setSlice(*ptrC, A, regs[OA(code)+1], B);  STEP;
+ GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); if (*ptrC==VERR) { goto error; } STEP;
+ SETS: if (setSlice(*ptrC, A, regs[OA(code)+1], B)) { goto error; } STEP;
 
  RET: {
         regs[0] = A;
@@ -352,7 +358,7 @@ SETI: setIndex(*ptrC, A, B);  STEP;
         gc->maybeCollect(this, root, regs - root + 1);
 #if FAST_CALL
         if (!retInfo.size()) {
-            return;
+            return 0;
         }
         RetInfo *ri = retInfo.top();
         pc         = ri->pc;
@@ -362,12 +368,12 @@ SETI: setIndex(*ptrC, A, B);  STEP;
         copyUpvals(activeFunc, regs);
         STEP;
 #else
-        return;
+        return 0;
 #endif
     }
 
 CALL: { 
-        ERR(!IS_OBJ(A) && !IS_CF(A), E_CALL_NOT_FUNC);
+        if (!IS_OBJ(A) && !IS_CF(A)) { goto error; } // E_CALL_NOT_FUNC
         int nEffArgs = OSB(code);
         assert(nEffArgs != 0);
         Value *base = ptrC;
@@ -386,13 +392,8 @@ CALL: {
             activeFunc = f;
         } else {
 #endif
-            DO_CALL(A, nEffArgs, regs, base, stack);
-            /*
-            unsigned regPos = regs - stack->base;
-            call(A, nEffArgs, base, stack);
-            regs = stack->base + regPos;
-            copyUpvals(activeFunc, regs);
-            */
+            int ret = DO_CALL(A, nEffArgs, regs, base, stack);
+            if (ret) { goto error; }
 #if FAST_CALL
         }
 #endif
@@ -413,12 +414,12 @@ CALL: {
  NOTL:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
     // notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
 
- ADD: *ptrC = doAdd(gc, A, B); STEP;
+ ADD: *ptrC = doAdd(gc, A, B); if (*ptrC == VERR) { goto error; } STEP;
  SUB: *ptrC = BINOP(-, A, B); STEP;
  MUL: *ptrC = BINOP(*, A, B); STEP;
  DIV: *ptrC = BINOP(/, A, B); STEP;
- MOD: *ptrC = doMod(A, B);    STEP;
- POW: *ptrC = doPow(A, B);    STEP;
+ MOD: *ptrC = doMod(A, B); if (*ptrC == VERR) { goto error; } STEP;
+ POW: *ptrC = doPow(A, B); if (*ptrC == VERR) { goto error; } STEP;
 
  AND: *ptrC = BITOP(&,  A, B); STEP;
  OR:  *ptrC = BITOP(|,  A, B); STEP;
@@ -437,7 +438,7 @@ CALL: {
  LT:  *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
  LE:  *ptrC = (equals(A, B) || lessThan(A, B)) ? TRUE : FALSE; STEP;
 
-    return; //0
+ error: return pc - activeFunc->proto->code.buf();
 }
 
 bool opcodeHasDest(int op) {

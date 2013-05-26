@@ -99,7 +99,9 @@ inline int TAG(Value v) { return ValueUnion{v:v}.tag; }
 
 inline Value VAL_TAG(short tag) { return ValueUnion{tag:tag}.v; }
 #define VNIL VAL_TAG(T_NIL)
+#define VERR VALUE_(T_NIL, 1)
 #define IS_NIL(v) (TAG(v) == T_NIL)
+#define IS_ERR(v) (v == VERR)
 #define IS_REG(v) (TAG(v) == T_REG)
 #define IS_OBJ(v) (TAG(v) == T_OBJ)
 #define IS_CF(v)  (TAG(v) == T_CF)
