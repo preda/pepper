@@ -62,7 +62,7 @@ void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
 
 void Map::set(Value *keys, Value *vals, int size) {
     for (Value *pk=keys, *end=keys+size, *pv=vals; pk < end; ++pk, ++pv) {
-        map.set(*pk, *pv);
+        set(*pk, *pv);
     }
 }
 
@@ -90,6 +90,15 @@ Value Map::set(Value key, Value val, bool *again) {
         *again = true;
         return rawGet(String::__SET);
     }
+}
+
+Value Map::set(Value key, Value val) {
+    if (key == String::__SET) {
+        hasSet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
+    } else if (key == String::__GET) {
+        hasGet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
+    }
+    return rawSet(key, val);
 }
 
 Value Map::get(Value key, bool *recurse) {

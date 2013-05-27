@@ -378,8 +378,7 @@ Value Parser::mapExpr(int top) {
     int slot = top;
     
     Map *map = Map::alloc(gc);
-    emit(slot, ADD, slot, EMPTY_MAP, VAL_OBJ(map));
-
+    Value mapValue = VAL_OBJ(map);
     for (int pos = 0; ; ++pos) {
         if (TOKEN == '}') { break; }
         Value k;
@@ -394,15 +393,19 @@ Value Parser::mapExpr(int top) {
         Value v = expr(topAbove(k, top+1));
         
         if (IS_REG(k) || IS_REG(v)) {
+            if (!IS_REG(mapValue)) {
+                emit(slot, MOVE, slot, mapValue, UNUSED);
+                mapValue = VAL_REG(slot);
+            }
             emit(top+2, SETI, slot, k, v);
         } else {
-            map->rawSet(k, v);
+            map->set(k, v);
         }
         if (TOKEN == '}') { break; }
         consume(',');
     }    
     consume('}');
-    return VAL_REG(slot);
+    return mapValue;
 }
 
 Value Parser::arrayExpr(int top) {
@@ -414,7 +417,6 @@ Value Parser::arrayExpr(int top) {
     int slot = top++;
     Array *array = Array::alloc(gc);
     Value arrayValue = VAL_OBJ(array);
-    // emit(slot, ADD, slot, EMPTY_ARRAY, arrayValue);
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == ']') { break; }
