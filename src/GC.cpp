@@ -21,7 +21,7 @@ GC::GC() :
     size(32),
     map((long *) calloc(size, sizeof(long))),
     n(0),
-    nLastCollect(8),
+    bytesSinceLast(0),
     grayStack(0)
 {
 }
@@ -81,10 +81,12 @@ void GC::markObjVect(Object **p, int size) {
 }
 
 Object *GC::alloc(int type, int bytes, bool traversable) {
+    assert(bytes > 0);
     if (n >= (size >> 1)) { growMap(); }
     Object *p = (Object *) calloc(1, bytes);
     add((long)p | (traversable ? BIT_TRAVERSABLE : 0));
     ++n;
+    bytesSinceLast += bytes;
     // printf("alloc %d %p type %d %s\n", bytes, p, type, Object::getTypeName(type));
     return p;
 }
@@ -161,6 +163,7 @@ void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
             }            
         }
     }
-    nLastCollect = n;
-    printf("GC collected %d left %d table %d\n", (nInitial - n), n, size);
+    printf("GC collected %d left %d table %d bytesSince %d\n",
+           (nInitial - n), n, size, bytesSinceLast);
+    bytesSinceLast = 0;
 }

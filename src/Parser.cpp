@@ -954,6 +954,9 @@ void Parser::emitCode(unsigned top, int op, int dest, Value a, Value b) {
             proto->code.push(CODE_CD(MOVE_C, dest, 0));
             proto->code.push((unsigned)a);
             proto->code.push((unsigned)(a>>32));
+            if (IS_OBJ(a)) {
+                proto->consts.push(GET_OBJ(a));
+            }
         }
         return;
     }

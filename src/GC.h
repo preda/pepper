@@ -12,7 +12,7 @@ class GC {
     int size;
     long *map;
     int n;
-    int nLastCollect;
+    unsigned bytesSinceLast;
     Vector<Object *> *grayStack;
 
     void add(long v);
@@ -24,7 +24,8 @@ class GC {
     ~GC();
 
     void maybeCollect(VM *vm, Value *vmStack, int vmStackSize) {
-        if (n > (nLastCollect << 1)) {
+        static const unsigned kLimit = 0;
+        if (bytesSinceLast >= kLimit) {
             collect(vm, vmStack, vmStackSize);
         }
     }

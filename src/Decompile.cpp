@@ -81,11 +81,14 @@ static void printBytecode(unsigned *start, int size, int indent, bool dump) {
         switch (op) {
         case JMP:    printf("JMP %d\n", i + OD(code) + 1); break;
 
+        case FOR:
+            printf("FOR %d := %d : %d  @ %d\n", c, c+2, c+1, i + OD(code) + 1);
+            break;
+            
         case JF: 
         case JT:
-        case FOR:
         case LOOP:
-            printf("%s %d, %d\n", opNames[op], i + OD(code) + 1, c); break;
+            printf("%s @ %d, %d\n", opNames[op], i + OD(code) + 1, c); break;
 
         case JLT:
         case JNIS: printf("%s %d, %d %d\n", opNames[op], i + OSC(code) + 1, a, b); break;
