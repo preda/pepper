@@ -5,12 +5,15 @@ tests := [
 ]
 
 print := builtin.print
-print(tests)
 block := builtin.parse.block
+ok := 1
 for i := 0 : #tests {
     t := tests[i]
-    print(t)
     f := block(t[0])
     res := f()
-    print('#'+i, 'expected ' + t[1] + ' got ', res, t[0])
+    if res != t[1] {
+        ok = 0
+        print('#'+i, 'expected ' + t[1] + ' got', res, t[0])        
+    }
 }
+return ok

@@ -130,7 +130,6 @@ Func *Parser::makeFunc(GC *gc, Proto *proto, Value *upsTop, int slot) {
 int Parser::parseStatList(GC *gc, Proto *proto, SymbolTable *syms, const char *text) {
     Lexer lexer(gc, text);
     if (int err = setjmp(jumpBuf)) {
-        printf("at line %d, '%s'\n", lexer.lineNumber, lexer.p);
         return err;
     }
     Parser parser(gc, proto, syms, &lexer);

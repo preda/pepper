@@ -24,7 +24,7 @@ class GC {
     ~GC();
 
     void maybeCollect(VM *vm, Value *vmStack, int vmStackSize) {
-        static const unsigned kLimit = 0;
+        static const unsigned kLimit = 256;
         if (bytesSinceLast >= kLimit) {
             collect(vm, vmStack, vmStackSize);
         }

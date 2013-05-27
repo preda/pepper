@@ -149,5 +149,7 @@ void printProto(Proto *proto, int indent) {
 }
 
 void printFunc(Func *func) {
-    printProto(func->proto, 0);
+    if (func) {
+        printProto(func->proto, 0);
+    }
 }

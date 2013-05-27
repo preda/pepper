@@ -125,6 +125,7 @@ void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
     // printf("GC before %d %d\n", n, size);
     // fprintf(stderr, "collect %d %p\n", vmStackSize, GET_OBJ(vmStack[0]));
     int nInitial = n;
+    (void) nInitial;
     {
         Vector<Object*> stack;
         grayStack = &stack;
@@ -163,7 +164,6 @@ void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
             }            
         }
     }
-    printf("GC collected %d left %d table %d bytesSince %d\n",
-           (nInitial - n), n, size, bytesSinceLast);
+    // printf("GC collected %d left %d table %d bytesSince %d\n", (nInitial - n), n, size, bytesSinceLast);
     bytesSinceLast = 0;
 }
