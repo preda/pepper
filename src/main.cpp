@@ -273,6 +273,7 @@ T tests[] = {
     T("d:={f=fn(){return this}}; p:=builtin.print; p((d).f(), (d.f)())", VNIL),
     T("fn a(x) { b:=fn(y) { c:=y+x; d:=fn(a) { p:=builtin.print; p(a)} d(c) } b(x+1)} a(3)", VNIL),
     T("f:=builtin.parse.block('return nil'); return f()", VNIL),
+    T("b:=1 for i:=0:2 { a:=[4,5,6] b=a[2] a[2]=13} return b", VAL_NUM(6)),
 };
 
     bool verbose = false;

@@ -413,12 +413,17 @@ Value Parser::arrayExpr(int top) {
     }
     int slot = top++;
     Array *array = Array::alloc(gc);
-    emit(slot, ADD, slot, EMPTY_ARRAY, VAL_OBJ(array));
+    Value arrayValue = VAL_OBJ(array);
+    // emit(slot, ADD, slot, EMPTY_ARRAY, arrayValue);
 
     for (int pos = 0; ; ++pos) {
         if (TOKEN == ']') { break; }
         Value elem = expr(top);
         if (IS_REG(elem)) {
+            if (!IS_REG(arrayValue)) {
+                emit(slot, MOVE, slot, arrayValue, UNUSED);
+                arrayValue = VAL_REG(slot);
+            }
             emit(top+1, SETF, slot, VAL_NUM(pos), elem);
         } else {
             array->push(elem);
@@ -427,7 +432,7 @@ Value Parser::arrayExpr(int top) {
         consume(',');
     }
     consume(']');
-    return VAL_REG(slot);
+    return arrayValue;
 }
 
 #define ARG_LIST(element) if (TOKEN != ')') { while (true) { element; if (TOKEN == ')') { break; } consume(','); } }

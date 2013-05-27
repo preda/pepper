@@ -409,7 +409,17 @@ CALL: {
     }
  MOVE_R: *ptrC = A; STEP;
  MOVE_I: *ptrC = VAL_NUM(OD(code)); STEP;
- MOVE_C: *ptrC = *pc | (((u64) *(pc+1)) << 32); pc += 2; STEP;
+ MOVE_C: {
+        Value v = *pc | (((u64) *(pc+1)) << 32);
+        pc += 2;
+        if (IS_ARRAY(v)) {
+            v = VAL_OBJ(ARRAY(v)->copy(gc));
+        } else if (IS_MAP(v)) {
+            v = VAL_OBJ(MAP(v)->copy(gc));
+        }
+        *ptrC = v;
+        STEP;
+    }
  LEN:    *ptrC = VAL_NUM(len(A)); STEP;
  NOTL:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
     // notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;

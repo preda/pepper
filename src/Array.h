@@ -40,4 +40,5 @@ class Array {
     void add(Value v);
     bool equals(Array *a);
     bool lessThan(Array *a);
+    Array *copy(GC *gc) { return alloc(gc, &vect); }
 };
