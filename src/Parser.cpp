@@ -21,6 +21,16 @@
 #define UNUSED VAL_REG(0)
 #define TOKEN (lexer->token)
 
+enum {
+    UP_NIL  = -1,
+    UP_ZERO = -2,
+    UP_ONE  = -3,
+    UP_NEG_ONE = -4,
+    UP_EMPTY_STRING = -5,
+    UP_EMPTY_ARRAY  = -6,
+    UP_EMPTY_MAP    = -7,
+};
+
 Parser::Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer) :
     proto(proto),
     syms(syms),
@@ -118,7 +128,6 @@ Func *Parser::parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *te
 Func *Parser::parseStatList(GC *gc, SymbolTable *syms, Value *upsTop, const char *text) {
     Proto *proto = Proto::alloc(gc, 0);
     if (Parser::parseStatList(gc, proto, syms, text)) { return 0; }
-    close(proto);
     return makeFunc(gc, proto, upsTop, -1);
 }
 
@@ -133,7 +142,11 @@ int Parser::parseStatList(GC *gc, Proto *proto, SymbolTable *syms, const char *t
         return err;
     }
     Parser parser(gc, proto, syms, &lexer);
-    parser.statList();
+    bool hasReturn = parser.statList();
+    if (!hasReturn) {
+        proto->code.push(CODE_CAB(RET, 0, UP_NIL, 0));
+    }
+    proto->freeze();
     return 0;
 }
 
@@ -836,21 +849,6 @@ void Parser::patchOrEmitMove(int top, int dest, Value src) {
         }
     }
     emit(top, MOVE, dest, src, UNUSED);
-}
-
-enum {
-    UP_NIL  = -1,
-    UP_ZERO = -2,
-    UP_ONE  = -3,
-    UP_NEG_ONE = -4,
-    UP_EMPTY_STRING = -5,
-    UP_EMPTY_ARRAY  = -6,
-    UP_EMPTY_MAP    = -7,
-};
-
-void Parser::close(Proto *proto) {
-    proto->code.push(CODE_CAB(RET, 0, UP_NIL, 0));
-    proto->freeze();
 }
 
 static bool isRangeInt(Value a, int min, int max) {
