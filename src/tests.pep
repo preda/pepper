@@ -115,7 +115,6 @@ tests := [
 ['fn sum(*args) { s:=0; for i := 0:#args { s = s + args[i] }; return s }; return sum(3, 5, 7)', 15],
 ['fn sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)', 11],
 ['fn foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])', 13],
-['for i:= 0:10 { builtin.gc(); }; return 13', 13],
 ['[builtin.print(nil, 'hello world', 1.5, 100, {3:9, 4:16, 'foo':"bar"}, [5, 4, 3]);]', nil],
 ['return #(builtin.type(builtin))', 3],
 ['[t:=builtin.type; return t('')=='string' && t(0)=='number']', 1],
@@ -143,12 +142,12 @@ tests := [
 ]
 
 print := builtin.print
-block := builtin.parse.block
+parse := builtin.parse.block
 ok := 1
 for i := 0 : #tests {
     t := tests[i]
-    f := block(t[0])
-    res := f()
+    f := parse(t[0])
+    res := f ? f() : nil;
     if res != t[1] {
         ok = 0
         print('#'+i, 'expected ' + t[1] + ' got', res, t[0])        

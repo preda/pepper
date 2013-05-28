@@ -17,7 +17,7 @@ StringBuilder::StringBuilder() :
 
 StringBuilder::~StringBuilder() {
     if (buf) {
-        delete buf;
+        free(buf);
     }
     buf = 0;
     size = allocSize = 0;

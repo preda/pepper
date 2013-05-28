@@ -61,18 +61,17 @@ extern __thread jmp_buf jumpBuf;
 
 Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
     Value ups[] = {
-        Map::makeMap(gc,
+        Map::makeMap(gc,                     
                      "type", CFunc::value(gc, builtinType),
                      "print",  CFunc::value(gc, builtinPrint),
-                     "gc",     CFunc::value(gc, builtinGC),
-                     "import", CFunc::value(gc, builtinImport),
-                     "android", Map::makeMap(gc, NULL),
                      "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
                      "parse",
                      Map::makeMap(gc,
                                   "func", CFunc::value(gc, builtinParseFunc),
                                   "block", CFunc::value(gc, builtinParseBlock),
                                   NULL),
+                     "file",
+                     Map::makeMap(gc, "read", CFunc::value(gc, builtinFileRead), NULL),
                      NULL),
         VAL_OBJ(Map::alloc(gc)),
         VAL_OBJ(Array::alloc(gc)),

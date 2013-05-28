@@ -248,8 +248,6 @@ T tests[] = {
     T("fn sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)", VAL_NUM(11)),
     T("fn foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
 
-    T("for i:= 0:10 { builtin.gc(); }; return 13", VAL_NUM(13)),
-
     T("builtin.print(nil, 'hello world', 1.5, 100, {3:9, 4:16, 'foo':\"bar\"}, [5, 4, 3]);", VNIL),
 
     // builtin.type()
@@ -279,6 +277,7 @@ T tests[] = {
     T("a:=[] a[3]=2 b:=[] return b[3]", VNIL),
     T("a:={} a[3]=2 return a[3]", VAL_NUM(2)),
     T("a:={} a[3]=2 b:={} return b[3]", VNIL),
+    T("f:=builtin.file.read('gen.pep') return #f", VAL_NUM(6395)),
 };
 
     bool verbose = false;

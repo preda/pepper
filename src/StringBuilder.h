@@ -2,6 +2,8 @@
 
 #include "Value.h"
 
+const char *typeStr(Value v);
+
 class StringBuilder {
 public:
     char *buf;

@@ -14,6 +14,29 @@
 #include <assert.h>
 #include <stdio.h>
 
+Value builtinFileRead(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
+    assert(op == CFunc::CFUNC_CALL && !data);
+    if (nCallArgs >= 2) {
+        Value v = stack[1];
+        if (IS_STRING(v)) {
+            const char *name = GET_CSTR(v);
+            FILE *fi = fopen(name, "rb");
+            if (fi) {
+                Vector<char> chars;
+                char buf[4 * 1024];
+                while (true) {
+                    int n = fread(buf, 1, sizeof(buf), fi);
+                    chars.append(buf, n);
+                    if (n < (int)sizeof(buf)) { break; }
+                }
+                fclose(fi);
+                return String::value(vm->getGC(), chars.buf(), chars.size());
+            }
+        }    
+    }
+    return VNIL;
+}
+
 Value builtinPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArgs > 0);
@@ -26,32 +49,11 @@ Value builtinPrint(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     return VNIL;    
 }
 
-char *typeStr(Value v); // defined in StringBuilder.cpp
-
 Value builtinType(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArgs > 0);
     if (nCallArgs < 2) { return VNIL; }
     return String::value(vm->getGC(), typeStr(stack[1]));
-}
-
-Value builtinGC(VM *vm, int op, void *data, Value *stack, int nCallArg) {
-    assert(op == CFunc::CFUNC_CALL && !data);
-    assert(nCallArg > 0);
-    // vm->gcCollect(stack + nCallArg);
-    return VNIL;
-}
-
-Value builtinImport(VM *vm, int op, void *data, Value *stack, int nCallArg) {
-    assert(op == CFunc::CFUNC_CALL && !data);
-    assert(nCallArg > 0);
-    if (nCallArg >= 2) {
-        Value v = stack[1];
-        if (IS_STRING(v)) {
-            // TODO
-        }
-    }
-    return VNIL;
 }
 
 static Value builtinParse(GC *gc, int op, void *data, Value *stack, int nCallArg, bool isFunc) {
