@@ -13,8 +13,6 @@ class Pepper {
     GC *gc;
     VM *vm;
 
-    // Func *parse(const char *text, bool isFunc);
-        
  public:
     Pepper(void *context);
     ~Pepper();

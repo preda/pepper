@@ -122,6 +122,8 @@ void StringBuilder::append(Value v, bool raw) {
             append(vals[i]);
         }
         append('}');
+    } else if (IS_NIL(v)) {
+        append("nil");
     } else {
         append('<');
         append(typeStr(v));

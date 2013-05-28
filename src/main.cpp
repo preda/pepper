@@ -9,6 +9,7 @@
 #include "GC.h"
 #include "Index.h"
 #include "StringBuilder.h"
+#include "Lexer.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -91,7 +92,7 @@ int main(int argc, char **argv) {
 
 T tests[] = {
     T("a := '[foo]' return a == 'foo'", TRUE),
-    T("foobarbar := '====[tralala\"']====' return foobarbar == 'tralala\"\\''", TRUE),
+    T("foobarbar := '====[tralala\"']====' return foobarbar == '[tralala\"']'", TRUE),
     T("f := builtin.parse.block('return 3') return f()", VAL_NUM(3)),
     T("f := builtin.parse.block('=[return 3]=') return f()", VAL_NUM(3)),
     T("return nil", VNIL),
@@ -286,8 +287,8 @@ T tests[] = {
         --argc;
         ++argv;
     }
+    const int n = sizeof(tests) / sizeof(tests[0]);
     if (argc < 2) {
-        int n = sizeof(tests) / sizeof(tests[0]);
         int nFail = 0;
         for (int i = 0; i < n; ++i) {
             T &t = tests[i];
@@ -336,6 +337,17 @@ T tests[] = {
             fclose(fi);
             ++argv;
             --argc;
+        } else if (!strcmp(argv[1], "-s")) {
+            StringBuilder builder;
+            for (int i = 0; i < n; ++i) {
+                const char *txt = tests[i].source;
+                char buf[256];
+                Lexer::quote(buf, sizeof(buf), txt);
+                builder.clear();
+                builder.append(tests[i].result);
+                fprintf(stderr, "[%s, %s],\n", buf, builder.cstr());
+            }
+            return 0;
         } else {
             text = argv[1];
         }

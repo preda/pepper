@@ -44,4 +44,6 @@ class Lexer {
     int advance();
     int lookahead();
     void printLocation();
+
+    static char *quote(char *buf, int bufSize, const char *text);
 };

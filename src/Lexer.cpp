@@ -137,6 +137,45 @@ int Lexer::advanceInt(TokenInfo *info) {
     return TK_END; // error
 }
 
+static char *makeMark(char *mark, int len, char at0, char atLen) {
+    if (len <= 0) {
+        mark[0] = '\'';
+    } else {
+        mark[0] = at0;
+        mark[len] = atLen;
+        memset(mark + 1, '=', len - 1);
+    }
+    mark[len + 1] = 0;
+    return mark;
+}
+
+/* 0 => '
+ * 1 => ]'
+ * 3 => ]=='
+ */
+static char *makeEndMark(char *mark, int len) {
+    return makeMark(mark, len, ']', '\'');
+}
+
+static char *makeBeginMark(char *mark, int len) {
+    return makeMark(mark, len, '\'', '[');
+}
+
+// 'foo' '[foo]' '=[foo]=' etc.
+char *Lexer::quote(char *buf, int bufSize, const char *str) {
+    char endMark[32];
+    char beginMark[32];
+    for (int len = 0; len < 16; ++len) {
+        makeEndMark(endMark, len);
+        if (!strstr(str, endMark)) {
+            makeBeginMark(beginMark, len);
+            snprintf(buf, bufSize, "%s%s%s", beginMark, str, endMark);
+            break;
+        }
+    }
+    return buf;
+}
+
 Value Lexer::readString(char startChar) {
     int markLen = -1;
     if (startChar == '\'') {
@@ -146,23 +185,22 @@ Value Lexer::readString(char startChar) {
             ++pp;
             ++markLen;
         }
-        if (pp >= end || *pp != '[') {
-            markLen = -1;
+        ERR(pp >= end, E_OPEN_STRING);
+        if (*pp == '[') {
+            ++markLen;
+        } else {
+            markLen = 0;
         }
     }
     Vector<char> s;
     if (markLen >= 0 && markLen < 128) {
-        p += markLen + 1;
-        char endMark[130];
-        endMark[0] = ']';
-        memset(endMark + 1, '=', markLen);
-        endMark[markLen+1] = '\'';
-        endMark[markLen+2] = 0;
-        char *mark = (char *) memmem(p, end - p, endMark, markLen + 2);
+        p += markLen;
+        char endMark[132];
+        makeEndMark(endMark, markLen);
+        char *mark = (char *) memmem(p, end - p, endMark, markLen + 1);
         ERR(!mark, E_OPEN_STRING);
         s.append(p, mark - p);
-        p = mark + (markLen + 2);
-        // fprintf(stderr, "******* %s", p);
+        p = mark + (markLen + 1);
     } else {
         char c;
         while (p < end && (c=*p) != startChar) {
