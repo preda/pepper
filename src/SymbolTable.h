@@ -1,25 +1,25 @@
-// Copyright (C) 2012 Mihai Preda
+// Copyright (C) 2012-2013 Mihai Preda
 
 #pragma once
 
-#include "Vector.h"
 #include "common.h"
+#include "Map.h"
+#include "Vector.h"
 
-class Map;
 class GC;
 
+struct UndoEntry {
+    Value name;
+    Value prev;
+};
+typedef Vector<UndoEntry> UndoVect;
+
+// Object
 class SymbolTable {
-    struct UndoEntry {
-        Value name;
-        Value prev;
-    };
-
-    typedef Vector<UndoEntry> UndoVect;
-
+    Map map;
     int level;
     UndoVect undoLog[16];
-    Map *map;
-
+    
     void undo(UndoEntry *p);
     
  public:

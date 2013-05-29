@@ -12,24 +12,30 @@
 #include <assert.h>
 #include <new>
 
+/*
+SymbolTable *SymbolTable::alloc(GC *gc) {
+    return new (gc->alloc(sizeof(SymbolTable), true)) SymbolTable;
+}
+*/
+
 Array *Array::alloc(GC *gc, int iniSize) {
-    return new (gc->alloc(O_ARRAY, sizeof(Array), true)) Array(iniSize);
+    return new (gc->alloc(sizeof(Array), true)) Array(iniSize);
 }
 
 Map *Map::alloc(GC *gc, unsigned sizeHint) {
     (void) sizeHint;
-    return new (gc->alloc(O_MAP, sizeof(Map), true)) Map;
+    return new (gc->alloc(sizeof(Map), true)) Map;
 }
 
 Func *Func::alloc(GC *gc, Proto *proto, Value *contextUps, Value *regs, byte recSlot) {
-    return new (gc->alloc(O_FUNC, sizeof(Func), true)) Func(proto, contextUps, regs, recSlot);
+    return new (gc->alloc(sizeof(Func), true)) Func(proto, contextUps, regs, recSlot);
 }
 
 Proto *Proto::alloc(GC *gc, Proto *up) {
-    return new (gc->alloc(O_PROTO, sizeof(Proto), true)) Proto(up);
+    return new (gc->alloc(sizeof(Proto), true)) Proto(up);
 }
 
 CFunc *CFunc::alloc(GC *gc, tfunc f, unsigned dataSize) {
     assert(dataSize);
-    return new (gc->alloc(O_CFUNC, sizeof(CFunc) + dataSize, true)) CFunc(f);
+    return new (gc->alloc(sizeof(CFunc) + dataSize, true)) CFunc(f);
 }

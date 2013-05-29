@@ -31,7 +31,7 @@ String::~String() {
 }
 
 String *String::alloc(GC *gc, unsigned size) {
-    String *s = (String *) gc->alloc(O_STR, sizeof(String) + size + 1, false);
+    String *s = (String *) gc->alloc(sizeof(String) + size + 1, false);
     s->setSize(size);
     return s;
 }

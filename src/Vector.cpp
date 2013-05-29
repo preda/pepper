@@ -90,4 +90,4 @@ template class Vector<Value>;
 template class Vector<Object*>;
 template class Vector<char>;
 template class Vector<RetInfo>;
-template class Vector<SymbolTable::UndoEntry>;
+template class Vector<UndoEntry>;

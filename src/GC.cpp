@@ -80,7 +80,7 @@ void GC::markObjVect(Object **p, int size) {
     }
 }
 
-Object *GC::alloc(int type, int bytes, bool traversable) {
+Object *GC::alloc(int bytes, bool traversable) {
     assert(bytes > 0);
     if (n >= (size >> 1)) { growMap(); }
     Object *p = (Object *) calloc(1, bytes);

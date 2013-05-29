@@ -23,6 +23,9 @@ class GC {
     GC();
     ~GC();
 
+    // void newRoot(Object *obj);
+    // void deleteRoot(Object *obj);
+
     void maybeCollect(VM *vm, Value *vmStack, int vmStackSize) {
         static const unsigned kLimit = 256;
         if (bytesSinceLast >= kLimit) {
@@ -32,7 +35,7 @@ class GC {
 
     void collect(VM *vm, Value *vmStack, int vmStackSize);
 
-    Object *alloc(int type, int bytes, bool traversable);
+    Object *alloc(int bytes, bool traversable);
     void mark(Object *p);
     void markValVect(Value *buf,   int size);
     void markObjVect(Object **buf, int size);
