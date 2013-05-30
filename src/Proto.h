@@ -14,7 +14,7 @@ class Proto {
  public:
     Vector<int> ups;
     signed char nArgs; // negative if hasEllipsis
-    byte level;
+    // byte level;
     byte localsTop;
     int patchPos;
 

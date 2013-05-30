@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 SymbolTable::SymbolTable(GC *gc) : 
-    topLevel(0)
+    curLevel(0)
 {
     starts[0] = 0;
 }
@@ -13,19 +13,19 @@ SymbolTable::~SymbolTable() {
 }
 
 int SymbolTable::pushContext() {
-    ++topLevel;
-    starts[topLevel] = names.size();
-    return topLevel;
+    ++curLevel;
+    starts[curLevel] = names.size();
+    return curLevel;
 }
 
 int SymbolTable::popContext() {
-    names.setSize(starts[topLevel]);
-    slots.setSize(starts[topLevel]);
-    return --topLevel;
+    names.setSize(starts[curLevel]);
+    slots.setSize(starts[curLevel]);
+    return --curLevel;
 }
 
 int SymbolTable::getLevel(int pos) {
-    for (int i = topLevel; i >= 0; --i) {
+    for (int i = curLevel; i >= 0; --i) {
         if (starts[i] <= pos) { return i; }
     }
     return -1;
@@ -56,14 +56,14 @@ void SymbolTable::set(Value name, int slot) {
 }
 
 void SymbolTable::set(Value name, int slot, int level) {
-    if (level == topLevel) {
+    if (level == curLevel) {
         set(name, slot);
     } else {
-        assert(level < topLevel);
+        assert(level < curLevel);
         int pos = starts[level + 1];
         names.insertAt(pos, name);
         slots.insertAt(pos, slot);
-        for (int i = level + 1; i <= topLevel; ++i) {
+        for (int i = level + 1; i <= curLevel; ++i) {
             ++starts[i];
         }
     }

@@ -15,7 +15,6 @@ struct UndoEntry {
 
 // Object
 class SymbolTable {
-    int topLevel;
     int starts[16];
     Vector<Value> names;
     Vector<int> slots;
@@ -24,6 +23,8 @@ class SymbolTable {
     int findPos(Value name);
     
  public:
+    int curLevel;
+    
     SymbolTable(GC *gc);
     ~SymbolTable();
 

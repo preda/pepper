@@ -312,7 +312,7 @@ void Parser::varStat() {
         Value s = syms->get(name);
         int level = s & 0xff;
         int slot  = s >> 8;
-        if (!IS_NIL(s) && level == proto->level && slot >= 0) {
+        if (!IS_NIL(s) && level == syms->curLevel && slot >= 0) {
             aSlot = slot; // reuse existing local with same name
         }
     }
@@ -340,16 +340,15 @@ static bool isUnaryOp(int token) {
     return token=='!' || token=='-' || token=='#' || token=='~';
 }
 
-int Parser::createUpval(Proto *proto, Value name, int level, int slot) {
-    assert(level < proto->level);
-    if (level < proto->level - 1) {
-        slot = createUpval(proto->up, name, level, slot);
+int Parser::createUpval(Proto *proto, int protoLevel, Value name, int fromLevel, int slot) {
+    assert(fromLevel < protoLevel);
+    if (fromLevel < protoLevel - 1) {
+        slot = createUpval(proto->up, protoLevel - 1, name, fromLevel, slot);
     }
-    // assert(level == proto->level - 1);
     proto->addUp(slot);
-    syms->set(name, -proto->nUp(), proto->level);
-    // return syms->set(proto->level, name, -proto->nUp());
-    return -proto->nUp();
+    int protoSlot = -proto->nUp();
+    syms->set(name, protoSlot, protoLevel);
+    return protoSlot;
 }
 
 int Parser::lookupName(Value name) {
@@ -358,14 +357,15 @@ int Parser::lookupName(Value name) {
         return 256; //marker not found
     }
     int v = (int) s;
-    int level = v & 0xff;
-    int slot  = v >> 8;
-    assert(level <= proto->level);
-    if (level < proto->level) {
-        slot = createUpval(proto, name, level, slot);
+    int fromLevel = v & 0xff;
+    int fromSlot  = v >> 8;
+    const int curLevel = syms->curLevel;
+    assert(fromLevel <= curLevel);
+    if (fromLevel < curLevel) {
+        fromSlot = createUpval(proto, curLevel, name, fromLevel, fromSlot);
     }
-    assert(slot < proto->localsTop);
-    return slot;
+    assert(fromSlot < proto->localsTop);
+    return fromSlot;
 }
 
 int Parser::lookupSlot(Value name) {    

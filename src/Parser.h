@@ -17,11 +17,10 @@ class Parser {
     GC *gc;
     Value EMPTY_ARRAY, EMPTY_MAP;
 
-
     Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();
     
-    int createUpval(Proto *proto, Value name, int level, int slot);
+    int createUpval(Proto *proto, int protoLevel, Value name, int level, int slot);
     int lookupName(Value name);
     int lookupSlot(Value name);
 
