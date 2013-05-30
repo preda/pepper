@@ -105,3 +105,4 @@ template class Vector<Object*>;
 template class Vector<char>;
 template class Vector<RetInfo>;
 template class Vector<UndoEntry>;
+template class Vector<int>;

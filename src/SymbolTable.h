@@ -15,10 +15,13 @@ struct UndoEntry {
 
 // Object
 class SymbolTable {
-    Map map;
     int level;
-    Vector<UndoEntry> undoLog[16];
-    void undo(UndoEntry *p);
+    int starts[16];
+    Vector<Value> names;
+    Vector<int> slots;
+
+    int getLevel(int pos);
+    int findPos(Value name);
     
  public:
     SymbolTable(GC *gc);
