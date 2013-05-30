@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 SymbolTable::SymbolTable(GC *gc) : 
-    level(0)
+    topLevel(0)
 {
     starts[0] = 0;
 }
@@ -13,20 +13,19 @@ SymbolTable::~SymbolTable() {
 }
 
 int SymbolTable::pushContext() {
-    // printf("SymbolTable push level %d\n", level+1);
-    ++level;
-    starts[level] = names.size();
-    return level;
+    ++topLevel;
+    starts[topLevel] = names.size();
+    return topLevel;
 }
 
 int SymbolTable::popContext() {
-    names.setSize(starts[level]);
-    slots.setSize(starts[level]);
-    return --level;
+    names.setSize(starts[topLevel]);
+    slots.setSize(starts[topLevel]);
+    return --topLevel;
 }
 
 int SymbolTable::getLevel(int pos) {
-    for (int i = level; i >= 0; --i) {
+    for (int i = topLevel; i >= 0; --i) {
         if (starts[i] <= pos) { return i; }
     }
     return -1;
@@ -47,20 +46,24 @@ Value SymbolTable::get(Value name) {
     int pos = findPos(name);
     if (pos == -1) { return VNIL; }
     int slot = slots.get(pos);
-    int lvl  = getLevel(pos);
-    return VAL_REG((slot << 8) | lvl);
+    int level  = getLevel(pos);
+    return VAL_REG((slot << 8) | level);
+}
+
+void SymbolTable::set(Value name, int slot) {
+    names.push(name);
+    slots.push(slot);
 }
 
 void SymbolTable::set(Value name, int slot, int level) {
-    if (level == -1 || level == this->level) {
-        names.push(name);
-        slots.push(slot);
-        return;
+    if (level == topLevel) {
+        set(name, slot);
     } else {
+        assert(level < topLevel);
         int pos = starts[level + 1];
         names.insertAt(pos, name);
         slots.insertAt(pos, slot);
-        for (int i = level + 1; i <= this->level; ++i) {
+        for (int i = level + 1; i <= topLevel; ++i) {
             ++starts[i];
         }
     }

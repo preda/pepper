@@ -15,7 +15,7 @@ struct UndoEntry {
 
 // Object
 class SymbolTable {
-    int level;
+    int topLevel;
     int starts[16];
     Vector<Value> names;
     Vector<int> slots;
@@ -31,5 +31,6 @@ class SymbolTable {
     int popContext();
     
     Value get(Value name);
-    void set(Value name, int slot, int level = -1);
+    void set(Value name, int slot);
+    void set(Value name, int slot, int level);
 };
