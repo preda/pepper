@@ -79,9 +79,23 @@ void Vector<T>::append(const T *v, unsigned vSize) {
 
 template<typename T>
 void Vector<T>::removeRange(int a, int b) {
-    assert(a >= 0 && b >= 0 && b <= size());
+    const int sz = size();
+    assert(a >= 0 && b >= 0 && b <= sz);
+    const int deltaSize = a - b;
+    const int newSize = sz + deltaSize;
+    if (deltaSize > 0) { setSize(newSize); }
     if (b < size()) { memmove(buf() + a, buf() + b, (size() - b) * sizeof(T)); }
-    setSize(size() - (b - a));
+    if (deltaSize < 0) { setSize(newSize); }
+}
+
+template<typename T>
+void Vector<T>::insertAt(int pos, T v) {
+    if (pos < size()) {
+        removeRange(pos + 1, pos);
+        buf()[pos] = v;
+    } else {
+        setExtend(pos, v);
+    }
 }
 
 template class Vector<unsigned>;

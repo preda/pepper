@@ -21,7 +21,7 @@ void SymbolTable::undo(UndoEntry *p) {
 }
 
 int SymbolTable::popContext() {
-    UndoVect *currUndo = undoLog + level;
+    Vector<UndoEntry> *currUndo = undoLog + level;
     int n = currUndo->size();
     UndoEntry *buf = currUndo->buf();
     for (UndoEntry *p = buf + n - 1; p >= buf; --p) {

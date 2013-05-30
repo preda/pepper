@@ -12,14 +12,12 @@ struct UndoEntry {
     Value name;
     Value prev;
 };
-typedef Vector<UndoEntry> UndoVect;
 
 // Object
 class SymbolTable {
     Map map;
     int level;
-    UndoVect undoLog[16];
-    
+    Vector<UndoEntry> undoLog[16];
     void undo(UndoEntry *p);
     
  public:

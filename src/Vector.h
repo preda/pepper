@@ -62,6 +62,9 @@ class Vector {
     void setDirect(int pos, T v);
     void setExtend(int pos, T v);
 
+    // If a < b, removes the range [a, b); If a > b, inserts the range [b, a).
     void removeRange(int a, int b);
+    
     void remove(unsigned pos) { removeRange(pos, pos + 1); }
+    void insertAt(int pos, T v);
 };
