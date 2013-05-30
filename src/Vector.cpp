@@ -98,11 +98,10 @@ void Vector<T>::insertAt(int pos, T v) {
     }
 }
 
-template class Vector<unsigned>;
-template class Vector<short>;
 template class Vector<Value>;
 template class Vector<Object*>;
 template class Vector<char>;
 template class Vector<RetInfo>;
 template class Vector<UndoEntry>;
+template class Vector<unsigned>;
 template class Vector<int>;

@@ -20,7 +20,7 @@ Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) :
     int n = nUp();
     ups = n ? (Value *) calloc(n, sizeof(Value)) : 0;
     Value *up = ups + n - 1;
-    for (short *p = proto->getUpBuf(), *end = p+n; p < end; ++p, --up) {
+    for (int *p = proto->ups.buf(), *end = p+n; p < end; ++p, --up) {
         int slot = *p;
         *up = slot >= 0 ? regs[slot] : contextUps[slot];
     }
