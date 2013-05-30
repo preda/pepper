@@ -28,10 +28,12 @@ class SymbolTable {
     SymbolTable(GC *gc);
     ~SymbolTable();
 
-    int pushContext();
-    int popContext();
+    void pushContext();
+    void popContext();
+    void pushBlock();
+    void popBlock();
     
     Value get(Value name);
     void set(Value name, int slot);
-    void set(Value name, int slot, int level);
+    void setUpval(Value name, int slot, int level);
 };

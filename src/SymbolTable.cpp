@@ -12,16 +12,15 @@ SymbolTable::SymbolTable(GC *gc) :
 SymbolTable::~SymbolTable() {
 }
 
-int SymbolTable::pushContext() {
+void SymbolTable::pushContext() {
     ++curLevel;
     starts[curLevel] = names.size();
-    return curLevel;
 }
 
-int SymbolTable::popContext() {
+void SymbolTable::popContext() {
     names.setSize(starts[curLevel]);
     slots.setSize(starts[curLevel]);
-    return --curLevel;
+    --curLevel;
 }
 
 int SymbolTable::getLevel(int pos) {
@@ -55,16 +54,13 @@ void SymbolTable::set(Value name, int slot) {
     slots.push(slot);
 }
 
-void SymbolTable::set(Value name, int slot, int level) {
-    if (level == curLevel) {
-        set(name, slot);
-    } else {
-        assert(level < curLevel);
-        int pos = starts[level + 1];
-        names.insertAt(pos, name);
-        slots.insertAt(pos, slot);
-        for (int i = level + 1; i <= curLevel; ++i) {
-            ++starts[i];
-        }
+void SymbolTable::setUpval(Value name, int slot, int level) {
+    assert(slot < 0);
+    assert(level <= curLevel);
+    int pos = starts[level];
+    names.insertAt(pos, name);
+    slots.insertAt(pos, slot);
+    for (int i = level + 1; i <= curLevel; ++i) {
+        ++starts[i];
     }
 }

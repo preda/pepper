@@ -347,7 +347,7 @@ int Parser::createUpval(Proto *proto, int protoLevel, Value name, int fromLevel,
     }
     proto->addUp(slot);
     int protoSlot = -proto->nUp();
-    syms->set(name, protoSlot, protoLevel);
+    syms->setUpval(name, protoSlot, protoLevel);
     return protoSlot;
 }
 
