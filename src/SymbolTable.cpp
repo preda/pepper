@@ -3,37 +3,40 @@
 #include "SymbolTable.h"
 #include <stdio.h>
 
-SymbolTable::SymbolTable(GC *gc) : 
-    curLevel(0)
-{
-    starts[0] = 0;
+SymbolTable::SymbolTable(GC *gc) {
+    enterBlock(true);
 }
 
 SymbolTable::~SymbolTable() {
+    exitBlock(true);
 }
 
-void SymbolTable::pushContext() {
-    ++curLevel;
-    starts[curLevel] = names.size();
+void SymbolTable::enterBlock(bool isProto) {
+    starts.push(names.size());
+    if (isProto) {
+        protos.push(starts.size() - 1);
+    }
 }
 
-void SymbolTable::popContext() {
-    names.setSize(starts[curLevel]);
-    slots.setSize(starts[curLevel]);
-    --curLevel;
+void SymbolTable::exitBlock(bool isProto) {
+    assert(isProto == (*protos.top() == starts.size() - 1));
+    if (isProto) {
+        protos.pop();
+    }
+    int sz = starts.pop();
+    names.setSize(sz);
+    slots.setSize(sz);    
 }
 
 int SymbolTable::getLevel(int pos) {
-    for (int i = curLevel; i >= 0; --i) {
-        if (starts[i] <= pos) { return i; }
+    for (int i = protos.size()-1; i >= 0; --i) {
+        if (starts[protos[i]] <= pos) { return i; }
     }
     return -1;
 }
 
 int SymbolTable::findPos(Value name) {
-    Value *buf = names.buf();
-    int n = names.size();
-    for (Value *p = buf + n - 1; p >= buf; --p) {
+    for (Value *buf = names.buf(), *p = buf + names.size() - 1; p >= buf; --p) {
         if (equals(name, *p)) {
             return p - buf;
         }
@@ -56,11 +59,9 @@ void SymbolTable::set(Value name, int slot) {
 
 void SymbolTable::setUpval(Value name, int slot, int level) {
     assert(slot < 0);
-    assert(level <= curLevel);
-    int pos = starts[level];
+    int block = protos.get(level);
+    int pos = starts.get(block);
     names.insertAt(pos, name);
     slots.insertAt(pos, slot);
-    for (int i = level + 1; i <= curLevel; ++i) {
-        ++starts[i];
-    }
+    for (int *buf = starts.buf(), *p = buf + block + 1, *end = buf + starts.size(); p < end; ++p) { ++*p; }
 }

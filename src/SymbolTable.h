@@ -15,7 +15,8 @@ struct UndoEntry {
 
 // Object
 class SymbolTable {
-    int starts[16];
+    Vector<int> protos;
+    Vector<int> starts;
     Vector<Value> names;
     Vector<int> slots;
 
@@ -23,17 +24,14 @@ class SymbolTable {
     int findPos(Value name);
     
  public:
-    int curLevel;
-    
     SymbolTable(GC *gc);
     ~SymbolTable();
 
-    void pushContext();
-    void popContext();
-    void pushBlock();
-    void popBlock();
+    void enterBlock(bool isProto);
+    void exitBlock(bool isProto);
     
     Value get(Value name);
     void set(Value name, int slot);
     void setUpval(Value name, int slot, int level);
+    int curLevel() { return protos.size() - 1; }
 };

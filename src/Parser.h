@@ -49,6 +49,7 @@ class Parser {
     
     // returns true if last statement was "return".
     bool block();
+    bool insideBlock();
     bool lambdaBody();
 
     bool statList();

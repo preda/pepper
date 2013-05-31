@@ -101,11 +101,11 @@ Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
             syms.set(String::value(gc, upNames[i]), i - nUps);
         }
     }
-    syms.pushContext();
+    syms.enterBlock(true);
     Func *f = isFunc ? 
         parseFunc(gc, &syms, ups + nUps, text) :
         parseStatList(gc, &syms, ups + nUps, text);
-    syms.popContext();
+    syms.exitBlock(true);
     return f;
 }
 
@@ -149,10 +149,17 @@ int Parser::parseStatList(GC *gc, Proto *proto, SymbolTable *syms, const char *t
     return 0;
 }
 
+bool Parser::insideBlock() {
+   consume('{');
+   bool ret = statList();
+   consume('}');
+   return ret;
+}
+
 bool Parser::block() {
-    consume('{');
-    bool ret = statList();
-    consume('}');
+    syms->enterBlock(false);
+    bool ret = insideBlock();
+    syms->exitBlock(false);
     return ret;
 }
 
@@ -312,7 +319,7 @@ void Parser::varStat() {
         Value s = syms->get(name);
         int level = s & 0xff;
         int slot  = s >> 8;
-        if (!IS_NIL(s) && level == syms->curLevel && slot >= 0) {
+        if (!IS_NIL(s) && level == syms->curLevel() && slot >= 0) {
             aSlot = slot; // reuse existing local with same name
         }
     }
@@ -341,6 +348,7 @@ static bool isUnaryOp(int token) {
 }
 
 int Parser::createUpval(Proto *proto, int protoLevel, Value name, int fromLevel, int slot) {
+    printf("up %d %s %d %d\n", protoLevel, GET_CSTR(name), fromLevel, slot);
     assert(fromLevel < protoLevel);
     if (fromLevel < protoLevel - 1) {
         slot = createUpval(proto->up, protoLevel - 1, name, fromLevel, slot);
@@ -359,7 +367,7 @@ int Parser::lookupName(Value name) {
     int v = (int) s;
     int fromLevel = v & 0xff;
     int fromSlot  = v >> 8;
-    const int curLevel = syms->curLevel;
+    const int curLevel = syms->curLevel();
     assert(fromLevel <= curLevel);
     if (fromLevel < curLevel) {
         fromSlot = createUpval(proto, curLevel, name, fromLevel, fromSlot);
@@ -604,15 +612,15 @@ Proto *Parser::parseProto(int *outSlot) {
         */
 
     proto = Proto::alloc(gc, proto);
-    syms->pushContext();
+    syms->enterBlock(true);
     parList();
-    bool hasReturn = TOKEN == '=' ? lambdaBody() : block();
+    bool hasReturn = TOKEN == '=' ? lambdaBody() : insideBlock();
     if (!hasReturn) {
         emit(0, RET, 0, VNIL, UNUSED);
     }
     proto->freeze();
     Proto *funcProto = proto;
-    syms->popContext();
+    syms->exitBlock(true);
     proto = proto->up;
     *outSlot = slot;
     return funcProto;
