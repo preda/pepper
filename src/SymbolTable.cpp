@@ -3,7 +3,7 @@
 #include "SymbolTable.h"
 #include <stdio.h>
 
-SymbolTable::SymbolTable(GC *gc) {
+SymbolTable::SymbolTable() {
     enterBlock(true);
 }
 
@@ -25,7 +25,6 @@ void SymbolTable::exitBlock(bool isProto) {
     }
     int sz = starts.pop();
     names.setSize(sz);
-    slots.setSize(sz);    
 }
 
 int SymbolTable::getLevel(int pos) {
@@ -36,8 +35,8 @@ int SymbolTable::getLevel(int pos) {
 }
 
 int SymbolTable::findPos(Value name) {
-    for (Value *buf = names.buf(), *p = buf + names.size() - 1; p >= buf; --p) {
-        if (equals(name, *p)) {
+    for (NameSlot *buf = names.buf(), *p = buf + names.size() - 1; p >= buf; --p) {
+        if (equals(name, p->name)) {
             return p - buf;
         }
     }
@@ -47,21 +46,19 @@ int SymbolTable::findPos(Value name) {
 Value SymbolTable::get(Value name) {
     int pos = findPos(name);
     if (pos == -1) { return VNIL; }
-    int slot = slots.get(pos);
+    int slot = names.get(pos).slot;
     int level  = getLevel(pos);
     return VAL_REG((slot << 8) | level);
 }
 
 void SymbolTable::set(Value name, int slot) {
-    names.push(name);
-    slots.push(slot);
+    names.push(NameSlot{name, slot});
 }
 
 void SymbolTable::setUpval(Value name, int slot, int level) {
     assert(slot < 0);
     int block = protos.get(level);
     int pos = starts.get(block);
-    names.insertAt(pos, name);
-    slots.insertAt(pos, slot);
+    names.insertAt(pos, NameSlot{name, slot});
     for (int *buf = starts.buf(), *p = buf + block + 1, *end = buf + starts.size(); p < end; ++p) { ++*p; }
 }

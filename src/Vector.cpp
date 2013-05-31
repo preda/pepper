@@ -84,7 +84,7 @@ void Vector<T>::removeRange(int a, int b) {
     const int deltaSize = a - b;
     const int newSize = sz + deltaSize;
     if (deltaSize > 0) { setSize(newSize); }
-    if (b < size()) { memmove(buf() + a, buf() + b, (size() - b) * sizeof(T)); }
+    if (b < size()) { memmove(buf() + a, buf() + b, (sz - b) * sizeof(T)); }
     if (deltaSize < 0) { setSize(newSize); }
 }
 
@@ -102,6 +102,6 @@ template class Vector<Value>;
 template class Vector<Object*>;
 template class Vector<char>;
 template class Vector<RetInfo>;
-template class Vector<UndoEntry>;
 template class Vector<unsigned>;
 template class Vector<int>;
+template class Vector<NameSlot>;

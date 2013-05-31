@@ -8,23 +8,22 @@
 
 class GC;
 
-struct UndoEntry {
+struct NameSlot {
     Value name;
-    Value prev;
+    int slot;
 };
 
 // Object
 class SymbolTable {
     Vector<int> protos;
     Vector<int> starts;
-    Vector<Value> names;
-    Vector<int> slots;
+    Vector<NameSlot> names;
 
     int getLevel(int pos);
     int findPos(Value name);
     
  public:
-    SymbolTable(GC *gc);
+    SymbolTable();
     ~SymbolTable();
 
     void enterBlock(bool isProto);

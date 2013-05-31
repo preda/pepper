@@ -95,7 +95,7 @@ Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
     const int nUps = ASIZE(ups);
     assert(nUps == ASIZE(upNames));
 
-    SymbolTable syms(gc);
+    SymbolTable syms;
     for (int i = 0; i < nUps; ++i) {
         if (upNames[i]) {
             syms.set(String::value(gc, upNames[i]), i - nUps);
@@ -348,7 +348,7 @@ static bool isUnaryOp(int token) {
 }
 
 int Parser::createUpval(Proto *proto, int protoLevel, Value name, int fromLevel, int slot) {
-    printf("up %d %s %d %d\n", protoLevel, GET_CSTR(name), fromLevel, slot);
+    // printf("up %d %s %d %d\n", protoLevel, GET_CSTR(name), fromLevel, slot);
     assert(fromLevel < protoLevel);
     if (fromLevel < protoLevel - 1) {
         slot = createUpval(proto->up, protoLevel - 1, name, fromLevel, slot);
