@@ -461,5 +461,4 @@ bool opcodeHasDest(int op) {
         return false;
     }
     return true;
-    // return (ADD <= op && op <= LEN) || op == MOVE || op == GET;
 }

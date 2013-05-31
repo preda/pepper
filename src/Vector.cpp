@@ -98,9 +98,8 @@ void Vector<T>::insertAt(int pos, T v) {
     }
 }
 
-template class Vector<Value>;
-template class Vector<Object*>;
 template class Vector<char>;
-template class Vector<RetInfo>;
 template class Vector<int>;
-template class Vector<NameSlot>;
+template class Vector<Object*>;
+template class Vector<Value>;
+template class Vector<RetInfo>;

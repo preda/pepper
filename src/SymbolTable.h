@@ -8,16 +8,12 @@
 
 class GC;
 
-struct NameSlot {
-    Value name;
-    int slot;
-};
-
 // Object
 class SymbolTable {
     Vector<int> protos;
     Vector<int> starts;
-    Vector<NameSlot> names;
+    Vector<int> slots;
+    Vector<Value> names;
 
     int getLevel(int pos);
     int findPos(Value name);
