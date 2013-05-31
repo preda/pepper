@@ -274,8 +274,8 @@ void Parser::whileStat() {
     int pos1 = emitHole();
     int pos2 = HERE;
     Value a = expr(proto->localsTop);
-    Vector<unsigned> copyExp;
-    Vector<unsigned> &code = proto->code;
+    Vector<int> copyExp;
+    Vector<int> &code = proto->code;
     while (code.size() > pos2) {
         copyExp.push(code.pop());
     }

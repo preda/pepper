@@ -257,7 +257,7 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     Value B;
     Value *ptrC;
     Func *activeFunc = (Func *) GET_OBJ(A);
-    unsigned *pc = activeFunc->proto->code.buf();
+    unsigned *pc = (unsigned *) activeFunc->proto->code.buf();
 
     /*
     if (int err = setjmp(jumpBuf)) {
@@ -448,7 +448,7 @@ CALL: {
  LT:  *ptrC = lessThan(A, B) ? TRUE : FALSE; STEP;
  LE:  *ptrC = (equals(A, B) || lessThan(A, B)) ? TRUE : FALSE; STEP;
 
- error: return pc - activeFunc->proto->code.buf();
+ error: return pc - (unsigned *) activeFunc->proto->code.buf();
 }
 
 bool opcodeHasDest(int op) {

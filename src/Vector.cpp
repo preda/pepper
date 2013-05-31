@@ -102,6 +102,5 @@ template class Vector<Value>;
 template class Vector<Object*>;
 template class Vector<char>;
 template class Vector<RetInfo>;
-template class Vector<unsigned>;
 template class Vector<int>;
 template class Vector<NameSlot>;

@@ -145,7 +145,7 @@ void printProto(Proto *proto, int indent) {
         buf.append(' ');
     }
     printf("%*sProto %s\n", indent, "", buf.cstr());
-    printBytecode(proto->code.buf(), proto->code.size(), indent, false);
+    printBytecode((unsigned *)proto->code.buf(), proto->code.size(), indent, false);
 }
 
 void printFunc(Func *func) {

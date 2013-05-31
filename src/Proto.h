@@ -19,7 +19,7 @@ class Proto {
     int patchPos;
 
     Vector<Object *> consts;
-    Vector<unsigned> code;
+    Vector<int> code;
     Proto *up; // level-1
 
     unsigned nUp() { return ups.size(); }
