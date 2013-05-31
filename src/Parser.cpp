@@ -149,18 +149,18 @@ int Parser::parseStatList(GC *gc, Proto *proto, SymbolTable *syms, const char *t
     return 0;
 }
 
-bool Parser::insideBlock() {
-   consume('{');
-   bool ret = statList();
-   consume('}');
-   return ret;
-}
-
 bool Parser::block() {
     syms->enterBlock(false);
     bool ret = insideBlock();
     syms->exitBlock(false);
     return ret;
+}
+
+bool Parser::insideBlock() {
+   consume('{');
+   bool ret = statList();
+   consume('}');
+   return ret;
 }
 
 bool Parser::statList() {
@@ -183,6 +183,7 @@ bool Parser::statement() {
     bool isReturn = false;
     switch (lexer->token) {
         // case TK_VAR:   advance(); varStat(); break;
+    case '{': isReturn = block(); break;
     case TK_if:    ifStat(); break;
     case TK_while: whileStat(); break;
     case TK_for:   forStat(); break;

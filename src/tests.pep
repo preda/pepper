@@ -2,6 +2,7 @@ tests1 := [
     ["a := '[foo]' return a", 'foo'],
     ["b := 1 return b + 3", 4],
     ["return 13", 13],
+    ['fn f(a) { a:=2 { a:=3 { return a + 1 }}} return f(5)', 4]
 ]
 
 tests := [
@@ -144,6 +145,8 @@ tests := [
 print := builtin.print
 parse := builtin.parse.block
 ok := 1
+print(#tests, #tests1)
+tests = tests + tests1
 for i := 0 : #tests {
     t := tests[i]
     f := parse(t[0])
@@ -153,4 +156,5 @@ for i := 0 : #tests {
         print('#'+i, 'expected ' + t[1] + ' got', res, t[0])        
     }
 }
+print('N ' + #tests);
 return ok
