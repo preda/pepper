@@ -358,7 +358,7 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
  RET: {
         regs[0] = A;
         Value *root = stack->base;
-        gc->maybeCollect(this, root, regs - root + 1);
+        gc->maybeCollect(root, regs - root + 1);
 #if FAST_CALL
         if (!retInfo.size()) {
             return 0;

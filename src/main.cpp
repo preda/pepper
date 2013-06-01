@@ -371,4 +371,5 @@ T tests[] = {
         printf("compilation %lld execution %lld\n", (t2-t1), (t3-t2));
         printValue(ret);
     }
+    delete pepper;
 }

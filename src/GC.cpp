@@ -30,6 +30,9 @@ GC::GC() :
 }
 
 GC::~GC() {
+    clearRoots();
+    collect(0, 0);
+    
     free(map);
     map = 0;
 }
@@ -132,7 +135,7 @@ void GC::clearRoots() {
     roots.clear();
 }
 
-void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
+void GC::collect(Value *vmStack, int vmStackSize) {
     // printf("GC before %d %d\n", n, size);
     // fprintf(stderr, "collect %d %p\n", vmStackSize, GET_OBJ(vmStack[0]));
     assert(grayStack.size() == 0);

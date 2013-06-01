@@ -30,14 +30,14 @@ class GC {
     void addRoot(Object *obj);
     void clearRoots();
 
-    void maybeCollect(VM *vm, Value *vmStack, int vmStackSize) {
+    void maybeCollect(Value *vmStack, int vmStackSize) {
         static const unsigned kLimit = 256;
         if (bytesSinceLast >= kLimit) {
-            collect(vm, vmStack, vmStackSize);
+            collect(vmStack, vmStackSize);
         }
     }
 
-    void collect(VM *vm, Value *vmStack, int vmStackSize);
+    void collect(Value *vmStack, int vmStackSize);
 
     Object *alloc(int bytes, bool traversable);
     void mark(Object *p);
