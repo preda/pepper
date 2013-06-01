@@ -8,14 +8,12 @@ class Proto;
 class Func;
 class GC;
 class Pepper;
-struct SymbolData;
 
 class Parser {
     Proto *proto;
     SymbolTable *syms;
     Lexer *lexer;
     GC *gc;
-    Value EMPTY_ARRAY, EMPTY_MAP;
 
     Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer);
     ~Parser();

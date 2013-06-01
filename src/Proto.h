@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Vector.h"
-#include "Value.h"
-
-#define N_CONST_UPS (7)
+#include "Object.h"
+#include "value.h"
 
 class GC;
 
@@ -23,7 +22,7 @@ class Proto {
     Proto *up; // level-1
 
     unsigned nUp() { return ups.size(); }
-    void addUp(int slot) { ups.push(slot); }
+    int newUp(int slot);
 
     ~Proto();
     static Proto *alloc(GC *gc, Proto *up);

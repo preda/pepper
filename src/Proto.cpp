@@ -1,6 +1,7 @@
 #include "Proto.h"
 #include "Object.h"
 #include "GC.h"
+#include "VM.h"
 
 void Proto::traverse(GC *gc) {
     gc->mark((Object*) up);
@@ -13,10 +14,12 @@ Proto::Proto(Proto *up) :
     localsTop(0),
     patchPos(-1),
     up(up) {
-    for (int i = 0; i < N_CONST_UPS; ++i) {
-        ups.push(-(i+1));
-    }
 }
 
 Proto::~Proto() {
+}
+
+int Proto::newUp(int slot) {
+    ups.push(slot);
+    return -nUp() - N_CONST_UPS;
 }

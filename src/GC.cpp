@@ -21,8 +21,12 @@ GC::GC() :
     size(32),
     map((long *) calloc(size, sizeof(long))),
     n(0),
-    bytesSinceLast(0)
+    bytesSinceLast(0),
+    EMPTY_MAP(VAL_OBJ(Map::alloc(this))),
+    EMPTY_ARRAY(VAL_OBJ(Array::alloc(this)))
 {
+    addRoot(GET_OBJ(EMPTY_MAP));
+    addRoot(GET_OBJ(EMPTY_ARRAY));
 }
 
 GC::~GC() {

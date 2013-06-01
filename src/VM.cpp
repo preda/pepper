@@ -131,7 +131,8 @@ static int setSlice(Value c, Value a1, Value a2, Value b) {
 
 VM::VM(GC *gc, void *context) :
     gc(gc),
-    context(context)
+    context(context),
+    constUps{gc->EMPTY_MAP, gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
 {
     stringMethods = Map::makeMap(gc, "find", CFunc::value(gc, String::method_find), NULL);
 }
@@ -170,11 +171,13 @@ bool lessThan(Value a, Value b) {
     return (IS_NUM(a) && IS_NUM(b)) ? GET_NUM(a) < GET_NUM(b) : lessThanNonNum(a, b);
 }
 
-static void copyUpvals(Func *f, Value *regs) {
+void VM::copyUpvals(Func *f, Value *regs) {
     unsigned nUp = f->proto->nUp();
-    // unsigned nOwnUp = nUp - N_CONST_UPS;
-    memcpy(regs + (256-nUp), f->ups, nUp * sizeof(Value));
-    // memcpy(regs + (256 - N_CONST_UPS), constUps, sizeof(constUps));
+    // assert(sizeof(constUps) == N_CONST_UPS * sizeof(Value));
+    if (nUp) {
+        memcpy(regs + (256 - N_CONST_UPS - nUp), f->ups, nUp * sizeof(Value));
+    }
+    memcpy(regs + (256 - N_CONST_UPS), constUps, N_CONST_UPS * sizeof(Value));
 }
 
 Value VM::run(Func *activeFunc, int nArg, Value *args) {

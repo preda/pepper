@@ -11,6 +11,7 @@
 #include "CFunc.h"
 #include "Pepper.h"
 #include "builtin.h"
+#include "GC.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -37,8 +38,6 @@ Parser::Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer) :
     lexer(lexer),
     gc(gc)
 {
-    EMPTY_ARRAY = VAL_OBJ(Array::alloc(gc));
-    EMPTY_MAP   = VAL_OBJ(Map::alloc(gc));
     lexer->advance();
 }
 
@@ -60,19 +59,8 @@ void Parser::consume(int t) {
 extern __thread jmp_buf jumpBuf;
 
 Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
+    /*
     Value ups[] = {
-        Map::makeMap(gc,                     
-                     "type", CFunc::value(gc, builtinType),
-                     "print",  CFunc::value(gc, builtinPrint),
-                     "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
-                     "parse",
-                     Map::makeMap(gc,
-                                  "func", CFunc::value(gc, builtinParseFunc),
-                                  "block", CFunc::value(gc, builtinParseBlock),
-                                  NULL),
-                     "file",
-                     Map::makeMap(gc, "read", CFunc::value(gc, builtinFileRead), NULL),
-                     NULL),
         VAL_OBJ(Map::alloc(gc)),
         VAL_OBJ(Array::alloc(gc)),
         EMPTY_STRING,
@@ -94,22 +82,38 @@ Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
     };
     const int nUps = ASIZE(ups);
     assert(nUps == ASIZE(upNames));
-
-    SymbolTable syms;
     for (int i = 0; i < nUps; ++i) {
         if (upNames[i]) {
             syms.set(String::value(gc, upNames[i]), i - nUps);
         }
     }
+    */
+    
+    SymbolTable syms;
+    syms.set(String::value(gc, "builtin"), 0);
     syms.enterBlock(true);
+    Value regs[] = {
+        Map::makeMap(gc,                     
+                     "type", CFunc::value(gc, builtinType),
+                     "print",  CFunc::value(gc, builtinPrint),
+                     "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
+                     "parse",
+                     Map::makeMap(gc,
+                                  "func", CFunc::value(gc, builtinParseFunc),
+                                  "block", CFunc::value(gc, builtinParseBlock),
+                                  NULL),
+                     "file",
+                     Map::makeMap(gc, "read", CFunc::value(gc, builtinFileRead), NULL),
+                     NULL)
+    };
     Func *f = isFunc ? 
-        parseFunc(gc, &syms, ups + nUps, text) :
-        parseStatList(gc, &syms, ups + nUps, text);
+        parseFunc(gc, &syms, regs, text) :
+        parseStatList(gc, &syms, regs, text);
     syms.exitBlock(true);
     return f;
 }
 
-Func *Parser::parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *text) {
+Func *Parser::parseFunc(GC *gc, SymbolTable *syms, Value *regs, const char *text) {
     Lexer lexer(gc, text);
 
     if (int err = setjmp(jumpBuf)) {
@@ -121,18 +125,13 @@ Func *Parser::parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *te
     Parser parser(gc, proto, syms, &lexer);
     int slot;
     Proto *funcProto = parser.parseProto(&slot);
-    return makeFunc(gc, funcProto, upsTop, slot);
+    return Func::alloc(gc, funcProto, 0, regs, slot);
 }
 
-Func *Parser::parseStatList(GC *gc, SymbolTable *syms, Value *upsTop, const char *text) {
+Func *Parser::parseStatList(GC *gc, SymbolTable *syms, Value *regs, const char *text) {
     Proto *proto = Proto::alloc(gc, 0);
     if (Parser::parseStatList(gc, proto, syms, text)) { return 0; }
-    return makeFunc(gc, proto, upsTop, -1);
-}
-
-Func *Parser::makeFunc(GC *gc, Proto *proto, Value *upsTop, int slot) {
-    Value dummyRegs;
-    return Func::alloc(gc, proto, upsTop, &dummyRegs, slot);
+    return Func::alloc(gc, proto, 0, regs, -1);
 }
 
 int Parser::parseStatList(GC *gc, Proto *proto, SymbolTable *syms, const char *text) {
@@ -353,9 +352,8 @@ int Parser::createUpval(Proto *proto, int protoLevel, Value name, int fromLevel,
     assert(fromLevel < protoLevel);
     if (fromLevel < protoLevel - 1) {
         slot = createUpval(proto->up, protoLevel - 1, name, fromLevel, slot);
-    }
-    proto->addUp(slot);
-    int protoSlot = -proto->nUp();
+    }    
+    int protoSlot = proto->newUp(slot);
     syms->setUpval(name, protoSlot, protoLevel);
     return protoSlot;
 }
@@ -394,7 +392,7 @@ Value Parser::mapExpr(int top) {
     consume('{');
     if (TOKEN=='}') {
         consume('}');
-        return EMPTY_MAP;
+        return gc->EMPTY_MAP;
     }
     int slot = top;
     
@@ -433,7 +431,7 @@ Value Parser::arrayExpr(int top) {
     consume('[');
     if (TOKEN==']') {
         consume(']');
-        return EMPTY_ARRAY;
+        return gc->EMPTY_ARRAY;
     }
     int slot = top++;
     Array *array = Array::alloc(gc);
@@ -885,9 +883,9 @@ Value Parser::mapSpecialConsts(Value a) {
         return VAL_REG(UP_NEG_ONE);
     } else if (a == EMPTY_STRING) {
         return VAL_REG(UP_EMPTY_STRING);
-    } else if (a == EMPTY_ARRAY) {
+    } else if (a == gc->EMPTY_ARRAY) {
         return VAL_REG(UP_EMPTY_ARRAY);
-    } else if (a == EMPTY_MAP) {
+    } else if (a == gc->EMPTY_MAP) {
         return VAL_REG(UP_EMPTY_MAP);
     }
     return a;
@@ -913,7 +911,7 @@ void Parser::emitJump(int pos, int op, Value a, int to) {
 }
 
 void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
-    if (a == EMPTY_ARRAY || a == EMPTY_MAP) {
+    if (a == gc->EMPTY_ARRAY || a == gc->EMPTY_MAP) {
         if (op == MOVE) {
             assert(b == UNUSED);
             op = ADD;

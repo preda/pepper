@@ -22,6 +22,8 @@ class GC {
     void traverse(Object *o);
 
  public:
+    const Value EMPTY_MAP, EMPTY_ARRAY;
+    
     GC();
     ~GC();
 

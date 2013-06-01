@@ -4,6 +4,8 @@
 #include "Value.h"
 #include "Func.h"
 
+#define N_CONST_UPS (7)
+
 Value doAdd(GC *gc, Value a, Value b);
 Value doMod(Value a, Value b);
 Value doPow(Value a, Value b);
@@ -62,7 +64,9 @@ class VM {
     GC *gc;
     void *context;
     Value stringMethods;
+    const Value constUps[N_CONST_UPS];
 
+    void copyUpvals(Func *f, Value *regs);
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
     int call(Value fval, int nArg, Value *base, Stack *stack); // returns non-zero on error
