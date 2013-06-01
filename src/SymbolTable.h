@@ -5,15 +5,17 @@
 #include "common.h"
 #include "Map.h"
 #include "Vector.h"
+#include "Array.h"
 
 class GC;
 
 // Object
 class SymbolTable {
+    // Vector<Value> names;
+    Array names;
     Vector<int> protos;
     Vector<int> starts;
     Vector<int> slots;
-    Vector<Value> names;
 
     int getLevel(int pos);
     int findPos(Value name);

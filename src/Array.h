@@ -6,8 +6,6 @@
 class GC;
 
 class Array {
-    Array(int iniSize);
-
     void append(Array *a) { append(a->buf(), a->size()); }
     void append(char *s, int size);
 
@@ -16,6 +14,7 @@ class Array {
  public:
     Vector<Value> vect;
 
+    Array(int iniSize = 0);
     ~Array();
     static Array *alloc(GC *gc, int iniSize = 0);
     void traverse(GC *gc);

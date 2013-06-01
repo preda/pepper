@@ -36,7 +36,6 @@ class Vector {
     void append(const T *v, unsigned size);
     void append(Vector<T> *v) { append(v->buf(), v->size()); }
 
-
     unsigned push(T v) {
         incSize();
         buf()[size() - 1] = v;

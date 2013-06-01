@@ -21,8 +21,7 @@ GC::GC() :
     size(32),
     map((long *) calloc(size, sizeof(long))),
     n(0),
-    bytesSinceLast(0),
-    grayStack(0)
+    bytesSinceLast(0)
 {
 }
 
@@ -61,7 +60,7 @@ void GC::mark(Object *o) {
         if (!(map[i] & BIT_MARK)) {
             map[i] |= BIT_MARK;
             if (map[i] & BIT_TRAVERSABLE) {
-                grayStack->push(o);
+                grayStack.push(o);
             }
         }
     }
@@ -121,21 +120,24 @@ static void release(long p) {
     free(obj);
 }
 
+void GC::addRoot(Object *obj) {
+    roots.push(obj);
+}
+
+void GC::clearRoots() {
+    roots.clear();
+}
+
 void GC::collect(VM *vm, Value *vmStack, int vmStackSize) {
     // printf("GC before %d %d\n", n, size);
     // fprintf(stderr, "collect %d %p\n", vmStackSize, GET_OBJ(vmStack[0]));
-    int nInitial = n;
-    (void) nInitial;
-    {
-        Vector<Object*> stack;
-        grayStack = &stack;
-        // vm->traverse();
-        markValVect(vmStack, vmStackSize);
-        while (stack.size()) {
-            traverse(stack.pop());
-        }
-        grayStack = 0;
+    assert(grayStack.size() == 0);
+    markObjVect(roots.buf(), roots.size());
+    markValVect(vmStack, vmStackSize);
+    while (grayStack.size()) {
+        traverse(grayStack.pop());
     }
+    assert(grayStack.size() == 0);
 
     const unsigned mask = size - 1;
     for (long *p = map+size-1, *end = map-1; p != end; --p) {

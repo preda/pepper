@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Value.h"
+#include "Vector.h"
 
 struct Object;
 class VM;
@@ -13,8 +14,9 @@ class GC {
     long *map;
     int n;
     unsigned bytesSinceLast;
-    Vector<Object *> *grayStack;
-
+    Vector<Object *> grayStack;
+    Vector<Object *> roots;
+    
     void add(long v);
     void growMap();
     void traverse(Object *o);
@@ -23,8 +25,8 @@ class GC {
     GC();
     ~GC();
 
-    // void newRoot(Object *obj);
-    // void deleteRoot(Object *obj);
+    void addRoot(Object *obj);
+    void clearRoots();
 
     void maybeCollect(VM *vm, Value *vmStack, int vmStackSize) {
         static const unsigned kLimit = 256;

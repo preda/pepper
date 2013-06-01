@@ -12,7 +12,7 @@ SymbolTable::~SymbolTable() {
 }
 
 void SymbolTable::enterBlock(bool isProto) {
-    starts.push(names.size());
+    starts.push(slots.size());
     if (isProto) {
         protos.push(starts.size() - 1);
     }
@@ -24,7 +24,7 @@ void SymbolTable::exitBlock(bool isProto) {
         protos.pop();
     }
     int sz = starts.pop();
-    names.setSize(sz);
+    names.vect.setSize(sz);
     slots.setSize(sz);
 }
 
@@ -36,7 +36,7 @@ int SymbolTable::getLevel(int pos) {
 }
 
 int SymbolTable::findPos(Value name) {
-    for (Value *buf = names.buf(), *p = buf + names.size() - 1; p >= buf; --p) {
+    for (Value *buf = names.vect.buf(), *p = buf + names.vect.size() - 1; p >= buf; --p) {
         if (equals(name, *p)) {
             return p - buf;
         }
@@ -53,7 +53,7 @@ Value SymbolTable::get(Value name) {
 }
 
 void SymbolTable::set(Value name, int slot) {
-    names.push(name);
+    names.vect.push(name);
     slots.push(slot);
 }
 
@@ -61,7 +61,7 @@ void SymbolTable::setUpval(Value name, int slot, int level) {
     assert(slot < 0);
     int block = protos.get(level);
     int pos = starts.get(block);
-    names.insertAt(pos, name);
+    names.vect.insertAt(pos, name);
     slots.insertAt(pos, slot);
     for (int *buf = starts.buf(), *p = buf + block + 1, *end = buf + starts.size(); p < end; ++p) { ++*p; }
 }
