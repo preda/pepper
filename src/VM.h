@@ -59,10 +59,11 @@ enum {
 bool opcodeHasDest(int opcode);
 
 class Stack;
+class Pepper;
 
 class VM {
     GC *gc;
-    void *context;
+    Pepper *pepper;
     Value stringMethods;
     const Value constUps[N_CONST_UPS];
 
@@ -72,10 +73,10 @@ class VM {
     int call(Value fval, int nArg, Value *base, Stack *stack); // returns non-zero on error
     
  public:
-    VM(GC *gc, void *context);
+    VM(Pepper *pepper);
     ~VM();
 
     Value run(Func *f, int nArg, Value *args);
     GC *getGC() { return gc; }
-    void *getContext() { return context; }
+    // void *getContext() { return context; }
 };

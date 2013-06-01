@@ -14,7 +14,7 @@ static void initSymbolTable(GC *gc, SymbolTable *syms) {
 
 Pepper::Pepper(void *context) :
     gc(new GC()),
-    vm(new VM(gc, context)),
+    vm(new VM(this)),
     syms(new SymbolTable())
 {
     assert(sizeof(Array) == 2 * sizeof(long));

@@ -12,6 +12,7 @@
 #include "NameValue.h"
 #include "Stack.h"
 #include "Decompile.h"
+#include "Pepper.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -129,9 +130,9 @@ static int setSlice(Value c, Value a1, Value a2, Value b) {
     }
 }
 
-VM::VM(GC *gc, void *context) :
-    gc(gc),
-    context(context),
+VM::VM(Pepper *pepper) :
+    gc(pepper->getGC()),
+    pepper(pepper),
     constUps{gc->EMPTY_MAP, gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
 {
     stringMethods = Map::makeMap(gc, "find", CFunc::value(gc, String::method_find), NULL);
