@@ -5,13 +5,20 @@
 #include "Parser.h"
 #include "VM.h"
 #include "Array.h"
+#include "Map.h"
+#include "SymbolTable.h"
 #include <assert.h>
+
+static void initSymbolTable(GC *gc, SymbolTable *syms) {
+}
 
 Pepper::Pepper(void *context) :
     gc(new GC()),
-    vm(new VM(gc, context))
+    vm(new VM(gc, context)),
+    syms(new SymbolTable())
 {
     assert(sizeof(Array) == 2 * sizeof(long));
+    initSymbolTable(gc, syms);
 }
 
 Pepper::~Pepper() {
@@ -19,6 +26,8 @@ Pepper::~Pepper() {
     gc = 0;
     delete vm;
     vm = 0;
+    delete syms;
+    syms = 0;
 }
 
 Value Pepper::run(Func *f, int nArg, Value *args) {

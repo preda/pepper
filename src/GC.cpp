@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Mihai Preda
+// Copyright (C) 2012-2013 Mihai Preda
 
 #include "GC.h"
 #include "Object.h"

@@ -2,10 +2,10 @@
 
 #pragma once
 
+#include "value.h"
 #include "common.h"
 #include <assert.h>
 
-typedef u64 Value;
 class Object;
 class VM;
 class GC;

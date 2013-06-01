@@ -2,10 +2,7 @@
 
 #pragma once
 
-typedef unsigned char byte;
-typedef unsigned long long u64;
-typedef long long s64;
-typedef u64 Value;
+#include "value.h"
 
 u64 hash64(byte *p, int len, u64 h=0);
 u64 hash64(const char *p);

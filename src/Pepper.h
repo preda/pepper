@@ -2,16 +2,17 @@
 
 #pragma once
 
-#include "Value.h"
+#include "value.h"
 
 class GC;
-class SymbolTable;
 class VM;
 class Func;
+class SymbolTable;
 
 class Pepper {
     GC *gc;
     VM *vm;
+    SymbolTable *syms;
 
  public:
     Pepper(void *context);
