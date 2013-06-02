@@ -61,9 +61,7 @@ void Parser::consume(int t) {
 extern __thread jmp_buf jumpBuf;
 
 Func *Parser::parseInEnv(Pepper *pepper, const char *text, bool isFunc) {
-    SymbolTable syms;
     GC *gc = pepper->gc();
-    syms.set(String::value(gc, "builtin"), 0);
     Value regs[] = {
         Map::makeMap(gc,                     
                      "type", CFunc::value(gc, builtinType),
@@ -78,9 +76,10 @@ Func *Parser::parseInEnv(Pepper *pepper, const char *text, bool isFunc) {
                      Map::makeMap(gc, "read", CFunc::value(gc, builtinFileRead), NULL),
                      NULL)
     };
+    SymbolTable *syms = pepper->syms();
     Func *f = isFunc ? 
-        parseFunc(gc, &syms, regs, text) :
-        parseStatList(gc, &syms, regs, text);
+        parseFunc(gc, syms, regs, text) :
+        parseStatList(gc, syms, regs, text);
     return f;
 }
 

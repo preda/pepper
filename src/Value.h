@@ -34,6 +34,7 @@ enum {
     O_CFUNC,
     O_PROTO,
     O_STR,
+    O_SYMTAB,
 };
 
 typedef Value (*tfunc)(VM *vm, int op, void *data, Value *stack, int nCallArg);

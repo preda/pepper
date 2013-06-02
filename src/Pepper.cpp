@@ -7,15 +7,17 @@
 #include "Array.h"
 #include "Map.h"
 #include "SymbolTable.h"
+#include "String.h"
 #include <assert.h>
 
 Pepper::Pepper(void *context) :
     _gc(new GC()),
     vm(new VM(this)),
-    _syms(new SymbolTable())
+    _syms(SymbolTable::alloc(_gc))
 {
     assert(sizeof(Array) == 2 * sizeof(long));
-    
+    _syms->set(String::value(_gc, "builtin"), 0);
+    _gc->addRoot((Object *) _syms);
 }
 
 Pepper::~Pepper() {
@@ -23,8 +25,7 @@ Pepper::~Pepper() {
     _gc = 0;
     delete vm;
     vm = 0;
-    delete _syms;
-    _syms = 0;
+    _syms = 0; // garbage collected
 }
 
 Value Pepper::run(Func *f, int nArg, Value *args) {

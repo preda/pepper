@@ -8,6 +8,7 @@
 #include "String.h"
 #include "CFunc.h"
 #include "Proto.h"
+#include "SymbolTable.h"
 #include "VM.h"
 
 #include <stdlib.h>
@@ -104,6 +105,7 @@ Object *GC::alloc(int bytes, bool traversable) {
  case O_FUNC:  ACTION(o, Func); break;\
  case O_CFUNC: ACTION(o, CFunc);  break;\
  case O_PROTO: ACTION(o, Proto); break;\
+ case O_SYMTAB: ACTION(o, SymbolTable); break;\
  default: ERR(true, E_OBJECT_TYPE);\
 }
 

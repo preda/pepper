@@ -2,28 +2,27 @@
 
 #pragma once
 
-#include "common.h"
-#include "Map.h"
 #include "Vector.h"
-#include "Array.h"
+#include "value.h"
 
 class GC;
 
 // Object
 class SymbolTable {
-    // Vector<Value> names;
-    Array names;
+    Vector<Value> names;
     Vector<int> protos;
     Vector<int> starts;
     Vector<int> slots;
 
+    SymbolTable();
     int getLevel(int pos);
     int findPos(Value name);
-    
+
  public:
-    SymbolTable();
+    static SymbolTable *alloc(GC *gc);
     ~SymbolTable();
 
+    void traverse(GC *gc); // GC
     void enterBlock(bool isProto);
     void exitBlock(bool isProto);
     
