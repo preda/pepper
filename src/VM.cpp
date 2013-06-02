@@ -407,12 +407,6 @@ CALL: {
  MOVEUP: {
         const int slot = regs + 256 - ptrC;
         activeFunc->setUp(slot, A);
-        /*
-        assert(slot > N_CONST_UPS); // E_UP_CONST);
-        const int nUp = activeFunc->nUp();
-        assert(slot <= nUp);
-        activeFunc->ups[nUp - slot] = A;
-        */
     }
  MOVE_R: *ptrC = A; STEP;
  MOVE_I: *ptrC = VAL_NUM(OD(code)); STEP;
