@@ -93,8 +93,8 @@ int main(int argc, char **argv) {
 T tests[] = {
     T("a := '[foo]' return a == 'foo'", TRUE),
     T("foobarbar := '====[tralala\"']====' return foobarbar == '[tralala\"']'", TRUE),
-    T("f := builtin.parse.block('return 3') return f()", VAL_NUM(3)),
-    T("f := builtin.parse.block('=[return 3]=') return f()", VAL_NUM(3)),
+    T("f := parse.block('return 3') return f()", VAL_NUM(3)),
+    T("f := parse.block('=[return 3]=') return f()", VAL_NUM(3)),
     T("return nil", VNIL),
     T("return -1", VAL_NUM(-1)),
     T("return 0", VAL_NUM(0)),
@@ -148,8 +148,8 @@ T tests[] = {
     T("s6:=\"abcabc\" if s6[6]==nil and s6[5]==\"c\" { return 7 } else{return 8}", VAL_NUM(7)),
 
     // ffi
-    // T("var strlen=builtin.ffi(\"strlen\", \"int (char *)\", \"c\"); return strlen(\"bar hello foo\")", VAL_NUM(13)),
-    // T("return builtin.ffi(\"strstr\", \"offset (char*, char *)\", \"c\")(\"big oneedle hayst\", \"need\")", VAL_NUM(5)),
+    // T("var strlen=ffi(\"strlen\", \"int (char *)\", \"c\"); return strlen(\"bar hello foo\")", VAL_NUM(13)),
+    // T("return ffi(\"strstr\", \"offset (char*, char *)\", \"c\")(\"big oneedle hayst\", \"need\")", VAL_NUM(5)),
 
     // assign
     T("a:=3; return a", VAL_NUM(3)),
@@ -248,11 +248,11 @@ T tests[] = {
     T("fn sum(a, b) { return a + 2 * b } args := [3, 4] return sum(*args)", VAL_NUM(11)),
     T("fn foo(a, b, *args) { return a + b + #args} return foo(1, *[10, 7, 9])", VAL_NUM(13)),
 
-    T("builtin.print(nil, 'hello world', 1.5, 100, {3:9, 4:16, 'foo':\"bar\"}, [5, 4, 3]);", VNIL),
+    T("print(nil, 'hello world', 1.5, 100, {3:9, 4:16, 'foo':\"bar\"}, [5, 4, 3]);", VNIL),
 
-    // builtin.type()
-    T("return #(builtin.type(builtin))", VAL_NUM(3)), 
-    T("t:=builtin.type; return t('')=='string' && t(0)=='number'", TRUE),
+    // type()
+    // T("return #(type(builtin))", VAL_NUM(3)), 
+    T("t:=type; return t('')=='string' && t(0)=='number'", TRUE),
 
     // GETF
     T("m:={'a':7, '__get':{'c':8}}; return m.c", VAL_NUM(8)),
@@ -264,20 +264,20 @@ T tests[] = {
     T("m:={2:3, __get={a=7, __get=fn(x){return 1+#x}}, bar=4}; return m.ab", VAL_NUM(3)),
     
     // T("a:=java; return 42", VAL_NUM(42)),
-    T("javaString := builtin.java.class('java/lang/String'); return 42", VAL_NUM(42)),
-    T("f:=fn(x) { return this}; builtin.print(f); return 1", VAL_NUM(1)),
-    T("d:={a=2}; builtin.print(d.x)", VNIL),
-    T("p:=builtin.print; d:={__get=fn(x){ p('**', this, x); return this}}; builtin.print(d.x)", VNIL),
-    T("p:=builtin.print; p('foo'); pp:=builtin.print; pp('pp'); builtin.print('bar'); p(p, pp, builtin.print)", VNIL),
-    T("d:={f=fn(){return this}}; p:=builtin.print; p((d).f(), (d.f)())", VNIL),
-    T("fn a(x) { b:=fn(y) { c:=y+x; d:=fn(a) { p:=builtin.print; p(a)} d(c) } b(x+1)} a(3)", VNIL),
-    T("f:=builtin.parse.block('return nil'); return f()", VNIL),
+    T("javaString := java.class('java/lang/String'); return 42", VAL_NUM(42)),
+    T("f:=fn(x) { return this}; print(f); return 1", VAL_NUM(1)),
+    T("d:={a=2}; print(d.x)", VNIL),
+    T("p:=print; d:={__get=fn(x){ p('**', this, x); return this}}; print(d.x)", VNIL),
+    T("p:=print; p('foo'); pp:=print; pp('pp'); print('bar'); p(p, pp, print)", VNIL),
+    T("d:={f=fn(){return this}}; p:=print; p((d).f(), (d.f)())", VNIL),
+    T("fn a(x) { b:=fn(y) { c:=y+x; d:=fn(a) { p:=print; p(a)} d(c) } b(x+1)} a(3)", VNIL),
+    T("f:=parse.block('return nil'); return f()", VNIL),
     T("b:=1 for i:=0:2 { a:=[4,5,6] b=a[2] a[2]=13} return b", VAL_NUM(6)),
     T("a:=[] a[3]=2 return a[3]", VAL_NUM(2)),
     T("a:=[] a[3]=2 b:=[] return b[3]", VNIL),
     T("a:={} a[3]=2 return a[3]", VAL_NUM(2)),
     T("a:={} a[3]=2 b:={} return b[3]", VNIL),
-    T("f:=builtin.file.read('gen.pep') return #f", VAL_NUM(6395)),
+    T("f:=file.read('gen.pep') return #f", VAL_NUM(6395)),
 };
 
     bool verbose = false;
@@ -305,7 +305,7 @@ T tests[] = {
                 fprintf(stderr, "%2d OK '%s'\n", i, t.source);
                 printValue(ret);
             }
-            snprintf(buf, sizeof(buf), "f:=builtin.parse.block('===[%s]==='); return f()", txt);
+            snprintf(buf, sizeof(buf), "f:=parse.block('===[%s]==='); return f()", txt);
             Value ret2 = eval(pepper, buf);
             if (!equals(ret, ret2)) {
                 fprintf(stderr, "parse %d '%s'\n", i, txt);
