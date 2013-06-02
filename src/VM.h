@@ -62,8 +62,8 @@ class Stack;
 class Pepper;
 
 class VM {
-    GC *gc;
-    Pepper *pepper;
+    GC *_gc;
+    Pepper *_pepper;
     Value stringMethods;
     const Value constUps[N_CONST_UPS];
 
@@ -77,6 +77,6 @@ class VM {
     ~VM();
 
     Value run(Func *f, int nArg, Value *args);
-    GC *getGC() { return gc; }
-    // void *getContext() { return context; }
+    GC *gc() { return _gc; }
+    Pepper *pepper() { return _pepper; }
 };

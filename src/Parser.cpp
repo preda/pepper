@@ -38,10 +38,12 @@ Parser::Parser(GC *gc, Proto *proto, SymbolTable *syms, Lexer *lexer) :
     lexer(lexer),
     gc(gc)
 {
+    syms->enterBlock(true);
     lexer->advance();
 }
 
 Parser::~Parser() {
+    syms->exitBlock(true);
 }
 
 void Parser::advance() {
@@ -58,10 +60,10 @@ void Parser::consume(int t) {
 
 extern __thread jmp_buf jumpBuf;
 
-Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
+Func *Parser::parseInEnv(Pepper *pepper, const char *text, bool isFunc) {
     SymbolTable syms;
+    GC *gc = pepper->gc();
     syms.set(String::value(gc, "builtin"), 0);
-    syms.enterBlock(true);
     Value regs[] = {
         Map::makeMap(gc,                     
                      "type", CFunc::value(gc, builtinType),
@@ -79,7 +81,6 @@ Func *Parser::parseInEnv(GC *gc, const char *text, bool isFunc) {
     Func *f = isFunc ? 
         parseFunc(gc, &syms, regs, text) :
         parseStatList(gc, &syms, regs, text);
-    syms.exitBlock(true);
     return f;
 }
 

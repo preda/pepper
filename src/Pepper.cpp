@@ -9,25 +9,22 @@
 #include "SymbolTable.h"
 #include <assert.h>
 
-static void initSymbolTable(GC *gc, SymbolTable *syms) {
-}
-
 Pepper::Pepper(void *context) :
-    gc(new GC()),
+    _gc(new GC()),
     vm(new VM(this)),
-    syms(new SymbolTable())
+    _syms(new SymbolTable())
 {
     assert(sizeof(Array) == 2 * sizeof(long));
-    initSymbolTable(gc, syms);
+    
 }
 
 Pepper::~Pepper() {
-    delete gc;
-    gc = 0;
+    delete _gc;
+    _gc = 0;
     delete vm;
     vm = 0;
-    delete syms;
-    syms = 0;
+    delete _syms;
+    _syms = 0;
 }
 
 Value Pepper::run(Func *f, int nArg, Value *args) {
@@ -35,9 +32,9 @@ Value Pepper::run(Func *f, int nArg, Value *args) {
 }
 
 Func *Pepper::parseFunc(const char *text) {
-    return Parser::parseInEnv(gc, text, true);
+    return Parser::parseInEnv(this, text, true);
 }
 
 Func *Pepper::parseStatList(const char *text) {
-    return Parser::parseInEnv(gc, text, false);
+    return Parser::parseInEnv(this, text, false);
 }

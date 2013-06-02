@@ -68,5 +68,5 @@ public:
     static Func *parseFunc(GC *gc, SymbolTable *syms, Value *upsTop, const char *text);
     static Func *parseStatList(GC *gc, SymbolTable *syms, Value *upsTop, const char *text);
     static int parseStatList(GC *gc, Proto *proto, SymbolTable *symbols, const char *text);
-    static Func *parseInEnv(GC *gc, const char *text, bool isFunc);
+    static Func *parseInEnv(Pepper *pepper, const char *text, bool isFunc);
 };

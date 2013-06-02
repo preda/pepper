@@ -30,7 +30,7 @@ Value builtinFileRead(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
                     if (n < (int)sizeof(buf)) { break; }
                 }
                 fclose(fi);
-                return String::value(vm->getGC(), chars.buf(), chars.size());
+                return String::value(vm->gc(), chars.buf(), chars.size());
             }
         }    
     }
@@ -53,7 +53,7 @@ Value builtinType(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArgs > 0);
     if (nCallArgs < 2) { return VNIL; }
-    return String::value(vm->getGC(), typeStr(stack[1]));
+    return String::value(vm->gc(), typeStr(stack[1]));
 }
 
 static Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg, bool isFunc) {
@@ -62,7 +62,7 @@ static Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg
     Value v = stack[1];
     if (!IS_STRING(v)) { return VNIL; }
     const char *text = GET_CSTR(v);
-    Func *f = Parser::parseInEnv(vm->getGC(), text, isFunc);
+    Func *f = Parser::parseInEnv(vm->pepper(), text, isFunc);
     return f ? VAL_OBJ(f) : VNIL;
 }
 
@@ -87,10 +87,8 @@ Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {
     if (!java) { return VNIL; }
     JNIEnv *env = java->env;
     if (!env) { return VNIL; }
-    // return VNIL;
     jclass cls = env->FindClass("java/lang/String");
-    return Map::makeMap(vm->getGC(), "_class", VAL_CP(cls), 0); 
-    // return String::value(vm->getGC(), name);
+    return Map::makeMap(vm->gc(), "_class", VAL_CP(cls), 0); 
 }
 #else
 Value javaClass(VM *vm, int op, void *data, Value *stack, int nCallArg) {

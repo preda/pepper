@@ -88,7 +88,7 @@ static long long getTimeUsec() {
 int main(int argc, char **argv) {
     testIndex();
     Pepper *pepper = new Pepper(0);
-    GC *gc = pepper->getGC();
+    GC *gc = pepper->gc();
 
 T tests[] = {
     T("a := '[foo]' return a == 'foo'", TRUE),

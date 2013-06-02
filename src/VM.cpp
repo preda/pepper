@@ -131,11 +131,11 @@ static int setSlice(Value c, Value a1, Value a2, Value b) {
 }
 
 VM::VM(Pepper *pepper) :
-    gc(pepper->getGC()),
-    pepper(pepper),
-    constUps{gc->EMPTY_MAP, gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
+    _gc(pepper->gc()),
+    _pepper(pepper),
+    constUps{_gc->EMPTY_MAP, _gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
 {
-    stringMethods = Map::makeMap(gc, "find", CFunc::value(gc, String::method_find), NULL);
+    stringMethods = Map::makeMap(_gc, "find", CFunc::value(_gc, String::method_find), NULL);
 }
 
 VM::~VM() {
@@ -245,7 +245,7 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     if (!(IS_O_TYPE(A, O_FUNC) || IS_CF(A) || IS_O_TYPE(A, O_CFUNC))) { return -1; }
     regs  = stack->maybeGrow(regs, 256);
     int nExpectedArgs = IS_O_TYPE(A, O_FUNC) ? ((Func *)GET_OBJ(A))->proto->nArgs : NARGS_CFUNC;
-    nEffArgs = prepareStackForCall(regs, nExpectedArgs, nEffArgs, gc);
+    nEffArgs = prepareStackForCall(regs, nExpectedArgs, nEffArgs, _gc);
 
     if (IS_CF(A) || IS_O_TYPE(A, O_CFUNC)) {
         if (IS_CF(A)) {
@@ -308,7 +308,7 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
 
  FUNC:
     assert(IS_PROTO(A));
-    *ptrC = VAL_OBJ(Func::alloc(gc, PROTO(A), regs + 256, regs, OB(code)));
+    *ptrC = VAL_OBJ(Func::alloc(_gc, PROTO(A), regs + 256, regs, OB(code)));
     STEP;
 
     // index, A[B]
@@ -353,13 +353,13 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
 
  SETF: if (setField(*ptrC, A, B)) { goto error; } STEP;
 
- GETS: *ptrC = getSlice(gc, A, B, regs[OB(code)+1]); if (*ptrC==VERR) { goto error; } STEP;
+ GETS: *ptrC = getSlice(_gc, A, B, regs[OB(code)+1]); if (*ptrC==VERR) { goto error; } STEP;
  SETS: if (setSlice(*ptrC, A, regs[OA(code)+1], B)) { goto error; } STEP;
 
  RET: {
         regs[0] = A;
         Value *root = stack->base;
-        gc->maybeCollect(root, regs - root + 1);
+        _gc->maybeCollect(root, regs - root + 1);
 #if FAST_CALL
         if (!retInfo.size()) {
             return 0;
@@ -385,7 +385,7 @@ CALL: {
         if (IS_O_TYPE(A, O_FUNC)) {
             Func *f = (Func *) GET_OBJ(A);
             Proto *proto = f->proto;
-            prepareStackForCall(base, proto->nArgs, nEffArgs, gc);
+            prepareStackForCall(base, proto->nArgs, nEffArgs, _gc);
             RetInfo *ret = retInfo.push();
             ret->pc    = pc;
             ret->base  = regs - stack->base;
@@ -417,9 +417,9 @@ CALL: {
         Value v = *pc | (((u64) *(pc+1)) << 32);
         pc += 2;
         if (IS_ARRAY(v)) {
-            v = VAL_OBJ(ARRAY(v)->copy(gc));
+            v = VAL_OBJ(ARRAY(v)->copy(_gc));
         } else if (IS_MAP(v)) {
-            v = VAL_OBJ(MAP(v)->copy(gc));
+            v = VAL_OBJ(MAP(v)->copy(_gc));
         }
         *ptrC = v;
         STEP;
@@ -428,7 +428,7 @@ CALL: {
  NOTL:   *ptrC = IS_FALSE(A) ? TRUE : FALSE; STEP;
     // notb: *ptrC = IS_INT(A)? VAL_INT(~getInteger(A)):ERROR(E_WRONG_TYPE); STEP;
 
- ADD: *ptrC = doAdd(gc, A, B); if (*ptrC == VERR) { goto error; } STEP;
+ ADD: *ptrC = doAdd(_gc, A, B); if (*ptrC == VERR) { goto error; } STEP;
  SUB: *ptrC = BINOP(-, A, B); STEP;
  MUL: *ptrC = BINOP(*, A, B); STEP;
  DIV: *ptrC = BINOP(/, A, B); STEP;
