@@ -20,20 +20,29 @@ Pepper::Pepper(void *context) :
     _regs(Array::alloc(_gc))
 {
     assert(sizeof(Array) == 2 * sizeof(long));
-
-    _syms->add(_gc, _regs, "type",  CFunc::value(_gc, builtinType));  // 0
-    _syms->add(_gc, _regs, "print", CFunc::value(_gc, builtinPrint)); // 1
-    _syms->add(_gc, _regs, "parse", VNIL); // 2
-    _syms->add(_gc, _regs, "file",  VNIL); // 3
-    _syms->add(_gc, _regs, "java",  VNIL); // 4
-
-    _regs->push(CFunc::value(_gc, builtinParseFunc));  // 5
-    _regs->push(CFunc::value(_gc, builtinParseBlock)); // 6
-    _regs->push(CFunc::value(_gc, builtinFileRead));   // 7
-    _regs->push(CFunc::value(_gc, javaClass));         // 8
-
     _gc->addRoot((Object *) _syms);
     _gc->addRoot((Object *) _regs);
+    
+    _regs->push(CFunc::value(_gc, builtinParseFunc));  // 0
+    _regs->push(CFunc::value(_gc, builtinParseBlock)); // 1
+    _regs->push(CFunc::value(_gc, builtinFileRead));   // 2
+    _regs->push(CFunc::value(_gc, javaClass));         // 3
+
+    _syms->add(_gc, _regs, "type",   CFunc::value(_gc, builtinType));  // 4
+    _syms->add(_gc, _regs, "print",  CFunc::value(_gc, builtinPrint)); // 5
+    _syms->add(_gc, _regs, "parse",  VNIL);  // 6
+    _syms->add(_gc, _regs, "file",   VNIL);  // 7
+    _syms->add(_gc, _regs, "java",   VNIL);  // 8
+
+    Func *f = parseStatList("\
+imports := {}\
+return fn(name) {\
+  if !imports[name] { imports[name] = parse.block(file.read(name + '.pep'))() }\
+  return imports[name]\
+}");
+    
+    Value import = run(f, 0, 0);
+    _syms->add(_gc, _regs, "import", import);  // 9
 }
 
 Pepper::~Pepper() {

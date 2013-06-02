@@ -62,9 +62,9 @@ Func *Parser::parseInEnv(Pepper *pepper, const char *text, bool isFunc) {
     GC *gc = pepper->gc();
     SymbolTable *syms = pepper->syms();
     Value *regs = pepper->regs();
-    regs[2] = Map::makeMap(gc, "func",  regs[5], "block", regs[6], NULL);
-    regs[3] = Map::makeMap(gc, "read",  regs[7], NULL);
-    regs[4] = Map::makeMap(gc, "class", regs[8], NULL);
+    regs[6] = Map::makeMap(gc, "func",  regs[0], "block", regs[1], NULL);
+    regs[7] = Map::makeMap(gc, "read",  regs[2], NULL);
+    regs[8] = Map::makeMap(gc, "class", regs[3], NULL);
     
     Func *f = isFunc ? 
         parseFunc(gc, syms, regs, text) :

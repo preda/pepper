@@ -279,6 +279,7 @@ T tests[] = {
     T("a:={} a[3]=2 b:={} return b[3]", VNIL),
     T("file.read='foofoobar' return #file.read", VAL_NUM(9)),
     T("f:=file.read('gen.pep') return #f", VAL_NUM(6395)),
+    T("print('import:', import) for i:=0:2 { f:=import('testimp') print('f:', i, f, f?f(i + 1):'*')}", VNIL),
 };
 
     bool verbose = false;
