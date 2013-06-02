@@ -21,12 +21,17 @@ Pepper::Pepper(void *context) :
 {
     assert(sizeof(Array) == 2 * sizeof(long));
 
-    _syms->add(_gc, _regs, "type", CFunc::value(_gc, builtinType));
-    _syms->add(_gc, _regs, "print", CFunc::value(_gc, builtinPrint));
-    _syms->add(_gc, _regs, "java", Map::makeMap(_gc, "class", CFunc::value(_gc, javaClass), NULL));
-    _syms->add(_gc, _regs, "parse", Map::makeMap(_gc, "func", CFunc::value(_gc, builtinParseFunc), "block", CFunc::value(_gc, builtinParseBlock), NULL));
-    _syms->add(_gc, _regs, "file", Map::makeMap(_gc, "read", CFunc::value(_gc, builtinFileRead), NULL));
-    
+    _syms->add(_gc, _regs, "type",  CFunc::value(_gc, builtinType));  // 0
+    _syms->add(_gc, _regs, "print", CFunc::value(_gc, builtinPrint)); // 1
+    _syms->add(_gc, _regs, "parse", VNIL); // 2
+    _syms->add(_gc, _regs, "file",  VNIL); // 3
+    _syms->add(_gc, _regs, "java",  VNIL); // 4
+
+    _regs->push(CFunc::value(_gc, builtinParseFunc));  // 5
+    _regs->push(CFunc::value(_gc, builtinParseBlock)); // 6
+    _regs->push(CFunc::value(_gc, builtinFileRead));   // 7
+    _regs->push(CFunc::value(_gc, javaClass));         // 8
+
     _gc->addRoot((Object *) _syms);
     _gc->addRoot((Object *) _regs);
 }

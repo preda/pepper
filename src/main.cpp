@@ -157,8 +157,8 @@ T tests[] = {
 
     // while
     T("i:=0; s:=0 while i < 4 { i = i + 1; s = s + i + 1 } return s", VAL_NUM(14)),
-    T("i:=0 s:=0 while i < 100000 { s=s+i+1 i=i+1 } return s",     VAL_NUM(5000050000ll)),
-    T("i:=0 s:=0 while i < 100000 { s=s+i+0.5 i=i+0.5 } return s", VAL_NUM(10000050000)),
+    T("i:=0 s:=0 while i < 50000 { s=s+i+1 i=i+1 } return s",     VAL_NUM(1250025000ll)),
+    T("i:=0 s:=0 while i < 10000 { s=s+i+0.5 i=i+0.5 } return s", VAL_NUM(100005000ll)),
 
     T("s:=0 for i:=0:5 {s = s + i}; return s", VAL_NUM(10)),
     T("s:=100 for i := -3:10 {s = s + 1}; return s", VAL_NUM(113)),
@@ -277,6 +277,7 @@ T tests[] = {
     T("a:=[] a[3]=2 b:=[] return b[3]", VNIL),
     T("a:={} a[3]=2 return a[3]", VAL_NUM(2)),
     T("a:={} a[3]=2 b:={} return b[3]", VNIL),
+    T("file.read='foofoobar' return #file.read", VAL_NUM(9)),
     T("f:=file.read('gen.pep') return #f", VAL_NUM(6395)),
 };
 
