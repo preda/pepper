@@ -8,9 +8,7 @@
 #include "Func.h"
 #include "Proto.h"
 #include "SymbolTable.h"
-#include "CFunc.h"
 #include "Pepper.h"
-#include "builtin.h"
 #include "GC.h"
 
 #include <assert.h>
@@ -62,21 +60,8 @@ extern __thread jmp_buf jumpBuf;
 
 Func *Parser::parseInEnv(Pepper *pepper, const char *text, bool isFunc) {
     GC *gc = pepper->gc();
-    Value regs[] = {
-        Map::makeMap(gc,                     
-                     "type", CFunc::value(gc, builtinType),
-                     "print",  CFunc::value(gc, builtinPrint),
-                     "java",    Map::makeMap(gc, "class", CFunc::value(gc, javaClass), NULL),
-                     "parse",
-                     Map::makeMap(gc,
-                                  "func", CFunc::value(gc, builtinParseFunc),
-                                  "block", CFunc::value(gc, builtinParseBlock),
-                                  NULL),
-                     "file",
-                     Map::makeMap(gc, "read", CFunc::value(gc, builtinFileRead), NULL),
-                     NULL)
-    };
     SymbolTable *syms = pepper->syms();
+    Value *regs = pepper->regs();
     Func *f = isFunc ? 
         parseFunc(gc, syms, regs, text) :
         parseStatList(gc, syms, regs, text);

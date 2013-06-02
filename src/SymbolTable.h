@@ -6,6 +6,7 @@
 #include "value.h"
 
 class GC;
+class Array;
 
 // Object
 class SymbolTable {
@@ -30,4 +31,6 @@ class SymbolTable {
     void set(Value name, int slot);
     void setUpval(Value name, int slot, int level);
     int curLevel() { return protos.size() - 1; }
+
+    void add(GC *gc, Array *regs, const char *name, Value v);
 };

@@ -3,6 +3,8 @@
 #include "SymbolTable.h"
 #include "GC.h"
 #include "Object.h"
+#include "Array.h"
+#include "String.h"
 #include <stdio.h>
 
 SymbolTable::SymbolTable() {
@@ -16,6 +18,11 @@ SymbolTable::~SymbolTable() {
 
 void SymbolTable::traverse(GC *gc) {
     gc->markValVect(names.buf(), names.size());
+}
+
+void SymbolTable::add(GC *gc, Array *regs, const char *name, Value v) {
+    regs->push(v);
+    set(String::value(gc, name), regs->size() - 1);
 }
 
 void SymbolTable::enterBlock(bool isProto) {
