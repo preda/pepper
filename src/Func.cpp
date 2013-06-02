@@ -2,13 +2,10 @@
 #include "Proto.h"
 #include "Value.h"
 #include "GC.h"
+#include "VM.h"
 
 #include <stdlib.h>
-
-void Func::traverse(GC *gc) { 
-    gc->markValVect(ups, nUp());
-    gc->mark((Object *) proto);
-}
+#include <assert.h>
 
 Func::Func(Proto *proto, Value *contextUps, Value *regs, byte recSlot) :
     type(O_FUNC)
@@ -33,4 +30,17 @@ Func::~Func() {
     }
     proto = 0;
     type  = 0;
+}
+
+void Func::traverse(GC *gc) { 
+    gc->markValVect(ups, nUp());
+    gc->mark((Object *) proto);
+}
+
+void Func::setUp(int slot, Value v) {
+    assert(slot > N_CONST_UPS);
+    slot -= N_CONST_UPS;
+    int n = nUp();
+    assert(slot <= n);
+    ups[n - slot] = v;
 }
