@@ -118,12 +118,12 @@ inline bool IS_SHORT_STR_TAG(int t) { return t >= T_STR0 && t <= T_STR5; }
 #define SHORT_STR_LEN(v) (TAG(v) - T_STR0)
 // #define VAL_SHORT_STR(c, len) ValueUnion{tag:(T_STR0+len)}.v
 
-#define IS_FALSE(v) (v == ZERO || TAG(v) == T_NIL)
+#define IS_FALSE(v) IS_NIL(v)
 #define IS_TRUE(a) (!IS_REG(a) && !IS_FALSE(a))
 
 #define ZERO  VAL_NUM(0)
 #define ONE   VAL_NUM(1)
-#define FALSE ZERO
+#define FALSE VNIL
 #define TRUE  ONE
 
 #define O_TYPE(v) (GET_OBJ(v)->type())

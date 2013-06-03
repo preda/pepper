@@ -106,7 +106,7 @@ T tests[] = {
     T("f:=fn(x) => x+1; return f(-1)", ZERO),
 
     T("f:=fn(x) { return -1 } return f(5)", VAL_NUM(-1)),
-    T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(0, 2)", ONE),
+    T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(nil, 2)", ONE),
     T("f:=fn(x,y) { if x { return y } else { return 0 } }; return 1+f(1, -1)", ZERO),
 
     T("return 13", VAL_NUM(13)),
@@ -127,12 +127,12 @@ T tests[] = {
     T("a:=2 b:=3 c:=nil return a+1 && b+2 || c+3", VAL_NUM(5)),
     T("return 1 && nil && 13", VNIL),
     T("return 13 || 14", VAL_NUM(13)),
-    T("a:=0 b:=3 c:=4 return a || b || c", VAL_NUM(3)),
-    T("a:=0 b:=3 c:=4 return a || (b && a) || c", VAL_NUM(4)),
-    T("a:=0 b:=3 c:=4 return a && b && c", ZERO),
-    T("a:=0 b:=3 c:=4 return b && c && a", ZERO),
-    T("a:=0 b:=3 c:=4 return a || c && b", VAL_NUM(3)),
-    T("a:=0 b:=3 c:=4 return (b || a) && (a || c)", VAL_NUM(4)),
+    T("a:=nil b:=3 c:=4 return a || b || c", VAL_NUM(3)),
+    T("a:=nil b:=3 c:=4 return a || (b && a) || c", VAL_NUM(4)),
+    T("a:=nil b:=3 c:=4 return a && b && c", VNIL),
+    T("a:=nil b:=3 c:=4 return b && c && a", VNIL),
+    T("a:=nil b:=3 c:=4 return a || c && b", VAL_NUM(3)),
+    T("a:=nil b:=3 c:=4 return (b || a) && (a || c)", VAL_NUM(4)),
     
     T("a:=[]; a[1]=2; b:=[]; return b[1]", VNIL),
     
@@ -186,10 +186,10 @@ T tests[] = {
 
     // ternary op
     T("return 1 ? 2 : 3", VAL_NUM(2)),
-    T("a:=0 b:=10 c:=20 return a ? b+1 : c+2", VAL_NUM(22)),
-    T("fn f(x) { return x + 10; } fn g(x, y) { return x * y } return g(3, 0) ? f(5) : g(f(0), f(1))", VAL_NUM(110)),
-    T("return 0 ? 1 : 2 ? 3 : 4", VAL_NUM(3)),
-    T("a:=2 return 0 ? 1 : a ? 3 : 4", VAL_NUM(3)),
+    T("a:=nil b:=10 c:=20 return a ? b+1 : c+2", VAL_NUM(22)),
+    T("fn f(x) { return x + 10; } fn g(x, y) { return x * y } return g(3, 0) != 0 ? f(5) : g(f(0), f(1))", VAL_NUM(110)),
+    T("return nil ? 1 : 2 ? 3 : 4", VAL_NUM(3)),
+    T("a:=2 return nil ? 1 : a ? 3 : 4", VAL_NUM(3)),
     
     // is, not is
     T("return {} === {}", TRUE),
@@ -322,9 +322,8 @@ T tests[] = {
             assert(argc > 2);
             int n = atoi(argv[2]);
             text = tests[n].source;
-            Value ret = eval(pepper, text);
-            // printValue(ret);
             compileDecompile(pepper, text);
+            Value ret = eval(pepper, text);
             ++argv;
             --argc;
         } else if (!strcmp(argv[1], "-f")) {
