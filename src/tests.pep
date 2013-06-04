@@ -12,11 +12,11 @@ tests = tests + tests1
 for i := 0 : #tests {
     t := tests[i]
     f := parse.block(t[0])
-    res := f ? f() : nil;
+    res := f ? f() : nil
     if res != t[1] {
         ok = 0
         print('#'+i, 'expected ' + t[1] + ' got', res, t[0])        
     }
 }
-print('N ' + #tests);
+print('N ' + #tests)
 return ok

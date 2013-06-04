@@ -164,14 +164,15 @@ bool Parser::statement() {
 
     case TK_return:
         advance();
-        emit(proto->localsTop, RET, 0, TOKEN == ';' ? VNIL : expr(proto->localsTop), UNUSED);
+        // TOKEN == ';' ? VNIL : 
+        emit(proto->localsTop, RET, 0, expr(proto->localsTop), UNUSED);
         isReturn = true;
         break;        
 
     default: exprOrAssignStat(); break;
     }
     
-    while (TOKEN == ';') { advance(); }
+    // while (TOKEN == ';') { advance(); }
     return isReturn;
 }
 
