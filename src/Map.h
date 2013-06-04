@@ -40,4 +40,6 @@ class Map {
 
     Value *keyBuf() { return map.keyBuf(); }
     Value *valBuf() { return map.valBuf(); }
+
+    static Value keysField(VM *vm, int op, void *data, Value *stack, int nArgs) { return VNIL; }
 };

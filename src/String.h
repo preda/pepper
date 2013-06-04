@@ -12,7 +12,8 @@ class String {
     unsigned _size;
 
  public:
-    static Value method_find(VM *vm, int op, void *data, Value *stack, int nCallArg);
+    static Value findField(VM *vm, int op, void *data, Value *stack, int nCallArg);
+    
     static Value value(GC *gc, const char *s);
     static Value value(GC *gc, const char *s, unsigned size);
     static Value value(GC *gc, unsigned size);

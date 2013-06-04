@@ -135,7 +135,12 @@ VM::VM(Pepper *pepper) :
     _pepper(pepper),
     constUps{_gc->EMPTY_MAP, _gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
 {
-    stringMethods = Map::makeMap(_gc, "find", CFunc::value(_gc, String::method_find), NULL);
+    stringFields = Map::makeMap(_gc, "find", CFunc::value(_gc, String::findField), NULL);
+    arrayFields  = Map::makeMap(_gc, "size", CFunc::value(_gc, Array::sizeField), NULL);
+    mapFields    = Map::makeMap(_gc, "keys", CFunc::value(_gc, Map::keysField),   NULL);
+    _gc->addRoot(GET_OBJ(stringFields));
+    _gc->addRoot(GET_OBJ(arrayFields));
+    _gc->addRoot(GET_OBJ(mapFields));
 }
 
 VM::~VM() {
@@ -182,11 +187,10 @@ void VM::copyUpvals(Func *f, Value *regs) {
 }
 
 Value VM::run(Func *activeFunc, int nArg, Value *args) {
-    static const int nExtra = 2;
+    static const int nExtra = 1;
     Stack stack;
     Value *regs = stack.maybeGrow(0, nArg + nExtra + 1);
     regs[0] = VAL_OBJ(activeFunc);
-    regs[1] = stringMethods;
     Value *base = regs + nExtra;
     base[0] = VNIL;
     memcpy(base+1, args, nArg * sizeof(Value));
@@ -318,34 +322,36 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     // field, A.B
  GETF: while (true) {
         if (IS_STRING(A)) {
-            A = stringMethods;
-        }
-        if (!IS_MAP(A)) {
+            A = stringFields;
+        } else if (IS_ARRAY(A)) {
+            A = arrayFields;
+        } else if (IS_MAP(A)) {
+            // A = mapFields;
+        } else {
             *ptrC = getIndex(A, B);
             break;
+        }
+        Map *map = MAP(A);
+        bool recurse = false;
+        Value v = map->get(B, &recurse);
+        if (!recurse) {
+            *ptrC = v;
+            break;
+        } else if (acceptsIndex(v)) {
+            A = v;
         } else {
-            Map *map = MAP(A);
-            bool recurse = false;
-            Value v = map->get(B, &recurse);
-            if (!recurse) {
-                *ptrC = v;
-                break;
-            } else if (acceptsIndex(v)) {
-                A = v;
-            } else {
-                const int oa = OA(code);
-                const int ob = OB(code);
-                int top = max(oa, ob) + 1;
-                top = max(top, activeFunc->proto->localsTop);
-                Value *base = regs + top;
-                printf("top %d\n", top);
-                base[0] = A;
-                base[1] = B;
-                int cPos = ptrC - regs;
-                DO_CALL(v, 2, regs, base, stack);
-                regs[cPos] = base[0];
-                break;
-            }
+            const int oa = OA(code);
+            const int ob = OB(code);
+            int top = max(oa, ob) + 1;
+            top = max(top, activeFunc->proto->localsTop);
+            Value *base = regs + top;
+            printf("top %d\n", top);
+            base[0] = A;
+            base[1] = B;
+            int cPos = ptrC - regs;
+            DO_CALL(v, 2, regs, base, stack);
+            regs[cPos] = base[0];
+            break;
         }
     }
     if (*ptrC == VERR) { goto error; }

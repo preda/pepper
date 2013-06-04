@@ -14,6 +14,8 @@ class Array {
  public:
     Vector<Value> vect;
 
+    static Value sizeField(VM *vm, int op, void *data, Value *stack, int nArgs);
+    
     Array(int iniSize = 0);
     ~Array();
     static Array *alloc(GC *gc, int iniSize = 0);
@@ -34,6 +36,7 @@ class Array {
     
     void push(Value val) { vect.push(val); }
     unsigned size()      { return vect.size(); }
+    void setSize(unsigned sz);
     Value *buf()         { return vect.buf(); }
 
     void add(Value v);

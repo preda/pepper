@@ -64,7 +64,7 @@ class Pepper;
 class VM {
     GC *_gc;
     Pepper *_pepper;
-    Value stringMethods;
+    Value stringFields, arrayFields, mapFields;
     const Value constUps[N_CONST_UPS];
 
     void copyUpvals(Func *f, Value *regs);

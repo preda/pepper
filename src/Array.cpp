@@ -5,6 +5,7 @@
 #include "Value.h"
 #include "Object.h"
 #include "GC.h"
+#include "CFunc.h"
 #include <assert.h>
 
 Array::Array(int iniSize) : vect(iniSize) {
@@ -117,4 +118,29 @@ void Array::add(Value v) {
     } else {
         append((Array *) GET_OBJ(v)); // handles both MAP & ARRAY
     }
+}
+
+void Array::setSize(unsigned sz) {
+    vect.setSize(sz);
+}
+
+Value Array::sizeField(VM *vm, int op, void *data, Value *stack, int nArgs) {
+    if (op != CFunc::CFUNC_CALL) {
+        return VNIL;
+    }
+    assert(nArgs > 0);
+    Value v = stack[0];
+    if (!IS_ARRAY(v)) {
+        return VNIL;
+    }
+    Array *a = ARRAY(v);
+    unsigned sz = 0;
+    if (nArgs == 1) {
+        sz = a->size();
+    } else if (nArgs >= 2) {
+        if (!IS_NUM(stack[1])) { return VNIL; }
+        sz = (unsigned) GET_NUM(stack[1]);
+        a->setSize(sz);
+    }
+    return VAL_NUM(sz);
 }
