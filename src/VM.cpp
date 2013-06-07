@@ -28,11 +28,8 @@
   int ret = call(f, n, base, stack);\
   regs = (stack)->base + p1; base = (stack)->base + p2;\
   copyUpvals(activeFunc, regs);\
-  if (ret > 0 && IS_O_TYPE(f, O_FUNC)) {\
-  fprintf(stderr, "Error at bytecode #%d\n", ret-1);\
-  printFunc((Func *) GET_OBJ(f));\
-  } else if (ret) { fprintf(stderr, "Error %d\n", ret); }   \
-  ret; })
+  if (ret > 0 && IS_O_TYPE(f, O_FUNC)) { fprintf(stderr, "Error at bytecode #%d\n", ret-1); printFunc((Func *) GET_OBJ(f)); }\
+  else if (ret) { fprintf(stderr, "Error %d\n", ret); } ret; })
 
 #define STEP code=*pc++; ptrC=regs+OC(code); A=regs[OA(code)]; B=regs[OB(code)]; goto *dispatch[OP(code)];
 
@@ -102,16 +99,11 @@ static int setIndex(Value c, Value a, Value b) {
     if (IS_ARRAY(c)) {
         ARRAY(c)->setV(a, b);
     } else if (IS_MAP(c)) {
-        bool again = false;
-        MAP(c)->set(a, b, &again);
+        MAP(c)->set(a, b);
     } else {
         return IS_STRING(c) ? E_STRING_WRITE : E_NOT_INDEXABLE;
     }
     return 0;
-}
-
-static int setField(Value c, Value a, Value b) {
-    return setIndex(c, a, b);
 }
 
 static Value getSlice(GC *gc, Value a, Value b1, Value b2) {
@@ -320,26 +312,11 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
  SETI: if (setIndex(*ptrC, A, B)) { goto error; } STEP;
 
     // field, A.B
- GETF: while (true) {
-        if (IS_STRING(A)) {
-            A = stringFields;
-        } else if (IS_ARRAY(A)) {
-            A = arrayFields;
-        } else if (IS_MAP(A)) {
-            // A = mapFields;
-        } else {
-            *ptrC = getIndex(A, B);
-            break;
-        }
+ GETF: {
+        A = getMap(A);
         Map *map = MAP(A);
-        bool recurse = false;
-        Value v = map->get(B, &recurse);
-        if (!recurse) {
-            *ptrC = v;
-            break;
-        } else if (acceptsIndex(v)) {
-            A = v;
-        } else {
+        *ptrC = map->get(B);
+        /*
             const int oa = OA(code);
             const int ob = OB(code);
             int top = max(oa, ob) + 1;
@@ -352,13 +329,21 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
             DO_CALL(v, 2, regs, base, stack);
             regs[cPos] = base[0];
             break;
-        }
+            if (*ptrC == VERR) { goto error; }
+        */
     }
-    if (*ptrC == VERR) { goto error; }
     STEP;
 
- SETF: if (setField(*ptrC, A, B)) { goto error; } STEP;
-
+ SETF: { // C[A] = B
+        Value C = getMap(*ptrC);
+        assert(IS_MAP(C));
+        Map *map = MAP(C);
+        // Value old = map->get(A);
+        // if (IS_ARRAY(old) && ARRAY(old)->getI(0) == STATIC_STRING("_prpt")) { }
+        map->set(A, B);
+    }
+    STEP;
+        
  GETS: *ptrC = getSlice(_gc, A, B, regs[OB(code)+1]); if (*ptrC==VERR) { goto error; } STEP;
  SETS: if (setSlice(*ptrC, A, regs[OA(code)+1], B)) { goto error; } STEP;
 

@@ -71,6 +71,7 @@ class VM {
     Value *maybeGrowStack(Value *regs);
     Value getField(Value a, Value b);
     int call(Value fval, int nArg, Value *base, Stack *stack); // returns non-zero on error
+    Value getMap(Value v) { return IS_STRING(v) ? stringFields : IS_ARRAY(v) ? arrayFields : v; }
     
  public:
     VM(Pepper *pepper);

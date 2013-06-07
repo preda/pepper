@@ -53,6 +53,8 @@ union ValueUnion {
     };
 };
 
+#define STATIC_STRING(s) ({ ValueUnion u{chars:s}; u.tag = (short) (T_STR0 + sizeof(s) - 1); u.v;})
+
 inline Value VALUE_(short tag, int w) {
     ValueUnion u{tag:tag};
     u.w1 = w;

@@ -20,10 +20,7 @@ void Map::traverse(GC *gc) {
     gc->markValVect(keyBuf(), sz);
 }
 
-Map::Map() :
-    hasGet(false),
-    hasSet(false)
-{
+Map::Map() {
     ((Object *) this)->setType(O_MAP);
 }
 
@@ -76,36 +73,19 @@ Value Map::rawSet(Value key, Value val) {
     return IS_NIL(val) ? map.remove(key) : map.set(key, val);
 }
 
-Value Map::set(Value key, Value val, bool *again) {
-    *again = false;
-    if (key == String::__SET) {
-        hasSet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
-        return rawSet(key, val);
-    } else if (!hasSet || map.contains(key)) {
-        if (key == String::__GET) {
-            hasGet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
-        }
-        return rawSet(key, val);
-    } else {
-        *again = true;
-        return rawGet(String::__SET);
-    }
+Value Map::set(Value key, Value v) {
+    return rawSet(key, v);
 }
 
-Value Map::set(Value key, Value val) {
-    if (key == String::__SET) {
-        hasSet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
-    } else if (key == String::__GET) {
-        hasGet = IS_FUNC(val) || IS_CFUNC(val) || IS_MAP(val);
-    }
-    return rawSet(key, val);
-}
-
-Value Map::get(Value key, bool *recurse) {
+Value Map::get(Value key) {
     Value v = rawGet(key);
-    const bool rec = IS_NIL(v) && hasGet;
-    *recurse = rec;
-    return rec ? rawGet(String::__GET) : v;
+    if (IS_NIL(v)) {
+        Value super = rawGet(STATIC_STRING("super"));
+        if (IS_MAP(super)) {
+            v = MAP(super)->get(key);
+        }
+    }
+    return v;
 }
 
 void Map::add(Value v) {

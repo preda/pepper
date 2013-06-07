@@ -9,9 +9,8 @@ struct NameValue;
 
 class Map {
     SimpleMap map;
- public:
-    bool hasGet, hasSet;
 
+ private:
     Map();
     void grow();
     void set(Vector<Value> *keys, Vector<Value> *vals);
@@ -30,8 +29,7 @@ class Map {
     Value rawGet(Value key) { return map.get(key); }
     Value rawSet(Value key, Value val);
 
-    Value get(Value key, bool *again);
-    Value set(Value key, Value val, bool *again);
+    Value get(Value key);
     Value set(Value key, Value val);
         
     Map *copy(GC *gc);
