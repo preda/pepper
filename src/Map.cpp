@@ -42,6 +42,10 @@ Value Map::makeMap(GC *gc, ...) {
     return VAL_OBJ(m);
 }
 
+Value Map::keysField(VM *vm, int op, void *data, Value *stack, int nArgs) {
+    return VNIL;
+}
+
 bool Map::equals(Map *o) {
     const int sz = size();
     if (sz != o->size()) { return false; }
@@ -51,13 +55,51 @@ bool Map::equals(Map *o) {
     return true;
 }
 
-void Map::set(Vector<Value> *keys, Vector<Value> *vals) {
-    const int sz = keys->size();
-    assert(vals->size() == sz);
-    set(keys->buf(), vals->buf(), sz);
+Value Map::remove(Value key) {
+    const int pos = index.remove(key);
+    if (pos < 0) { 
+        return VNIL; 
+    } else {
+        Value val = vals.get(pos);
+        Value top = vals.pop();
+        if (pos < index.size()) {
+            vals.setDirect(pos, top);
+        }
+        return val;
+    }
 }
 
-void Map::set(Value *keys, Value *vals, int size) {
+Value Map::rawGet(Value key) {
+    const int pos = index.getPos(key);
+    return pos < 0 ? VNIL : vals.get(pos);
+}
+
+Value Map::rawSet(Value key, Value v) {
+    const int pos = index.add(key);
+    Value prev = VNIL;
+    if (pos >= 0) {
+        prev = vals.get(pos);
+        vals.setDirect(pos, v);
+    } else {
+        vals.push(v);
+    }
+    return prev;
+}
+
+/*
+Value Map::getOrAdd(Value key, Value v) {
+    const int pos = index.add(key);
+    return pos >= 0 ? vals.get(pos) : (vals.push(v), v);
+}
+*/
+
+void Map::setVectors(Vector<Value> *keys, Vector<Value> *vals) {
+    const int sz = keys->size();
+    assert(vals->size() == sz);
+    setArrays(keys->buf(), vals->buf(), sz);
+}
+
+void Map::setArrays(Value *keys, Value *vals, int size) {
     for (Value *pk=keys, *end=keys+size, *pv=vals; pk < end; ++pk, ++pv) {
         set(*pk, *pv);
     }
@@ -65,16 +107,12 @@ void Map::set(Value *keys, Value *vals, int size) {
 
 Map *Map::copy(GC *gc) {
     Map *m = alloc(gc, size());
-    m->set(keyBuf(), valBuf(), size());
+    m->setArrays(keyBuf(), valBuf(), size());
     return m;
 }
 
-Value Map::rawSet(Value key, Value val) {
-    return IS_NIL(val) ? map.remove(key) : map.set(key, val);
-}
-
 Value Map::set(Value key, Value v) {
-    return rawSet(key, v);
+    return IS_NIL(v) ? remove(key) : rawSet(key, v);
 }
 
 Value Map::get(Value key) {
@@ -91,5 +129,5 @@ Value Map::get(Value key) {
 void Map::add(Value v) {
     ERR(!(IS_MAP(v)), E_ADD_NOT_COLLECTION);
     Map *m = MAP(v);
-    set(m->keyBuf(), m->valBuf(), m->size());
+    setArrays(m->keyBuf(), m->valBuf(), m->size());
 }

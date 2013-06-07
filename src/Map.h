@@ -2,31 +2,36 @@
 
 #pragma once
 
-#include "SimpleMap.h"
+#include "value.h"
+#include "Vector.h"
+#include "Index.h"
 
 class GC;
 struct NameValue;
 
 class Map {
-    SimpleMap map;
+    Vector<Value> vals;
+    Index index;
 
- private:
     Map();
     void grow();
-    void set(Vector<Value> *keys, Vector<Value> *vals);
-    void set(Value *keys, Value *vals, int size);
-    bool set(Value key, Value v, bool overwrite);
-
+    
+    void setVectors(Vector<Value> *keys, Vector<Value> *vals);
+    void setArrays(Value *keys, Value *vals, int size);        
+    Value remove(Value key);            // returns previous value or NIL
+    bool contains(Value key) { return index.getPos(key) >= 0; }
+    
  public:
     static Map *alloc(GC *gc, unsigned sizeHint = 0);
     static Value makeMap(GC *gc, ...);
-
+    static Value keysField(VM *vm, int op, void *data, Value *stack, int nArgs);
+    
     ~Map();
 
-    int size() { return map.size(); }
+    int size() { return index.size(); }
     void traverse(GC *gc);
 
-    Value rawGet(Value key) { return map.get(key); }
+    Value rawGet(Value key);
     Value rawSet(Value key, Value val);
 
     Value get(Value key);
@@ -36,8 +41,9 @@ class Map {
     void add(Value v);
     bool equals(Map *o);
 
-    Value *keyBuf() { return map.keyBuf(); }
-    Value *valBuf() { return map.valBuf(); }
-
-    static Value keysField(VM *vm, int op, void *data, Value *stack, int nArgs) { return VNIL; }
+    Value *keyBuf() { return index.getBuf(); }
+    Value *valBuf() { return vals.buf(); }
 };
+
+// bool set(Value key, Value v, bool overwrite);
+// Value getOrAdd(Value key, Value v); // sets if not existing and returns get(key)
