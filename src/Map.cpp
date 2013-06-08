@@ -69,11 +69,6 @@ Value Map::remove(Value key) {
     }
 }
 
-Value Map::rawGet(Value key) {
-    const int pos = index.getPos(key);
-    return pos < 0 ? VNIL : vals.get(pos);
-}
-
 /*
 Value Map::getOrAdd(Value key, Value v) {
     const int pos = index.add(key);
@@ -112,9 +107,30 @@ Value Map::rawSet(Value key, Value v) {
 }
 
 Value Map::set(Value key, Value v) {
-    
-    
+    /*
+    int pos = getPos(key);
+    if (pos == -1) { // key not found
+        if (IS_NIL(v)) {
+            return VNIL;
+        } else {
+            return rawSet(key, v);
+        }
+    } else {
+        Value old = vals.get(pos);
+        if (IS_ARRAY(old)) {
+            Array *a = ARRAY(old);
+            if (a->size() > 0 && a->getI(0) == STATIC_STRING("_prop")) {
+                return old; // no set
+            }
+        }
+    }
+    */
     return IS_NIL(v) ? remove(key) : rawSet(key, v);
+}
+
+Value Map::rawGet(Value key) {
+    const int pos = index.getPos(key);
+    return pos < 0 ? VNIL : vals.get(pos);
 }
 
 Value Map::get(Value key) {
