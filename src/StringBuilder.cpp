@@ -58,7 +58,7 @@ void StringBuilder::append(double d) {
     if (d == (long long) d) {
         snprintf(tmp, sizeof(tmp), "%lld", (long long) d);
     } else {
-        snprintf(tmp, sizeof(tmp), "%f", d);
+        snprintf(tmp, sizeof(tmp), "%.17g", d);
     }
     append(tmp);
 }

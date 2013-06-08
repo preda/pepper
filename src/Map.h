@@ -18,7 +18,7 @@ class Map {
     
     void setVectors(Vector<Value> *keys, Vector<Value> *vals);
     void setArrays(Value *keys, Value *vals, int size);        
-    Value remove(Value key);            // returns previous value or NIL
+    Value remove(Value key); // returns previous value or NIL
     bool contains(Value key) { return index.getPos(key) >= 0; }
     
  public:

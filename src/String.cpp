@@ -3,6 +3,7 @@
 #include "Map.h"
 #include "CFunc.h"
 #include "GC.h"
+#include "StringBuilder.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -95,24 +96,10 @@ static Value stringConcat(GC *gc, Value a, char *pb, unsigned sb) {
     return v;
 }
 
-static void numberToString(Value a, char *out, int outSize) {
-    snprintf(out, outSize, "%.17g", GET_NUM(a));
-}
-
 Value String::concat(GC *gc, Value a, Value b) {
-    char buf[32];
-    int sb;
-    char *pb;    
-    if (IS_NUM(b)) {
-        numberToString(b, buf, sizeof(buf));
-        pb = buf;
-        sb = strlen(buf);
-    } else {
-        ERR(!IS_STRING(b), E_STR_ADD_TYPE);
-        pb = GET_CSTR(b);
-        sb = len(b);
-    }
-    return stringConcat(gc, a, pb, sb);
+    StringBuilder sb;
+    sb.append(b, true);
+    return stringConcat(gc, a, sb.cstr(), sb.size);
 }
 
 Value String::findField(VM *vm, int op, void *data, Value *stack, int nCallArg) {

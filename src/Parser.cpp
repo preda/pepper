@@ -405,7 +405,7 @@ Value Parser::arrayExpr(int top) {
                 emit(slot, MOVE, slot, arrayValue, UNUSED);
                 arrayValue = VAL_REG(slot);
             }
-            emit(top+1, SETF, slot, VAL_NUM(pos), elem);
+            emit(top+1, SETI, slot, VAL_NUM(pos), elem);
         } else {
             array->push(elem);
         }

@@ -74,18 +74,6 @@ Value Map::rawGet(Value key) {
     return pos < 0 ? VNIL : vals.get(pos);
 }
 
-Value Map::rawSet(Value key, Value v) {
-    const int pos = index.add(key);
-    Value prev = VNIL;
-    if (pos >= 0) {
-        prev = vals.get(pos);
-        vals.setDirect(pos, v);
-    } else {
-        vals.push(v);
-    }
-    return prev;
-}
-
 /*
 Value Map::getOrAdd(Value key, Value v) {
     const int pos = index.add(key);
@@ -111,7 +99,21 @@ Map *Map::copy(GC *gc) {
     return m;
 }
 
+Value Map::rawSet(Value key, Value v) {
+    const int pos = index.add(key);
+    Value prev = VNIL;
+    if (pos >= 0) {
+        prev = vals.get(pos);
+        vals.setDirect(pos, v);
+    } else {
+        vals.push(v);
+    }
+    return prev;
+}
+
 Value Map::set(Value key, Value v) {
+    
+    
     return IS_NIL(v) ? remove(key) : rawSet(key, v);
 }
 
