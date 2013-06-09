@@ -9,12 +9,14 @@
 #include "SymbolTable.h"
 #include "String.h"
 #include "CFunc.h"
+#include "Type.h"
 #include "builtin.h"
 #include <assert.h>
 #include <stdlib.h>
 
 Pepper::Pepper(void *context) :
     _gc(new GC()),
+    types(new Types(_gc)),
     vm(new VM(this)),
     _syms(SymbolTable::alloc(_gc)),
     _regs(Array::alloc(_gc))
@@ -46,10 +48,12 @@ return fn(name) {\
 }
 
 Pepper::~Pepper() {
-    delete _gc;
-    _gc = 0;
     delete vm;
     vm = 0;
+    delete types;
+    types = 0;
+    delete _gc;
+    _gc = 0;
     _syms = 0; // garbage collected
 }
 

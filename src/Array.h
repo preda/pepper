@@ -22,10 +22,10 @@ class Array {
     void traverse(GC *gc);
 
     Value getI(int pos);
-    Value getV(Value pos);
-
     void  setI(int pos, Value val);
-    void  setV(Value pos, Value v);
+    
+    Value indexGet(Value pos);
+    bool indexSet(Value pos, Value v);
 
     Value getSliceV(GC *gc, Value pos1, Value pos2);
     Value getSliceI(GC *gc, int pos1, int pos2);

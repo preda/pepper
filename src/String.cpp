@@ -41,9 +41,10 @@ String *String::alloc(GC *gc, const char *p, unsigned size) {
     return s;
 }
 
-Value String::get(Value s, Value p) {
+Value String::indexGet(Value s, Value p) {
     assert(IS_STRING(s));
-    ERR(!IS_NUM(p), E_INDEX_NOT_NUMBER);
+    // ERR(!IS_NUM(p), E_INDEX_NOT_NUMBER);
+    if (!IS_NUM(p)) { return VNIL; }
     s64 pos = (s64) GET_NUM(p);
     unsigned size = len(s);
     if (pos < 0) { pos += size; }

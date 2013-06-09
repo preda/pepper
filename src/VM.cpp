@@ -13,6 +13,7 @@
 #include "Stack.h"
 #include "Decompile.h"
 #include "Pepper.h"
+#include "Type.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -83,29 +84,6 @@ static Value doSHR(Value v, int shift) {
     return VAL_NUM(shift >= 32 ? 0 : ((unsigned)GET_NUM(v) >> shift));
 }
 
-static Value getIndex(Value a, Value key) {
-    return IS_ARRAY(a)  ? ARRAY(a)->getV(key) :
-        IS_STRING(a) ? String::get(a, key) :
-        IS_MAP(a)    ? MAP(a)->rawGet(key) :
-        VERR;
-    // E_NOT_INDEXABLE);
-}
-
-static bool acceptsIndex(Value v) {
-    return IS_MAP(v) || IS_ARRAY(v) || IS_STRING(v);
-}
-
-static int setIndex(Value c, Value a, Value b) {
-    if (IS_ARRAY(c)) {
-        ARRAY(c)->setV(a, b);
-    } else if (IS_MAP(c)) {
-        MAP(c)->set(a, b);
-    } else {
-        return IS_STRING(c) ? E_STRING_WRITE : E_NOT_INDEXABLE;
-    }
-    return 0;
-}
-
 static Value getSlice(GC *gc, Value a, Value b1, Value b2) {
     return 
         IS_ARRAY(a)  ? ARRAY(a)->getSliceV(gc, b1, b2) :
@@ -124,15 +102,10 @@ static int setSlice(Value c, Value a1, Value a2, Value b) {
 
 VM::VM(Pepper *pepper) :
     _gc(pepper->gc()),
+    types(pepper->types),
     _pepper(pepper),
     constUps{_gc->EMPTY_MAP, _gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
 {
-    stringFields = Map::makeMap(_gc, "find", CFunc::value(_gc, String::findField), NULL);
-    arrayFields  = Map::makeMap(_gc, "size", CFunc::value(_gc, Array::sizeField), NULL);
-    mapFields    = Map::makeMap(_gc, "keys", CFunc::value(_gc, Map::keysField),   NULL);
-    _gc->addRoot(GET_OBJ(stringFields));
-    _gc->addRoot(GET_OBJ(arrayFields));
-    _gc->addRoot(GET_OBJ(mapFields));
 }
 
 VM::~VM() {
@@ -308,41 +281,26 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     STEP;
 
     // index, A[B]
- GETI: *ptrC = getIndex(A, B); if (*ptrC == VERR) { goto error; } STEP;
- SETI: if (setIndex(*ptrC, A, B)) { goto error; } STEP;
-
-    // field, A.B
- GETF: {
-        A = getMap(A);
-        Map *map = MAP(A);
-        *ptrC = map->get(B);
-        /*
-            const int oa = OA(code);
-            const int ob = OB(code);
-            int top = max(oa, ob) + 1;
-            top = max(top, activeFunc->proto->localsTop);
-            Value *base = regs + top;
-            printf("top %d\n", top);
-            base[0] = A;
-            base[1] = B;
-            int cPos = ptrC - regs;
-            DO_CALL(v, 2, regs, base, stack);
-            regs[cPos] = base[0];
-            break;
-            if (*ptrC == VERR) { goto error; }
-        */
-    }
-    STEP;
-
- SETF: { // C[A] = B
-        Value C = getMap(*ptrC);
-        assert(IS_MAP(C));
-        Map *map = MAP(C);
-        // Value old = map->get(A);
-        // if (IS_ARRAY(old) && ARRAY(old)->getI(0) == STATIC_STRING("_prpt")) { }
-        map->set(A, B);
-    }
-    STEP;
+ GETI: *ptrC = types->type(A)->indexGet(A, B); if (*ptrC == VERR) { goto error; } STEP;
+ GETF: *ptrC = types->type(A)->fieldGet(A, B); if (*ptrC == VERR) { goto error; } STEP;
+    
+ SETI: if (!types->type(*ptrC)->indexSet(*ptrC, A, B)) { goto error; } STEP;
+ SETF: if (!types->type(*ptrC)->fieldSet(*ptrC, A, B)) { goto error; } STEP;
+    /*
+      const int oa = OA(code);
+      const int ob = OB(code);
+      int top = max(oa, ob) + 1;
+      top = max(top, activeFunc->proto->localsTop);
+      Value *base = regs + top;
+      printf("top %d\n", top);
+      base[0] = A;
+      base[1] = B;
+      int cPos = ptrC - regs;
+      DO_CALL(v, 2, regs, base, stack);
+      regs[cPos] = base[0];
+      break;
+      if (*ptrC == VERR) { goto error; }
+    */
         
  GETS: *ptrC = getSlice(_gc, A, B, regs[OB(code)+1]); if (*ptrC==VERR) { goto error; } STEP;
  SETS: if (setSlice(*ptrC, A, regs[OA(code)+1], B)) { goto error; } STEP;

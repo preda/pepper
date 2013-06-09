@@ -9,10 +9,15 @@ class VM;
 class Func;
 class SymbolTable;
 class Array;
+class Types;
 
 class Pepper {
+ public:
     GC *_gc;
+    Types *types;
     VM *vm;
+    
+ private:
     SymbolTable *_syms;
     Array *_regs;
 

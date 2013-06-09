@@ -63,14 +63,17 @@ void Array::setI(int pos, Value v) {
     vect.setExtend(pos, v);
 }
 
-Value Array::getV(Value pos) {
-    ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
-    return getI(GET_NUM(pos));
+Value Array::indexGet(Value pos) {
+    return IS_NUM(pos) ? getI(GET_NUM(pos)) : VERR;
 }
 
-void Array::setV(Value pos, Value v) {
-    ERR(!IS_NUM(pos), E_INDEX_NOT_NUMBER);
-    setI(GET_NUM(pos), v); 
+bool Array::indexSet(Value pos, Value v) {
+    if (IS_NUM(pos)) {
+        setI(GET_NUM(pos), v);
+        return true;
+    } else {
+        return false;
+    }
 }
 
 Value Array::getSliceI(GC *gc, int pos1, int pos2) {

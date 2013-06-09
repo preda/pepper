@@ -22,7 +22,7 @@ class String {
     static String *alloc(GC *gc, unsigned size);
     static unsigned hashCode(char *buf, int size);
     static Value concat(GC *gc, Value a, Value b);
-    static Value get(Value a, Value pos);
+    static Value indexGet(Value a, Value pos);
     static Value getSlice(GC *gc, Value a, Value pos1, Value pos2);
     
     char s[0];

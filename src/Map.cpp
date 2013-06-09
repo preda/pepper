@@ -36,7 +36,7 @@ Value Map::makeMap(GC *gc, ...) {
         if (!name) { break; }
         // fprintf(stderr, "%s\n", name);
         Value v = va_arg(ap, Value);
-        m->rawSet(String::value(gc, name), v);
+        m->indexSet(String::value(gc, name), v);
     }
     va_end(ap);
     return VAL_OBJ(m);
@@ -50,7 +50,7 @@ bool Map::equals(Map *o) {
     const int sz = size();
     if (sz != o->size()) { return false; }
     for (Value *pk = keyBuf(), *end=pk+sz, *pv=valBuf(); pk < end; ++pk, ++pv) {
-        if (!::equals(*pv, o->rawGet(*pk))) { return false; }
+        if (!::equals(*pv, o->indexGet(*pk))) { return false; }
     }
     return true;
 }
@@ -84,7 +84,7 @@ void Map::setVectors(Vector<Value> *keys, Vector<Value> *vals) {
 
 void Map::setArrays(Value *keys, Value *vals, int size) {
     for (Value *pk=keys, *end=keys+size, *pv=vals; pk < end; ++pk, ++pv) {
-        set(*pk, *pv);
+        indexSet(*pk, *pv);
     }
 }
 
@@ -94,54 +94,23 @@ Map *Map::copy(GC *gc) {
     return m;
 }
 
-Value Map::rawSet(Value key, Value v) {
-    const int pos = index.add(key);
-    Value prev = VNIL;
-    if (pos >= 0) {
-        prev = vals.get(pos);
-        vals.setDirect(pos, v);
+bool Map::indexSet(Value key, Value v) {
+    if (IS_NIL(v)) {
+        remove(key);
     } else {
-        vals.push(v);
-    }
-    return prev;
-}
-
-Value Map::set(Value key, Value v) {
-    /*
-    int pos = getPos(key);
-    if (pos == -1) { // key not found
-        if (IS_NIL(v)) {
-            return VNIL;
+        const int pos = index.add(key);
+        if (pos >= 0) {
+            vals.setDirect(pos, v);
         } else {
-            return rawSet(key, v);
-        }
-    } else {
-        Value old = vals.get(pos);
-        if (IS_ARRAY(old)) {
-            Array *a = ARRAY(old);
-            if (a->size() > 0 && a->getI(0) == STATIC_STRING("_prop")) {
-                return old; // no set
-            }
+            vals.push(v);
         }
     }
-    */
-    return IS_NIL(v) ? remove(key) : rawSet(key, v);
+    return true;
 }
 
-Value Map::rawGet(Value key) {
+Value Map::indexGet(Value key) {
     const int pos = index.getPos(key);
     return pos < 0 ? VNIL : vals.get(pos);
-}
-
-Value Map::get(Value key) {
-    Value v = rawGet(key);
-    if (IS_NIL(v)) {
-        Value super = rawGet(STATIC_STRING("super"));
-        if (IS_MAP(super)) {
-            v = MAP(super)->get(key);
-        }
-    }
-    return v;
 }
 
 void Map::add(Value v) {

@@ -31,12 +31,9 @@ class Map {
     int size() { return index.size(); }
     void traverse(GC *gc);
 
-    Value rawGet(Value key);
-    Value rawSet(Value key, Value val);
+    Value indexGet(Value key);
+    bool indexSet(Value key, Value val);
 
-    Value get(Value key);
-    Value set(Value key, Value val);
-        
     Map *copy(GC *gc);
     void add(Value v);
     bool equals(Map *o);
@@ -44,6 +41,3 @@ class Map {
     Value *keyBuf() { return index.getBuf(); }
     Value *valBuf() { return vals.buf(); }
 };
-
-// bool set(Value key, Value v, bool overwrite);
-// Value getOrAdd(Value key, Value v); // sets if not existing and returns get(key)
