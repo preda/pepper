@@ -141,7 +141,7 @@ Value Type::fieldGet(Value self, Value key) {
         Value get = type(v)->indexGet(v, VAL_NUM(1));
         Type *p = type(get);
         if (p->hasCall()) {
-            v = p->call(get, 3, self, v, key);
+            v = p->call(get, 3, self, key, v);
         }
     }
     return v;
@@ -153,7 +153,7 @@ bool Type::fieldSet(Value self, Value key, Value v) {
         Value set = type(old)->indexGet(old, VAL_NUM(2));
         Type *p = type(set);
         if (p->hasCall()) {
-            v = p->call(set, 4, self, old, key, v);
+            v = p->call(set, 4, self, key, v, old);
             return true;
         }
         return false;

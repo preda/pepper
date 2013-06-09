@@ -77,7 +77,7 @@ class VM {
     VM(Pepper *pepper);
     ~VM();
 
-    Value run(Func *f, int nArg, Value *args);
+    Value run(Value fv, int nArg, Value *args);
     GC *gc() { return _gc; }
     Pepper *pepper() { return _pepper; }
 };

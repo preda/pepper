@@ -143,23 +143,24 @@ bool lessThan(Value a, Value b) {
 }
 
 void VM::copyUpvals(Func *f, Value *regs) {
-    unsigned nUp = f->proto->nUp();
-    // assert(sizeof(constUps) == N_CONST_UPS * sizeof(Value));
-    if (nUp) {
-        memcpy(regs + (256 - N_CONST_UPS - nUp), f->ups, nUp * sizeof(Value));
+    if (f) {
+        unsigned nUp = f->proto->nUp();
+        if (nUp) {
+            memcpy(regs + (256 - N_CONST_UPS - nUp), f->ups, nUp * sizeof(Value));
+        }
+        memcpy(regs + (256 - N_CONST_UPS), constUps, N_CONST_UPS * sizeof(Value));
     }
-    memcpy(regs + (256 - N_CONST_UPS), constUps, N_CONST_UPS * sizeof(Value));
 }
 
-Value VM::run(Func *activeFunc, int nArg, Value *args) {
+Value VM::run(Value fv, int nArg, Value *args) {
     static const int nExtra = 1;
     Stack stack;
     Value *regs = stack.maybeGrow(0, nArg + nExtra + 1);
-    regs[0] = VAL_OBJ(activeFunc);
+    regs[0] = fv;
     Value *base = regs + nExtra;
     base[0] = VNIL;
     memcpy(base+1, args, nArg * sizeof(Value));
-    Value fv = VAL_OBJ(activeFunc);
+    Func *activeFunc = 0; // no active func
     int err = DO_CALL(fv, nArg, regs, base, &stack);    
     return !err ? base[0] : VNIL;
 }
@@ -231,16 +232,6 @@ int VM::call(Value A, int nEffArgs, Value *regs, Stack *stack) {
     Value *ptrC;
     Func *activeFunc = (Func *) GET_OBJ(A);
     unsigned *pc = (unsigned *) activeFunc->proto->code.buf();
-
-    /*
-    if (int err = setjmp(jumpBuf)) {
-        (void) err;
-        printf("at %d op %x\n", (int) (pc - activeFunc->proto->code.buf() - 1), code);
-        printFunc(activeFunc);
-        __builtin_abort();
-        return;
-    }
-    */
 
     static void *dispatch[] = {
 #define _(name) &&name

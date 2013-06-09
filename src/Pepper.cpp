@@ -62,7 +62,7 @@ Value *Pepper::regs() {
 }
 
 Value Pepper::run(Func *f, int nArg, Value *args) {
-    return vm->run(f, nArg, args);
+    return vm->run(VAL_OBJ(f), nArg, args);
 }
 
 Func *Pepper::parseFunc(const char *text) {
