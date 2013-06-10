@@ -14,9 +14,9 @@ class Types;
 class Pepper {
  public:
     GC *_gc;
-    Types *types;
     VM *vm;
-    
+    Types *types;
+
  private:
     SymbolTable *_syms;
     Array *_regs;

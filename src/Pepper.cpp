@@ -16,11 +16,12 @@
 
 Pepper::Pepper(void *context) :
     _gc(new GC()),
-    types(new Types(_gc)),
     vm(new VM(this)),
+    types(new Types(vm)),
     _syms(SymbolTable::alloc(_gc)),
     _regs(Array::alloc(_gc))
 {
+    vm->types = types;
     assert(sizeof(Array) == 2 * sizeof(long));
     _gc->addRoot((Object *) _syms);
     _gc->addRoot((Object *) _regs);

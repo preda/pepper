@@ -30,7 +30,7 @@ Value builtinFileRead(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
                     if (n < (int)sizeof(buf)) { break; }
                 }
                 fclose(fi);
-                return String::value(vm->gc(), chars.buf(), chars.size());
+                return String::value(vm->gc, chars.buf(), chars.size());
             }
         }    
     }
@@ -53,7 +53,7 @@ Value builtinType(VM *vm, int op, void *data, Value *stack, int nCallArgs) {
     assert(op == CFunc::CFUNC_CALL && !data);
     assert(nCallArgs > 0);
     if (nCallArgs < 2) { return VNIL; }
-    return String::value(vm->gc(), typeStr(stack[1]));
+    return String::value(vm->gc, typeStr(stack[1]));
 }
 
 static Value builtinParse(VM *vm, int op, void *data, Value *stack, int nCallArg, bool isFunc) {

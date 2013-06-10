@@ -6,16 +6,18 @@
 
 class GC;
 class Type;
+class VM;
 
 class Types {
     Type
         *stringType,
         *arrayType,
         *mapType,
+        *functionType,
         *defaultType;
         
  public:
-    Types(GC *gc);
+    Types(VM *vm);
     ~Types();
 
     Type *type(Value v);
@@ -46,7 +48,17 @@ class Type {
     virtual Value fieldGet(Value self, Value key);
     virtual bool  fieldSet(Value self, Value key, Value v);
     
-    virtual Value call(Value self, int nArgs, ...);
+    virtual Value call(Value self, int nArgs, Value *args);
+};
+
+class FunctionType : public Type {
+    VM *vm;
+    
+ public:
+    FunctionType(Types *types, VM *vm);
+
+    bool hasCall() { return true; }
+    Value call(Value self, int nArgs, Value *args);
 };
 
 class StringType : public Type {
@@ -81,13 +93,4 @@ class MapType : public Type {
     bool indexSet(Value self, Value key, Value v);
 
     bool hasIndexSet() { return true; }    
-};
-
-class FunctionType : public Type {
- public:
-    FunctionType(Types *types, GC *gc);
-    
-    Value call(Value self, int nArgs, ...);
-
-    bool hasCall() { return true; }
 };

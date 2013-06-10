@@ -63,8 +63,11 @@ class Pepper;
 class Types;
 
 class VM {
-    GC *_gc;
+ public:
+    GC *gc;
     Types *types;
+    
+ private:
     Pepper *_pepper;
     const Value constUps[N_CONST_UPS];
 
@@ -78,6 +81,5 @@ class VM {
     ~VM();
 
     Value run(Value fv, int nArg, Value *args);
-    GC *gc() { return _gc; }
     Pepper *pepper() { return _pepper; }
 };

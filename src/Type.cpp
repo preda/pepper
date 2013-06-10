@@ -6,13 +6,15 @@
 #include "GC.h"
 #include "CFunc.h"
 #include "Object.h"
+#include "VM.h"
 
 #include <unistd.h>
 
-Types::Types(GC *gc) :
-    stringType(new StringType(this, gc)),
-    arrayType(new ArrayType(this, gc)),
-    mapType(new MapType(this, gc)),
+Types::Types(VM *vm) :
+    stringType(new StringType(this, vm->gc)),
+    arrayType(new ArrayType(this, vm->gc)),
+    mapType(new MapType(this, vm->gc)),
+    functionType(new FunctionType(this, vm)),
     defaultType(new Type(this))
 {
 }
@@ -21,6 +23,7 @@ Types::~Types() {
     delete stringType;
     delete arrayType;
     delete mapType;
+    delete functionType;
     delete defaultType;
 }
 
@@ -32,11 +35,11 @@ Type *Types::type(Value v) {
         return arrayType;
     } else if (IS_MAP(v)) {
         return mapType;
+    } else if (IS_FUNC(v) || IS_CFUNC(v) || IS_CF(v)) {
+        return functionType;
     } else {
         return defaultType;
     }
-    // todo: CF, FUNC, CFUNC
-    
 }
 
 // -- String --
@@ -84,6 +87,18 @@ bool MapType::indexSet(Value self, Value key, Value v) {
     return MAP(self)->indexSet(key, v);
 }
 
+// -- FunctionType --
+
+FunctionType::FunctionType(Types *types, VM *vm) :
+    Type(types),
+    vm(vm)
+{
+}
+
+Value FunctionType::call(Value self, int nArgs, Value *args) {
+    return vm->run(self, nArgs, args);
+}
+
 // -- Type --
 
 Type::Type(Types *types) :
@@ -105,7 +120,7 @@ bool Type::hasFieldSet() { return hasIndexSet(); }
 bool Type::hasFieldGet() { return hasIndexGet(); }
 bool Type::hasCall()     { return false; }
 
-Value Type::call(Value self, int nArgs, ...) {
+Value Type::call(Value self, int nArgs, Value *args) {
     return VERR;
 }
 
@@ -141,7 +156,8 @@ Value Type::fieldGet(Value self, Value key) {
         Value get = type(v)->indexGet(v, VAL_NUM(1));
         Type *p = type(get);
         if (p->hasCall()) {
-            v = p->call(get, 3, self, key, v);
+            Value args[] = {self, key, v};
+            v = p->call(get, 3, args);
         }
     }
     return v;
@@ -153,7 +169,8 @@ bool Type::fieldSet(Value self, Value key, Value v) {
         Value set = type(old)->indexGet(old, VAL_NUM(2));
         Type *p = type(set);
         if (p->hasCall()) {
-            v = p->call(set, 4, self, key, v, old);
+            Value args[] = {self, key, v, old};
+            v = p->call(set, 4, args);
             return true;
         }
         return false;
