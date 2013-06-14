@@ -350,6 +350,7 @@ CALL: {
     }
  MOVE_R: *ptrC = A; STEP;
  MOVE_I: *ptrC = VAL_NUM(OD(code)); STEP;
+ MOVE_V: *ptrC = constUps[OA(code)]; STEP;
  MOVE_C: {
         Value v = *pc | (((u64) *(pc+1)) << 32);
         pc += 2;

@@ -15,9 +15,10 @@ _(SETF),   // field set, C.A=B
 _(GETS),   // slice get C=A[B:B+1]
 _(SETS),   // slice set C[A:A+1]=B
 _(MOVEUP), // C dest, A is src
-_(MOVE_R), // C dest, A is src
-_(MOVE_I), // D is int src
-_(MOVE_C),
+_(MOVE_R), // C = A
+_(MOVE_I), // C = integer(D)
+_(MOVE_C), // C = inline value
+_(MOVE_V), // C = special const
 
 _(LEN),
 _(NOTL),
