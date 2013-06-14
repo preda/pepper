@@ -104,7 +104,9 @@ VM::VM(Pepper *pepper) :
     gc(pepper->gc()),
     types(0),
     _pepper(pepper),
-    constUps{gc->EMPTY_MAP, gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL}
+    constUps{gc->EMPTY_MAP, gc->EMPTY_ARRAY, EMPTY_STRING, VAL_NUM(-1), ONE, ZERO, VNIL},
+    emptyArray(ARRAY(gc->EMPTY_ARRAY)),
+    emptyMap(MAP(gc->EMPTY_MAP))
 {
 }
 
@@ -348,9 +350,19 @@ CALL: {
         const int slot = regs + 256 - ptrC;
         activeFunc->setUp(slot, A);
     }
+    
  MOVE_R: *ptrC = A; STEP;
  MOVE_I: *ptrC = VAL_NUM(OD(code)); STEP;
- MOVE_V: *ptrC = constUps[OA(code)]; STEP;
+ MOVE_V: {
+        int id = OA(code);
+        *ptrC =
+            id == CONST_NIL          ? VNIL :
+            id == CONST_EMPTY_STRING ? EMPTY_STRING :
+            id == CONST_EMPTY_ARRAY  ? VAL_OBJ(emptyArray->copy(gc)) :
+            VAL_OBJ(emptyMap->copy(gc));
+        STEP;
+    }
+    
  MOVE_C: {
         Value v = *pc | (((u64) *(pc+1)) << 32);
         pc += 2;

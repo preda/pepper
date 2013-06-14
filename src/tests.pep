@@ -1,4 +1,5 @@
 tests1 := [
+    ["return []", []],
     ["a := '[foo]' return a", 'foo'],
     ["b := 1 return b + 3", 4],
     ["return 13", 13],

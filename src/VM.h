@@ -6,6 +6,13 @@
 
 #define N_CONST_UPS (7)
 
+enum {
+    CONST_NIL = 0,
+    CONST_EMPTY_STRING = 1,
+    CONST_EMPTY_ARRAY  = 2,
+    CONST_EMPTY_MAP    = 3,
+};
+
 Value doAdd(GC *gc, Value a, Value b);
 Value doMod(Value a, Value b);
 Value doPow(Value a, Value b);
@@ -61,6 +68,8 @@ bool opcodeHasDest(int opcode);
 class Stack;
 class Pepper;
 class Types;
+class Map;
+class Array;
 
 class VM {
  public:
@@ -70,6 +79,8 @@ class VM {
  private:
     Pepper *_pepper;
     const Value constUps[N_CONST_UPS];
+    Array *emptyArray;
+    Map *emptyMap;
 
     void copyUpvals(Func *f, Value *regs);
     Value *maybeGrowStack(Value *regs);

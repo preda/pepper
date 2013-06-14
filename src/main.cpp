@@ -91,6 +91,7 @@ int main(int argc, char **argv) {
     GC *gc = pepper->gc();
 
 T tests[] = {
+    // T("return []", VNIL),
     T("a := '[foo]' return a == 'foo'", TRUE),
     T("foobarbar := '====[tralala\"']====' return foobarbar == '[tralala\"']'", TRUE),
     T("f := parse.block('return 3') return f()", VAL_NUM(3)),
@@ -192,7 +193,7 @@ T tests[] = {
     T("a:=2 return nil ? 1 : a ? 3 : 4", VAL_NUM(3)),
     
     // is, not is
-    T("return {} === {}", TRUE),
+    T("return {} === {}", FALSE),
     T("a:={} b:={} return a===b", FALSE),
     T("return \"a\" === \"a\"", TRUE),
     T("return \"foofoobar\" === \"foofoobar\"", FALSE),
@@ -282,7 +283,7 @@ T tests[] = {
     T("print('import:', import) for i:=0:2 { f:=import('testimp') print('f:', i, f, f?f(i + 1):'*')} return import('testimp')()", VAL_NUM(100)),
     T("m:={a=2,b=3} m2:={}+m m2.a=nil return #m2", VAL_NUM(1)),
     T("a:=2 b:=[a] return b[0]", VAL_NUM(2)),
-
+    T("a:=[[]] a[1]=[] a[1][0]=2 b:=[] return b[0]", VNIL),
     // T("a:={foo=['_prop', fn(key, prop){ print(this, key, prop) return '_'+key}, fn(key, v, prop){ }]} print(a.foo)", VNIL),
 };
 

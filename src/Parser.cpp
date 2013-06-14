@@ -825,16 +825,23 @@ void Parser::emitJump(int pos, int op, Value a, int to) {
 }
 
 void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
-    if (a == gc->EMPTY_ARRAY || a == gc->EMPTY_MAP) {
-        if (op == MOVE) {
-            assert(b == UNUSED);
-            op = ADD;
-            b = a;
-        } else if (op == RET) {
-            assert(b == UNUSED);
-            emit(top, ADD, top, a, a);
-            a = VAL_REG(top);
-        }
+    if (a == gc->EMPTY_ARRAY) {
+        emitCode(top, MOVE_V, top, VAL_REG(CONST_EMPTY_ARRAY), UNUSED);
+        a = VAL_REG(top);
+        ++top;
+    } else if (a == gc->EMPTY_MAP) {
+        emitCode(top, MOVE_V, top, VAL_REG(CONST_EMPTY_MAP),   UNUSED);
+        a = VAL_REG(top);
+        ++top;
+    }
+    if (b == gc->EMPTY_ARRAY) {
+        emitCode(top, MOVE_V, top, VAL_REG(CONST_EMPTY_ARRAY), UNUSED);
+        b = VAL_REG(top);
+        ++top;
+    } else if (b == gc->EMPTY_MAP) {
+        emitCode(top, MOVE_V, top, VAL_REG(CONST_EMPTY_MAP),   UNUSED);
+        b = VAL_REG(top);
+        ++top;
     }
     
     if ((op == SETI || op == SETF) && (dest == UP_EMPTY_ARRAY || dest == UP_EMPTY_MAP)) {
