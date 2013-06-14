@@ -198,6 +198,7 @@ void Parser::exprOrAssignStat() {
 
 void Parser::forStat() {
     consume(TK_for);
+    syms->enterBlock(false);    
     CERR(TOKEN != TK_NAME, E_FOR_NAME, VNIL);
     Value name = lexer->info.name;
     int slot = proto->localsTop++;
@@ -212,10 +213,11 @@ void Parser::forStat() {
     int pos2 = HERE;
     syms->set(name, slot);
     proto->localsTop++;
-    block();
+    insideBlock();
     //TODO assert proto->localsTop reverted
     emitJump(HERE, LOOP, VAL_REG(slot), pos2);
     emitJump(pos1, FOR,  VAL_REG(slot), HERE);
+    syms->exitBlock(false);
 }
 
 void Parser::whileStat() {
@@ -844,11 +846,8 @@ void Parser::emit(unsigned top, int op, int dest, Value a, Value b) {
         ++top;
     }
     
-    if ((op == SETI || op == SETF) && (dest == UP_EMPTY_ARRAY || dest == UP_EMPTY_MAP)) {
-        assert(op == SETI);
-        proto->patchPos = -1;
-        return;
-    }
+    // if (op == MOVE && isShortInt(a) && 
+    
     a = mapSpecialConsts(a);
     if (op != CALL && op != SHL && op != SHR) {
         b = mapSpecialConsts(b);

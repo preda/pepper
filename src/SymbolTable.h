@@ -8,6 +8,11 @@
 class GC;
 class Array;
 
+struct BlockInfo {
+    int start;
+    int nConsts;
+};
+
 // Object
 class SymbolTable {
     Vector<Value> names;

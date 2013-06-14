@@ -284,6 +284,7 @@ T tests[] = {
     T("m:={a=2,b=3} m2:={}+m m2.a=nil return #m2", VAL_NUM(1)),
     T("a:=2 b:=[a] return b[0]", VAL_NUM(2)),
     T("a:=[[]] a[1]=[] a[1][0]=2 b:=[] return b[0]", VNIL),
+    T("a:=0 b:=0 for b:=1:3 { a = a + 2 } return b", ZERO),
     // T("a:={foo=['_prop', fn(key, prop){ print(this, key, prop) return '_'+key}, fn(key, v, prop){ }]} print(a.foo)", VNIL),
 };
 
