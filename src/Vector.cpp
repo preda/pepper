@@ -103,3 +103,4 @@ template class Vector<int>;
 template class Vector<Object*>;
 template class Vector<Value>;
 template class Vector<RetInfo>;
+template class Vector<BlockInfo>;

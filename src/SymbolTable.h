@@ -9,7 +9,14 @@ class GC;
 class Array;
 
 struct BlockInfo {
+BlockInfo(int start) :
+    start(start), localsTop(0), nConsts(0) {}
+    
+BlockInfo(int start, BlockInfo *base) :
+    start(start), localsTop(base->localsTop), nConsts(base->nConsts) {}
+    
     int start;
+    int localsTop;
     int nConsts;
 };
 
@@ -17,7 +24,7 @@ struct BlockInfo {
 class SymbolTable {
     Vector<Value> names;
     Vector<int> protos;
-    Vector<int> starts;
+    Vector<BlockInfo> starts;
     Vector<int> slots;
 
     SymbolTable();
@@ -39,6 +46,7 @@ class SymbolTable {
     int protoLevel() { return protos.size() - 1; }
     int blockLevel() { return starts.size() - 1; }
     bool definedInThisBlock(Value name);
+    int localsTop();
     
     void add(GC *gc, Array *regs, const char *name, Value v);
 };
