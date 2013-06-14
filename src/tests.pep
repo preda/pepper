@@ -2,7 +2,7 @@ tests1 := [
     ["a := '[foo]' return a", 'foo'],
     ["b := 1 return b + 3", 4],
     ["return 13", 13],
-    ['fn f(a) { a:=2 { a:=3 { return a + 1 }}} return f(5)', 4],
+    ['fn f(a) { a=2 { a:=3 { return a + 1 }}} return f(5)', 4],
     ['return [1]', [1]],
     ['a:=2 return [a]', [2]],
     ['a:=2 b:=[a] return b[0]', 2],

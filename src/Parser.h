@@ -19,7 +19,6 @@ class Parser {
     ~Parser();
     
     int createUpval(Proto *proto, int protoLevel, Value name, int level, int slot);
-    int lookupName(Value name);
     int lookupSlot(Value name);
 
     int  emitHole();

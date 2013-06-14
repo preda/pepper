@@ -205,16 +205,6 @@ void Parser::forStat() {
     consume(':'+TK_EQUAL);
     Value a = expr(slot+2);
     patchOrEmitMove(slot+2, slot+2, a);
-    /*
-    if (!IS_REG(a)) {
-        ERR(!IS_INT(a), E_FOR_NOT_INT);
-        s64 va = getInteger(a);
-        if (va < -1 || va > 1) {
-            emit(slot+2, MOVE, slot+2, a, UNUSED);
-            a = VAL_REG(slot+2);
-        }
-    }
-    */
     consume(':');
     Value b = expr(slot+3);
     patchOrEmitMove(slot+3, slot+1, b);
@@ -266,41 +256,21 @@ void Parser::ifStat() {
     }
 }
 
-void Parser::varStat() {
+void Parser::varStat() { // name := expr
     CERR(TOKEN != TK_NAME, E_VAR_NAME, VNIL);
     Value name = lexer->info.name;
     advance();
-    int top = proto->localsTop;
-    Value a = VNIL;
-    int aSlot = -1;
-    if (TOKEN == '=' || TOKEN == ':'+TK_EQUAL) {
-        advance();
-        a = expr(top);
-        Value s = syms->get(name);
-        int level = s & 0xff;
-        int slot  = s >> 8;
-        if (!IS_NIL(s) && level == syms->curLevel() && slot >= 0) {
-            aSlot = slot; // reuse existing local with same name
-        }
+    consume(':'+TK_EQUAL); 
+    if (syms->definedInThisBlock(name)) {
+        CERR(true, E_VAR_REDEFINITION, name);
+        // aSlot = slot; // reuse existing local with same name
+    } else {
+        const Value a = expr(proto->localsTop);
+        const int slot = proto->localsTop++;
+        syms->set(name, slot);
+        patchOrEmitMove(proto->localsTop+1, slot, a);
+        proto->patchPos = -1;
     }
-    /* else {
-        Value s = lookupName(name);
-        if (!IS_NIL(s)) {
-            int slot = s >> 8;
-            if (slot < 0) {
-                a = VAL_REG(slot); // init from upval with same name
-            } else {
-                return; // reuse existing local unchanged
-            }
-        }
-    }
-    */
-    if (aSlot < 0) {
-        aSlot = proto->localsTop++;
-        syms->set(name, aSlot);
-    }
-    patchOrEmitMove(proto->localsTop+1, aSlot, a);
-    proto->patchPos = -1;
 }
 
 static bool isUnaryOp(int token) {
@@ -318,33 +288,17 @@ int Parser::createUpval(Proto *proto, int protoLevel, Value name, int fromLevel,
     return protoSlot;
 }
 
-int Parser::lookupName(Value name) {
-    Value s = syms->get(name);
-    if (IS_NIL(s)) {
-        return 256; //marker not found
-    }
-    int v = (int) s;
-    int fromLevel = v & 0xff;
-    int fromSlot  = v >> 8;
-    const int curLevel = syms->curLevel();
-    assert(fromLevel <= curLevel);
-    if (fromLevel < curLevel) {
-        fromSlot = createUpval(proto, curLevel, name, fromLevel, fromSlot);
-    }
-    assert(fromSlot < proto->localsTop);
-    return fromSlot;
-}
+int Parser::lookupSlot(Value name) {
+    int slot, protoLevel;
+    bool found = syms->get(name, &slot, &protoLevel, 0);
+    CERR(!found, E_NAME_NOT_FOUND, name);
 
-int Parser::lookupSlot(Value name) {    
-    int slot = lookupName(name);
-    /*
-    if (slot == 256) {
-        const char *nameStr = GET_CSTR(name);
-        fprintf(stderr, "Undefined '%s'\nLine #%d : %d '%s'\n",
-                nameStr, lexer->lineNumber + 1, (int)(lexer->p - line), buf);
+    const int curProtoLevel = syms->protoLevel();
+    assert(protoLevel <= curProtoLevel);
+    if (protoLevel < curProtoLevel) {
+        slot = createUpval(proto, curProtoLevel, name, protoLevel, slot);
     }
-    */
-    CERR(slot == 256, E_NAME_NOT_FOUND, name);
+    assert(slot < proto->localsTop);
     return slot;
 }
 

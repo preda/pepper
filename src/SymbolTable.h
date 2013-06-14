@@ -16,7 +16,8 @@ class SymbolTable {
     Vector<int> slots;
 
     SymbolTable();
-    int getLevel(int pos);
+    int getProtoLevel(int pos);
+    int getBlockLevel(int pos);
     int findPos(Value name);
 
  public:
@@ -27,10 +28,12 @@ class SymbolTable {
     void enterBlock(bool isProto);
     void exitBlock(bool isProto);
     
-    Value get(Value name);
+    bool get(Value name, int *slot, int *protoLevel, int *blockLevel);
     void set(Value name, int slot);
-    void setUpval(Value name, int slot, int level);
-    int curLevel() { return protos.size() - 1; }
-
+    void setUpval(Value name, int slot, int protoLevel);
+    int protoLevel() { return protos.size() - 1; }
+    int blockLevel() { return starts.size() - 1; }
+    bool definedInThisBlock(Value name);
+    
     void add(GC *gc, Array *regs, const char *name, Value v);
 };

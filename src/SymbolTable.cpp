@@ -42,9 +42,16 @@ void SymbolTable::exitBlock(bool isProto) {
     slots.setSize(sz);
 }
 
-int SymbolTable::getLevel(int pos) {
+int SymbolTable::getProtoLevel(int pos) {
     for (int i = protos.size()-1; i >= 0; --i) {
         if (starts[protos[i]] <= pos) { return i; }
+    }
+    return -1;
+}
+
+int SymbolTable::getBlockLevel(int pos) {
+    for (int i = starts.size() - 1; i >= 0; --i) {
+        if (starts[i] <= pos) { return i; }
     }
     return -1;
 }
@@ -58,12 +65,27 @@ int SymbolTable::findPos(Value name) {
     return -1;
 }
 
-Value SymbolTable::get(Value name) {
+bool SymbolTable::get(Value name, int *slot, int *protoLevel, int *blockLevel) {
     int pos = findPos(name);
-    if (pos == -1) { return VNIL; }
-    int slot = slots.get(pos);
-    int level  = getLevel(pos);
-    return VAL_REG((slot << 8) | level);
+    if (pos == -1) { return false; }
+    if (slot) {
+        *slot = slots.get(pos);
+    }
+    if (protoLevel) {
+        *protoLevel = getProtoLevel(pos);
+    }
+    if (blockLevel) {
+        *blockLevel = getBlockLevel(pos);
+    }
+    return true;
+}
+
+bool SymbolTable::definedInThisBlock(Value name) {
+    int nameLevel = 0;
+    int blockLevel = this->blockLevel();
+    get(name, 0, 0, &nameLevel);    
+    assert(blockLevel > 0 && nameLevel <= blockLevel);
+    return nameLevel == blockLevel;
 }
 
 void SymbolTable::set(Value name, int slot) {
@@ -71,9 +93,9 @@ void SymbolTable::set(Value name, int slot) {
     slots.push(slot);
 }
 
-void SymbolTable::setUpval(Value name, int slot, int level) {
+void SymbolTable::setUpval(Value name, int slot, int protoLevel) {
     assert(slot < 0);
-    int block = protos.get(level);
+    int block = protos.get(protoLevel);
     int pos = starts.get(block);
     names.insertAt(pos, name);
     slots.insertAt(pos, slot);
