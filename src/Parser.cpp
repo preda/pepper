@@ -524,7 +524,7 @@ Proto *Parser::parseProto(int *outSlot) {
     }
     proto->freeze();
     Proto *funcProto = proto;
-    syms->exitBlock(true);
+    proto->maxLocalsTop = syms->exitBlock(true);
     proto = proto->up;
     *outSlot = slot;
     return funcProto;

@@ -17,6 +17,7 @@ BlockInfo(int start, BlockInfo *base) :
     
     int start;
     int localsTop;
+    int maxLocalsTop;
     int nConsts;
 };
 
@@ -38,7 +39,7 @@ class SymbolTable {
 
     void traverse(GC *gc); // GC
     void enterBlock(bool isProto);
-    void exitBlock(bool isProto);
+    int exitBlock(bool isProto); // returns maxLocalsTop
     
     bool get(Value name, int *slot, int *protoLevel, int *blockLevel);
     void set(Value name, int slot);

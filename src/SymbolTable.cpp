@@ -42,14 +42,22 @@ void SymbolTable::enterBlock(bool isProto) {
     }
 }
 
-void SymbolTable::exitBlock(bool isProto) {
+int SymbolTable::exitBlock(bool isProto) {
     assert(isProto == (*protos.top() == starts.size() - 1));
     if (isProto) {
         protos.pop();
     }
-    int sz = starts.pop().start;
+    BlockInfo *info = starts.top();
+    int m = max(info->localsTop, info->maxLocalsTop);
+    const int sz = info->start;
+    starts.pop();
+    if (!isProto) {
+        info = starts.top();
+        info->maxLocalsTop = max(info->maxLocalsTop, m);
+    }
     names.setSize(sz);
     slots.setSize(sz);
+    return m;
 }
 
 int SymbolTable::getProtoLevel(int pos) {
