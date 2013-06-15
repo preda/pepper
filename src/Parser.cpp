@@ -133,7 +133,8 @@ bool Parser::statList() {
 bool Parser::lambdaBody() {
     consume('=');
     consume('>');
-    emit(proto->localsTop, RET, 0, expr(proto->localsTop), UNUSED);
+    int top = syms->localsTop();
+    emit(top, RET, 0, expr(top), UNUSED);
     return true;
 }
 
@@ -152,7 +153,8 @@ bool Parser::statement() {
             int slot = lookupSlot(lexer->info.name);
             advance();
             consume('=');
-            patchOrEmitMove(proto->localsTop+1, slot, expr(proto->localsTop));
+            int top = syms->localsTop();
+            patchOrEmitMove(top + 1, slot, expr(top));
             proto->patchPos = -1;
         } else if (lookahead == ':'+TK_EQUAL) { 
             varStat();
@@ -162,13 +164,14 @@ bool Parser::statement() {
         break;
     }
 
-    case TK_return:
+    case TK_return: {
         advance();
-        // TOKEN == ';' ? VNIL : 
-        emit(proto->localsTop, RET, 0, expr(proto->localsTop), UNUSED);
+        int top = syms->localsTop();
+        emit(top, RET, 0, expr(top), UNUSED);
         isReturn = true;
         break;        
-
+    }
+        
     default: exprOrAssignStat(); break;
     }
     
@@ -181,16 +184,17 @@ static int topAbove(Value a, int top) {
 }
 
 void Parser::exprOrAssignStat() {
-    Value lhs = expr(proto->localsTop);
+    int top = syms->localsTop();
+    Value lhs = expr(top);
     if (TOKEN == '=') {
         consume('=');
         CERR(!IS_REG(lhs), E_ASSIGN_TO_CONST, lhs);
         CERR(proto->patchPos < 0, E_ASSIGN_RHS, lhs);
         unsigned code = proto->code.pop();
         int op = OP(code);
-        CERR(op != GETI && op != GETF, E_ASSIGN_RHS, lhs); // (lhs & FLAG_DONT_PATCH)
+        CERR(op != GETI && op != GETF, E_ASSIGN_RHS, lhs);
         assert((int)lhs == OC(code));
-        emit(proto->localsTop+3, op+1, OA(code), VAL_REG(OB(code)), expr(proto->localsTop+2));
+        emit(top + 3, op + 1, OA(code), VAL_REG(OB(code)), expr(top + 2));
     }    
 }
 
@@ -200,21 +204,19 @@ void Parser::forStat() {
     consume(TK_for);
     syms->enterBlock(false);    
     CERR(TOKEN != TK_NAME, E_FOR_NAME, VNIL);
+
     Value name = lexer->info.name;
-    int slot = proto->localsTop++;
+    int slot = syms->localsTop();
     advance();
     consume(':'+TK_EQUAL);
-    Value a = expr(slot+2);
-    patchOrEmitMove(slot+2, slot+2, a);
+    patchOrEmitMove(slot+2, slot+2, expr(slot+2));
     consume(':');
-    Value b = expr(slot+3);
-    patchOrEmitMove(slot+3, slot+1, b);
+    patchOrEmitMove(slot+3, slot+1, expr(slot+3));
     int pos1 = emitHole();
     int pos2 = HERE;
     syms->set(name, slot);
-    proto->localsTop++;
+    syms->addLocalsTop(2);
     insideBlock();
-    //TODO assert proto->localsTop reverted
     emitJump(HERE, LOOP, VAL_REG(slot), pos2);
     emitJump(pos1, FOR,  VAL_REG(slot), HERE);
     syms->exitBlock(false);
@@ -224,7 +226,7 @@ void Parser::whileStat() {
     consume(TK_while);
     int pos1 = emitHole();
     int pos2 = HERE;
-    Value a = expr(proto->localsTop);
+    Value a = expr(syms->localsTop());
     Vector<int> copyExp;
     Vector<int> &code = proto->code;
     while (code.size() > pos2) {
@@ -240,7 +242,7 @@ void Parser::whileStat() {
 
 void Parser::ifStat() {
     consume(TK_if);
-    Value a = expr(proto->localsTop);
+    Value a = expr(syms->localsTop());
     int pos1 = emitHole();
     block();
     if (lexer->token == TK_else) {
@@ -267,10 +269,9 @@ void Parser::varStat() { // name := expr
         CERR(true, E_VAR_REDEFINITION, name);
         // aSlot = slot; // reuse existing local with same name
     } else {
-        const Value a = expr(proto->localsTop);
-        const int slot = proto->localsTop++;
-        syms->set(name, slot);
-        patchOrEmitMove(proto->localsTop+1, slot, a);
+        const Value a = expr(syms->localsTop());
+        const int slot = syms->set(name);
+        patchOrEmitMove(slot+1, slot, a);
         proto->patchPos = -1;
     }
 }
@@ -300,7 +301,7 @@ int Parser::lookupSlot(Value name) {
     if (protoLevel < curProtoLevel) {
         slot = createUpval(proto, curProtoLevel, name, protoLevel, slot);
     }
-    assert(slot < proto->localsTop);
+    assert(slot < syms->localsTop());
     return slot;
 }
 
@@ -377,7 +378,7 @@ Value Parser::arrayExpr(int top) {
 void Parser::parList() {
     consume('(');
     ++proto->nArgs;
-    syms->set(String::value(gc, "this"), proto->localsTop++);
+    syms->set(String::value(gc, "this"));
     bool hasEllipsis = false;
     ARG_LIST(
              if (TOKEN == '*') {
@@ -386,7 +387,7 @@ void Parser::parList() {
              }
              CERR(TOKEN != TK_NAME, E_SYNTAX, VNIL);
              ++proto->nArgs;
-             syms->set(lexer->info.name, proto->localsTop++);
+             syms->set(lexer->info.name);
              advance();
              );
     consume(')');
@@ -511,21 +512,9 @@ Proto *Parser::parseProto(int *outSlot) {
     consume(TK_fn);
     int slot = -1;
     if (TOKEN == TK_NAME) {
-        syms->set(lexer->info.name, slot=proto->localsTop++);
+        slot = syms->set(lexer->info.name);
         advance();
     }
-        /*
-        Value s = syms->get(name);
-        int level = s & 0xff;
-        int sSlot  = s >> 8;
-        if (!IS_NIL(s) && level == proto->level && sSlot >= 0) {
-            slot = sSlot;
-        } else {
-            slot = proto->localsTop++;
-            syms->set(name, slot);
-        }
-        */
-
     proto = Proto::alloc(gc, proto);
     syms->enterBlock(true);
     parList();

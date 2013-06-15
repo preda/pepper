@@ -29,6 +29,10 @@ int SymbolTable::localsTop() {
     return starts.top()->localsTop;
 }
 
+void SymbolTable::addLocalsTop(int inc) {
+    starts.top()->localsTop += inc;
+}
+
 void SymbolTable::enterBlock(bool isProto) {
     if (isProto) {
         starts.push(BlockInfo(slots.size()));
@@ -97,6 +101,12 @@ bool SymbolTable::definedInThisBlock(Value name) {
 void SymbolTable::set(Value name, int slot) {
     names.push(name);
     slots.push(slot);
+}
+
+int SymbolTable::set(Value name) {
+    int slot = starts.top()->localsTop++;
+    set(name, slot);
+    return slot;
 }
 
 void SymbolTable::setUpval(Value name, int slot, int protoLevel) {

@@ -42,11 +42,13 @@ class SymbolTable {
     
     bool get(Value name, int *slot, int *protoLevel, int *blockLevel);
     void set(Value name, int slot);
+    int set(Value name);
     void setUpval(Value name, int slot, int protoLevel);
     int protoLevel() { return protos.size() - 1; }
     int blockLevel() { return starts.size() - 1; }
     bool definedInThisBlock(Value name);
     int localsTop();
+    void addLocalsTop(int delta);
     
     void add(GC *gc, Array *regs, const char *name, Value v);
 };

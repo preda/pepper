@@ -11,7 +11,7 @@ void Proto::traverse(GC *gc) {
 Proto::Proto(Proto *up) :
     type(O_PROTO),
     nArgs(0),
-    localsTop(0),
+    maxLocalsTop(0),
     patchPos(-1),
     up(up) {
 }
