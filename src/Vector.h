@@ -57,7 +57,7 @@ class Vector {
     }
 
     T get(int pos);
-    T operator[](int pos) { return buf()[pos]; }
+    T &operator[](int pos) { return buf()[pos]; }
     
     void setDirect(int pos, T v);
     void setExtend(int pos, T v);
