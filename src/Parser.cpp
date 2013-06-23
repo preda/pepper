@@ -141,29 +141,10 @@ bool Parser::lambdaBody() {
 bool Parser::statement() {
     bool isReturn = false;
     switch (lexer->token) {
-        // case TK_VAR:   advance(); varStat(); break;
     case '{': isReturn = block(); break;
     case TK_if:    ifStat(); break;
     case TK_while: whileStat(); break;
     case TK_for:   forStat(); break;
-
-    case TK_NAME: {
-        int lookahead = lexer->lookahead();
-        if (lookahead == '=') {
-            int slot = lookupSlot(lexer->info.name);
-            advance();
-            consume('=');
-            int top = syms->localsTop();
-            patchOrEmitMove(top + 1, slot, expr(top));
-            proto->patchPos = -1;
-        } else if (lookahead == ':'+TK_EQUAL) { 
-            varStat();
-        } else {
-            exprOrAssignStat();
-        }
-        break;
-    }
-
     case TK_return: {
         advance();
         int top = syms->localsTop();
@@ -171,31 +152,54 @@ bool Parser::statement() {
         isReturn = true;
         break;        
     }
-        
-    default: exprOrAssignStat(); break;
+
+    case TK_NAME: {
+        int lookahead = lexer->lookahead();
+        if (lookahead == '=' || lookahead == ':'+TK_EQUAL) {
+            Value name = lexer->info.name;
+            consume(TK_NAME);
+            if (lookahead == '=') {
+                int slot = lookupSlot(name);
+                consume('=');
+                int top = syms->localsTop();
+                patchOrEmitMove(top + 1, slot, expr(top));
+                proto->patchPos = -1;                
+            } else {
+                consume(':'+TK_EQUAL); 
+                if (syms->definedInThisBlock(name)) {
+                    CERR(true, E_VAR_REDEFINITION, name);
+                    // aSlot = slot; // reuse existing local with same name
+                } else {
+                    const Value a = expr(syms->localsTop());
+                    const int slot = syms->set(name);
+                    patchOrEmitMove(slot+1, slot, a);
+                    proto->patchPos = -1;
+                }
+            }
+            break;
+        }
     }
-    
-    // while (TOKEN == ';') { advance(); }
+        
+    default: {
+        int top = syms->localsTop();
+        Value lhs = expr(top);
+        if (TOKEN == '=') {
+            consume('=');
+            CERR(!IS_REG(lhs), E_ASSIGN_TO_CONST, lhs);
+            CERR(proto->patchPos < 0, E_ASSIGN_RHS, lhs);
+            unsigned code = proto->code.pop();
+            int op = OP(code);
+            CERR(op != GETI && op != GETF, E_ASSIGN_RHS, lhs);
+            assert((int)lhs == OC(code));
+            emit(top + 3, op + 1, OA(code), VAL_REG(OB(code)), expr(top + 2));
+        }
+    }
+    }
     return isReturn;
 }
 
 static int topAbove(Value a, int top) {
     return IS_REG(a) ? max((int)a + 1, top) : top;
-}
-
-void Parser::exprOrAssignStat() {
-    int top = syms->localsTop();
-    Value lhs = expr(top);
-    if (TOKEN == '=') {
-        consume('=');
-        CERR(!IS_REG(lhs), E_ASSIGN_TO_CONST, lhs);
-        CERR(proto->patchPos < 0, E_ASSIGN_RHS, lhs);
-        unsigned code = proto->code.pop();
-        int op = OP(code);
-        CERR(op != GETI && op != GETF, E_ASSIGN_RHS, lhs);
-        assert((int)lhs == OC(code));
-        emit(top + 3, op + 1, OA(code), VAL_REG(OB(code)), expr(top + 2));
-    }    
 }
 
 #define HERE (proto->code.size())
@@ -257,22 +261,6 @@ void Parser::ifStat() {
         emitJump(pos2, JMP, UNUSED, HERE);
     } else {
         emitJump(pos1, JF, a, HERE);
-    }
-}
-
-void Parser::varStat() { // name := expr
-    CERR(TOKEN != TK_NAME, E_VAR_NAME, VNIL);
-    Value name = lexer->info.name;
-    advance();
-    consume(':'+TK_EQUAL); 
-    if (syms->definedInThisBlock(name)) {
-        CERR(true, E_VAR_REDEFINITION, name);
-        // aSlot = slot; // reuse existing local with same name
-    } else {
-        const Value a = expr(syms->localsTop());
-        const int slot = syms->set(name);
-        patchOrEmitMove(slot+1, slot, a);
-        proto->patchPos = -1;
     }
 }
 
@@ -719,28 +707,23 @@ Value Parser::subExpr(int top, int limit) {
     return a;
 }
 
-Value Parser::ternaryExpr(int top) {
+Value Parser::expr(int top) {
     Value a = subExpr(top, 0);
     if (TOKEN != '?') { 
         return a; 
     }
     advance();
     int pos1 = emitHole();
-    Value b = ternaryExpr(top);
+    Value b = expr(top);
     patchOrEmitMove(top, top, b);
     int pos2 = emitHole();
     emitJump(pos1, JF, a, HERE);
     consume(':');
-    Value c = ternaryExpr(top);
+    Value c = expr(top);
     patchOrEmitMove(top, top, c);
     emitJump(pos2, JMP, UNUSED, HERE);
     return VAL_REG(top);
 }
-
-Value Parser::expr(int top) {
-    return ternaryExpr(top);
-}
-
 
 // code generation below
 

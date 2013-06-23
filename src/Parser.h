@@ -39,7 +39,6 @@ class Parser {
     Value arrayExpr(int top);
     Value mapExpr(int top);
     Value funcExpr(int top);
-    Value ternaryExpr(int top);
     Value callExpr(int top, Value func, Value self);
 
     void parList();
@@ -54,11 +53,9 @@ class Parser {
     // returns true if statement was "return".
     bool statement();
 
-    void varStat();
     void ifStat();
     void whileStat();
     void forStat();
-    void exprOrAssignStat();
     Proto *parseProto(int *outSlot);
     Value mapSpecialConsts(Value a);
     static Func  *makeFunc(GC *gc, Proto *proto, Value *upsTop, int recSlot);
