@@ -10,6 +10,7 @@
 #include "Index.h"
 #include "StringBuilder.h"
 #include "Lexer.h"
+#include "RegAlloc.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -18,6 +19,35 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+
+void testRegAlloc() {
+    {
+        RegAlloc regAlloc;
+        int n = regAlloc.doAllocation(0, 0);
+        assert(n == 0);
+    }
+
+    {
+        RegAlloc regAlloc;
+        regAlloc.write(0, 0);
+        regAlloc.write(1, 0);
+        regAlloc.write(2, 1);
+        regAlloc.write(3, 1);
+        regAlloc.read(0, 3);
+        regAlloc.read(1, 2);
+        regAlloc.read(2, 2);
+        regAlloc.read(3, 6);
+        int args[] = {0, 1};
+        int n = regAlloc.doAllocation(2, args);
+        assert(n == 4);
+        assert(regAlloc.get(2) == 3);
+        assert(regAlloc.get(3) == 2);
+        printf("%d\n", n);
+        for (int i = 0; i < 4; ++i) {
+            printf("%d : %d\n", i, regAlloc.get(i));
+        }
+    }    
+}
 
 void testIndex() {
     Index idx;
@@ -87,6 +117,7 @@ static long long getTimeUsec() {
 
 int main(int argc, char **argv) {
     testIndex();
+    testRegAlloc();
     Pepper *pepper = new Pepper(0);
     GC *gc = pepper->gc();
 

@@ -40,5 +40,5 @@ class RegAlloc {
     void write(unsigned var, int pos);
     int doAllocation(int nArgs, int *args);
 
-    int get(int var);    
+    int get(int var) { return allocReg[var]; }    
 };
