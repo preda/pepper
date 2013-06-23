@@ -40,7 +40,10 @@ Pepper::Pepper(void *context) :
     Func *f = parseStatList("\
 imports := {}\
 return fn(name) {\
-  if !imports[name] { imports[name] = parse.block(file.read(name + '.pep'))() }\
+  if !imports[name] {\
+    data := file.read(name + '.pep')\
+    if data { imports[name] = parse.block(data)() }\
+  }\
   return imports[name]\
 }");
     
