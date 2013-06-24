@@ -2,20 +2,25 @@
 
 #include <vector>
 
-class RegAlloc {
+class SpanTracker {
+ public:
+    void read(unsigned var, int pos);
+    void write(unsigned var, int pos);
+    std::vector<int> varToReg(int nArgs, int *args);
+
     struct Var {
         Var(int name, int begin) : name(name), begin(begin), end(begin) {}
 
-        int length() const { return end - begin; }
+        int span() const { return end - begin; }
 
         bool overlaps(Var other) {
             return !(end <= other.begin || other.end <= begin);
         }
         
         bool operator<(const Var &other) const {
-            int l1 = length();
-            int l2 = other.length();
-            return l1 > l2 || (l1 == l2 && begin < other.begin);
+            int s1 = span();
+            int s2 = other.span();
+            return s1 > s2 || (s1 == s2 && begin < other.begin);
         }
 
         unsigned name;
@@ -23,22 +28,6 @@ class RegAlloc {
         int end;
     };
 
-    struct Reg {
-        std::vector<Var> vars;
-        bool add(Var &var);
-    };
-    
+ private:
     std::vector<Var> vars;
-    std::vector<Reg> regs;
-    std::vector<int> allocReg;
-    
-    void alloc(Var &var);
-    
- public:
-    
-    void read(unsigned var, int pos);
-    void write(unsigned var, int pos);
-    int doAllocation(int nArgs, int *args);
-
-    int get(int var) { return allocReg[var]; }    
 };

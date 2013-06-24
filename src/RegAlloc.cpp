@@ -4,7 +4,30 @@
 #include <assert.h>
 #include <algorithm>
 
-bool RegAlloc::Reg::add(Var &var) {
+typedef SpanTracker::Var Var;
+
+void SpanTracker::write(unsigned v, int pos) {
+    if (v == vars.size()) {
+        vars.push_back(Var(v, pos));
+    } else {
+        assert(0 <= v && v < vars.size() && vars[v].begin < pos);        
+    }    
+}
+
+void SpanTracker::read(unsigned v, int pos) {
+    assert(0 <= v && v < vars.size() && vars[v].end < pos);
+    vars[v].end = pos;
+}
+
+class Reg {
+    std::vector<Var> vars;
+    
+public:
+    Reg(Var var) { bool ok = add(var); assert(ok); }
+    bool add(Var var);
+};
+
+bool Reg::add(Var var) {
     for (Var v : vars) {
         if (var.overlaps(v)) {
             return false;
@@ -14,45 +37,27 @@ bool RegAlloc::Reg::add(Var &var) {
     return true;
 }
 
-void RegAlloc::write(unsigned v, int pos) {
-    if (v == vars.size()) {
-        vars.push_back(Var(v, pos));
-    } else {
-        assert(0 <= v && v < vars.size() && vars[v].begin < pos);        
-    }    
-}
-
-void RegAlloc::read(unsigned v, int pos) {
-    assert(0 <= v && v < vars.size() && vars[v].end < pos);
-    vars[v].end = pos;
-}
-
-void RegAlloc::alloc(Var &var) {
-    // if (allocReg[var.name] >= 0) { return; }
+static int alloc(std::vector<Reg> &regs, Var var) {
     for (auto it = regs.begin(), end = regs.end(); it < end; ++it) {
-        if (it->add(var)) {
-            allocReg[var.name] = it - regs.begin();
-            return;
-        }
+        if (it->add(var)) { return it - regs.begin(); }
     }
-    Reg reg;
-    bool ok = reg.add(var);
-    assert(ok);
-    regs.push_back(reg);
-    allocReg[var.name] = regs.size() - 1;
+    regs.emplace_back(var);
+    return regs.size() - 1;
 }
 
-int RegAlloc::doAllocation(int nArg, int *args) {
-    allocReg.resize(vars.size());
-    std::fill(allocReg.begin(), allocReg.end(), -1);
+std::vector<int> SpanTracker::varToReg(int nArg, int *args) {
+    std::vector<Reg> regs;
+    std::vector<int> ret(vars.size(), -1);
     for (int i = 0; i < nArg; ++i) {
-        alloc(vars[args[i]]);
+        Var var = vars[args[i]];
+        ret[var.name] = alloc(regs, var);
     }    
     std::sort(vars.begin(), vars.end());
     for (Var &var : vars) {
-        if (allocReg[var.name] == -1) {
-            alloc(var);
+        const int id = var.name;
+        if (ret[id] == -1) {
+            ret[id] = alloc(regs, var);
         }
     }
-    return regs.size();
+    return ret;
 }

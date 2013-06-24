@@ -22,29 +22,28 @@
 
 void testRegAlloc() {
     {
-        RegAlloc regAlloc;
-        int n = regAlloc.doAllocation(0, 0);
-        assert(n == 0);
+        SpanTracker spans;
+        std::vector<int> varToReg = spans.varToReg(0, 0);
+        assert(varToReg.size() == 0);
     }
 
     {
-        RegAlloc regAlloc;
-        regAlloc.write(0, 0);
-        regAlloc.write(1, 0);
-        regAlloc.write(2, 1);
-        regAlloc.write(3, 1);
-        regAlloc.read(0, 3);
-        regAlloc.read(1, 2);
-        regAlloc.read(2, 2);
-        regAlloc.read(3, 6);
+        SpanTracker spans;
+        spans.write(0, 0);
+        spans.write(1, 0);
+        spans.write(2, 1);
+        spans.write(3, 1);
+        spans.read(0, 3);
+        spans.read(1, 2);
+        spans.read(2, 2);
+        spans.read(3, 6);
         int args[] = {0, 1};
-        int n = regAlloc.doAllocation(2, args);
-        assert(n == 4);
-        assert(regAlloc.get(2) == 3);
-        assert(regAlloc.get(3) == 2);
-        printf("%d\n", n);
+        std::vector<int> varToReg = spans.varToReg(2, args);
+        assert(varToReg.size() == 4);
+        assert(varToReg[2] == 3);
+        assert(varToReg[3] == 2);
         for (int i = 0; i < 4; ++i) {
-            printf("%d : %d\n", i, regAlloc.get(i));
+            printf("%d : %d\n", i, varToReg[i]);
         }
     }    
 }
