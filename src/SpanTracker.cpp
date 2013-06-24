@@ -1,6 +1,6 @@
 // Copyright (C) 2013 Mihai Preda
 
-#include "RegAlloc.h"
+#include "SpanTracker.h"
 #include <assert.h>
 #include <algorithm>
 

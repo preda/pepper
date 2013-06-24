@@ -10,7 +10,7 @@
 #include "Index.h"
 #include "StringBuilder.h"
 #include "Lexer.h"
-#include "RegAlloc.h"
+#include "SpanTracker.h"
 
 #include <stdio.h>
 #include <assert.h>
